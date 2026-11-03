@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ROBINHOOD_CHAIN_ID } from './constants';
+import { isNearMainnetAccountId } from './near-account';
 import { isUrl, URL_MESSAGE, zod3Issues, ZOD_MESSAGES } from './zod-messages';
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
@@ -251,6 +252,10 @@ export const serverEnvSchema = z
      *    returned, never sent to a browser; a malformed value is refused at boot without quoting it.
      *  - HEY_SHIP_ESCROW_ADDRESSES: the escrow contracts HEY signs for, comma-separated (the EIP-712 domain's
      *    verifyingContract). An escrow not listed is refused, so a signature never verifies on a contract HEY did not name.
+     *  - HEY_SHIP_NEAR_ESCROWS (2026-11-03, founder "ok buat idea tu", NEAR HACKATHON): the NEAR mainnet escrow accounts
+     *    HEY signs for (`escrow=near:<account id>`), comma-separated, each a NEAR account id as NEAR's rules write it
+     *    (`isNearMainnetAccountId`: lower-case, never a testnet account). Empty means none. Never lower-cased for the
+     *    operator: the EIP-712 domain's salt hashes the account id's exact bytes, so a misspelt entry is refused at boot.
      */
     proofOfShip: z.object({
       attesterKey: optionalString.pipe(
@@ -267,6 +272,14 @@ export const serverEnvSchema = z
             .filter(Boolean),
         )
         .refine((list) => list.every((entry) => /^0x[0-9a-f]{40}$/.test(entry)), 'HEY_SHIP_ESCROW_ADDRESSES is a comma-separated list of 0x addresses (40 hex characters each)'),
+      nearEscrows: optionalString
+        .transform((value) =>
+          (value ?? '')
+            .split(',')
+            .map((entry) => entry.trim())
+            .filter(Boolean),
+        )
+        .refine((list) => list.every(isNearMainnetAccountId), 'HEY_SHIP_NEAR_ESCROWS is a comma-separated list of NEAR mainnet account ids (lower-case, as NEAR writes them; no near: prefix, no testnet account)'),
     }),
 
     /*
@@ -954,6 +967,7 @@ function shapeEnv(raw: RawEnv) {
     proofOfShip: {
       attesterKey: raw.HEY_SHIP_ATTESTER_KEY,
       escrowAddresses: raw.HEY_SHIP_ESCROW_ADDRESSES,
+      nearEscrows: raw.HEY_SHIP_NEAR_ESCROWS,
     },
     erc8004Validator: {
       enabled: raw.HEY_ERC8004_VALIDATOR_ENABLED,
@@ -1104,6 +1118,7 @@ export const ENV_KEY_BY_PATH: Record<string, string> = {
   'uniswap.apiKey': 'UNISWAP_API_KEY',
   'proofOfShip.attesterKey': 'HEY_SHIP_ATTESTER_KEY',
   'proofOfShip.escrowAddresses': 'HEY_SHIP_ESCROW_ADDRESSES',
+  'proofOfShip.nearEscrows': 'HEY_SHIP_NEAR_ESCROWS',
   'erc8004Validator.enabled': 'HEY_ERC8004_VALIDATOR_ENABLED',
   'erc8004Validator.key': 'HEY_ERC8004_VALIDATOR_KEY',
   'erc8004Validator.address': 'HEY_ERC8004_VALIDATOR_ADDRESS',

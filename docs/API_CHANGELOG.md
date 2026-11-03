@@ -13,7 +13,7 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
-## 2026-11-03 — A Proof of Ship window HEY never read is not measured, and two new validator declines
+## 2026-11-03 — A Proof of Ship window HEY never read is not measured, two new validator declines, and Proof of Ship on NEAR
 
 ### Changed
 
@@ -33,6 +33,15 @@ The TypeScript SDK keeps its own changelog in its package; its entries are summa
   agent's owner or declared wallet in the ERC-8004 Identity Registry is not one of the project's Proof of Ship payout
   ties) and `activity_not_measured` (as above). `definitions.erc8004Validations` names them. Additive; every other field
   is unchanged. The validator is not switched on in production yet, so no request has been read.
+- `GET /api/v1/proof-of-ship/attestation`: `escrow` may also be `near:<account id>`, a NEAR mainnet escrow account the
+  host lists (`HEY_SHIP_NEAR_ESCROWS`). HEY signs the same `Ships` struct over the same counted set, for the same tied
+  `builder`, with the same key, under the NEAR escrow's fixed domain
+  `EIP712Domain(string name,string version,uint256 chainId,bytes32 salt)`: "HEY Proof of Ship", "1", chain id 397,
+  `salt = keccak256(utf8(account id))`. A malformed NEAR account id (capitals, a testnet account, anything NEAR's
+  account-id rules refuse) is `400 invalid_parameter`; an unlisted one `400 escrow_not_configured`. Every answer, for
+  either escrow, adds `escrow` (as signed for), `escrowKind` (`evm` or `near`), `digest` (the EIP-712 digest) and
+  `typedData` (the whole payload, `types.EIP712Domain` included). Additive: a Robinhood Chain escrow's `domain`,
+  signature and every other field are unchanged. See [Proof of Ship](PUBLIC_API.md).
 
 ## 2026-11-02 — The payout addresses HEY would sign Proof of Ship for, and feedback for HEY's agent
 

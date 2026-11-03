@@ -1046,7 +1046,7 @@ GET /api/v1/proof-of-ship/attestation?slug=loom&builder=0x…&since=1790812800&e
 | `builder` | the bounty's payout address; must be tied to the project (below) |
 | `since` | window start, unix seconds — the bounty's `start`; at most 400 days back |
 | `until` | window end, unix seconds; optional, defaults to `issuedAt` and is never later than it |
-| `escrow` | the escrow contract the signature is for (the EIP-712 `verifyingContract`); must be one HEY signs for |
+| `escrow` | the escrow the signature is for: a Robinhood Chain ShipEscrow contract, `0x` and 40 hex characters (the EIP-712 `verifyingContract`), or — since 2026-11-03 — `near:<account id>`, a NEAR mainnet escrow account (`hey-open-ecosystem/proof-of-ship-near`), the account id exactly as NEAR writes it (lower-case, NEAR's account-id rules, never a testnet account; anything else is `400 invalid_parameter`, never a tidied copy). Either must be one HEY signs for |
 
 ```json
 {
@@ -1054,6 +1054,10 @@ GET /api/v1/proof-of-ship/attestation?slug=loom&builder=0x…&since=1790812800&e
   "signature": "0x…",
   "signer": "0x…",
   "domain": { "name": "HEY Proof of Ship", "version": "1", "chainId": 4663, "verifyingContract": "0x…" },
+  "escrow": "0x…",
+  "escrowKind": "evm",
+  "digest": "0x…",
+  "typedData": { "types": { "EIP712Domain": [ … ], "Ships": [ … ] }, "primaryType": "Ships", "domain": { … }, "message": { … } },
   "slug": "loom",
   "currentSlug": "loom",
   "builderTie": "wallet_claim",
@@ -1100,6 +1104,46 @@ GET /api/v1/proof-of-ship/attestation?slug=loom&builder=0x…&since=1790812800&e
   `issuedAt` is HEY's clock less 60 seconds — the contract refuses an `issuedAt` ahead of the block, and the route never
   asks the chain — and `until` is never later than it. The contract accepts an attestation for at most one day after
   `issuedAt`, so ask close to claiming. `ships` may be 0.
+- **A NEAR escrow (2026-11-03, NEAR HACKATHON):** with `escrow=near:<account id>`, for an account listed in
+  `HEY_SHIP_NEAR_ESCROWS`, HEY signs the same `Ships` struct over the same counted set, for the same tied `builder` (an
+  EVM address: the NEAR escrow recovers the attester with ecrecover and pays the builder's address as the bounty names
+  it), with the same key, pause and limits, under the domain the NEAR escrow fixes:
+  `EIP712Domain(string name,string version,uint256 chainId,bytes32 salt)` with `name` "HEY Proof of Ship", `version`
+  "1", `chainId` 397 (NEAR mainnet) and `salt = keccak256(utf8(account id))`. A NEAR account has no 20-byte address to
+  stand as `verifyingContract`, so the salt names the escrow: a signature for the Robinhood Chain escrow (chain 4663,
+  a `verifyingContract`, a different domain type) never verifies on a NEAR escrow, nor one NEAR escrow's on another's.
+  An unlisted NEAR account answers `400 escrow_not_configured`, like an unknown contract.
+
+  ```json
+  {
+    "domain": { "name": "HEY Proof of Ship", "version": "1", "chainId": 397, "salt": "0x693e…854b" },
+    "escrow": "near:proof-of-ship.hey-research.near",
+    "escrowKind": "near",
+    "digest": "0x60dc…e91a",
+    "typedData": {
+      "types": {
+        "EIP712Domain": [
+          { "name": "name", "type": "string" }, { "name": "version", "type": "string" },
+          { "name": "chainId", "type": "uint256" }, { "name": "salt", "type": "bytes32" }
+        ],
+        "Ships": [
+          { "name": "project", "type": "bytes32" }, { "name": "builder", "type": "address" },
+          { "name": "since", "type": "uint64" }, { "name": "until", "type": "uint64" },
+          { "name": "ships", "type": "uint32" }, { "name": "evidence", "type": "bytes32" },
+          { "name": "issuedAt", "type": "uint64" }
+        ]
+      },
+      "primaryType": "Ships",
+      "domain": { "name": "HEY Proof of Ship", "version": "1", "chainId": 397, "salt": "0x693e…854b" },
+      "message": { "project": "0x23ac…", "builder": "0x…", "since": 1790812800, "until": 1792497600, "ships": 2, "evidence": "0x1b00…", "issuedAt": 1792497605 }
+    }
+  }
+  ```
+
+  Every other field (`attestation`, `signature`, `signer`, `builderTie`, `evidenceIds`, …) is as above. `escrow`,
+  `escrowKind`, `digest` and `typedData` are additive and present for a Robinhood Chain escrow too (`escrowKind: "evm"`,
+  `types.EIP712Domain` with `address verifyingContract`). The hourly release watch reads the Robinhood Chain escrows
+  only.
 - **A renamed page:** the escrow keys a bounty on `keccak256(slug)` for good, while HEY renames pages. An old slug
   that redirects to a published page answers for that page: HEY signs over the slug as asked (the bounty's) and returns
   the page's `currentSlug`.
@@ -1109,7 +1153,7 @@ GET /api/v1/proof-of-ship/attestation?slug=loom&builder=0x…&since=1790812800&e
   `issuedAt` or more than 400 days back), `400 escrow_not_configured` (an escrow HEY does not sign for), `403
   builder_not_tied`, `404 not_found` (no published page answers to the slug, by its current slug or an old one that
   redirects to it; a slug that is one page's current slug while its redirect names another is refused too),
-  `503 not_configured` (the host has no attester key). `cache-control: no-store`; no provider call.
+  `503 not_configured` (the host has no attester key), `503 paused`. `cache-control: no-store`; no provider call.
 - **What it is not:** a signature is what HEY counted, never that a project is good, safe or worth funding. HEY holds no
   funds and earns nothing from a bounty, stores nothing about the payout address, and the attestation changes nothing
   on HEY — no status, score, badge or order.
@@ -1141,7 +1185,8 @@ GET /api/v1/proof-of-ship/tie?slug=predict-fwa
   token, and the signer of each verified wallet-signature claim on the project — through the attestation's own tie
   (above, "Whom HEY signs for"), and lists only what it ties, with the `kind` the attestation would answer in
   `builderTie`. Every listed `address` is accepted as `builder` by `/api/v1/proof-of-ship/attestation` for the same
-  slug at the same moment; an address not listed answers `403 builder_not_tied` there. Addresses are checksummed, as
+  slug at the same moment, for a Robinhood Chain escrow (`escrow=0x…`) and a NEAR one (`escrow=near:<account id>`)
+  alike — the tie does not depend on the escrow; an address not listed answers `403 builder_not_tied` there. Addresses are checksummed, as
   the attestation's `attestation.builder`, sorted by address.
 - **None:** `payable: false`, `ties: []` and `reason`, the first condition that failed: `no_token` (the page tracks no
   token), `token_not_verified`, `issuer_token`, `site_disclaims_contract`, `site_names_another_contract`, `contested`
