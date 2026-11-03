@@ -194,7 +194,7 @@ describe('the 8-week chart', () => {
 
   it('says a project HEY observed in none of the weeks is not observed, never 0 ships', () => {
     const series = weeks([null, null, null, null, null, null, null, null]);
-    expect(shipWeeksSentence(series)).toBe('Not observed: HEY had not read this project in these 8 weeks.');
+    expect(shipWeeksSentence(series)).toBe('Not observed: HEY did not read this project’s building in these 8 weeks, so no week is a zero.');
     const html = renderToStaticMarkup(createElement(ShipWeeksChart, { series }));
     expect(html).toContain('data-state="not-observed"');
     expect(html).not.toMatch(/data-testid="ship-weeks-total">0/);

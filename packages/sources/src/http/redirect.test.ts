@@ -253,49 +253,54 @@ describe("HEY's own origin addresses", () => {
     vi.unstubAllEnvs();
   });
 
+  /*
+   * The origin's stand-ins are public resolvers' addresses (8.8.4.4, 2606:4700:4700::1111), never an address in the
+   * range HEY's own server sits in (2026-11-03 full audit, own-repos P3-3). A documentation range (203.0.113.0/24,
+   * 2001:db8::/32) would not do: the guard refuses it as reserved before it reads the deny list.
+   */
   it('refuses a submitted URL whose name resolves to the origin', async () => {
     vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '203.0.113.9, 2001:db8::1');
     const allowed = stubFetch(page('ok'));
     await expect(
       httpRequest(
         { url: 'https://looks-public.example/', enforceUrlSafety: true },
-        testContext({ fetchImpl: allowed.fetchImpl, lookupImpl: async () => ['45.77.1.2'] }),
+        testContext({ fetchImpl: allowed.fetchImpl, lookupImpl: async () => ['8.8.4.4'] }),
       ),
     ).resolves.toMatchObject({ kind: 'ok' });
 
-    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '45.77.1.2');
+    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '8.8.4.4');
     const refused = stubFetch(page('ok'));
     await expect(
       httpRequest(
         { url: 'https://looks-public.example/', enforceUrlSafety: true },
-        testContext({ fetchImpl: refused.fetchImpl, lookupImpl: async () => ['45.77.1.2'] }),
+        testContext({ fetchImpl: refused.fetchImpl, lookupImpl: async () => ['8.8.4.4'] }),
       ),
     ).rejects.toMatchObject({ code: 'BLOCKED_URL' });
     expect(refused.callCount()).toBe(0);
   });
 
   it('refuses the origin however its IPv6 address is spelled, and as a literal host', async () => {
-    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '2A05:F480:1800:0:0::1');
+    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '2606:4700:4700:0:0::1111');
     const stub = stubFetch(page('ok'));
     await expect(
       httpRequest(
         { url: 'https://looks-public.example/', enforceUrlSafety: true },
-        testContext({ fetchImpl: stub.fetchImpl, lookupImpl: async () => ['2a05:f480:1800::1'] }),
+        testContext({ fetchImpl: stub.fetchImpl, lookupImpl: async () => ['2606:4700:4700::1111'] }),
       ),
     ).rejects.toMatchObject({ code: 'BLOCKED_URL' });
 
-    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '45.77.1.2');
+    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '8.8.4.4');
     await expect(
-      httpRequest({ url: 'https://45.77.1.2/', enforceUrlSafety: true }, testContext({ fetchImpl: stub.fetchImpl })),
+      httpRequest({ url: 'https://8.8.4.4/', enforceUrlSafety: true }, testContext({ fetchImpl: stub.fetchImpl })),
     ).rejects.toMatchObject({ code: 'BLOCKED_URL' });
     expect(stub.callCount()).toBe(0);
   });
 
   it('refuses a configured provider’s redirect to a host that resolves to the origin', async () => {
-    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '45.77.1.2');
+    vi.stubEnv('WEBHOOK_DENY_ADDRESSES', '8.8.4.4');
     const stub = stubFetch([redirectTo('https://origin-alias.example/'), page('ok')]);
     await expect(
-      httpRequest({ url: 'https://api.launchpad.example/v1' }, testContext({ fetchImpl: stub.fetchImpl, lookupImpl: async () => ['45.77.1.2'] })),
+      httpRequest({ url: 'https://api.launchpad.example/v1' }, testContext({ fetchImpl: stub.fetchImpl, lookupImpl: async () => ['8.8.4.4'] })),
     ).rejects.toMatchObject({ code: 'BLOCKED_URL' });
     expect(stub.callCount()).toBe(1);
   });

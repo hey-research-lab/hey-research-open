@@ -31,6 +31,15 @@ import { performSourceFetch } from '../http/perform';
  * A repeated log (same transaction and log index) counts once; a log the node marks `removed` is not counted; a log
  * from another contract, of another event or for another agent means the answer is not the one asked for, and the
  * whole window is refused rather than half-counted.
+ *
+ * Account statements are counted apart (2026-11-03, founder: Raeto account statements). Raeto, the model provider HEY's
+ * AI runs on, posts a weekly account statement for HEY's agent into the same registry, from one writer address that
+ * never acts as an agent (`RAETO_ACCOUNT_STATEMENT_WRITER`), with tag1 `account.statement` or `account.correction` and
+ * a value that is money moved in the window (6 decimals), not a score. A `NewFeedback` log is a statement only when
+ * both hold: the client (topic 2) is that writer and its tag1, decoded from the log data, begins with `account.`. A
+ * statement is never feedback and never enters a value bucket; a `FeedbackRevoked` from the writer is a statement
+ * revocation. Anything else stays feedback: a stranger using the tag, or the writer posting another tag. The tag is read
+ * in memory to decide this and never leaves the adapter, nor does a statement's value.
  */
 export const ERC8004_REPUTATION_REGISTRY_ADDRESS = '0x8004baa17c55a88189ae136b182e5fda19de9b63' as const;
 
@@ -56,6 +65,14 @@ export const HEY_ERC8004_AGENTS_BY_CHAIN: Readonly<Record<number, number>> = { 4
 
 export type Erc8004FeedbackEvent = 'new' | 'revoked';
 
+/**
+ * The one address Raeto posts HEY's agent's account statements from (Raeto, 2026-11-03: it never acts as an agent). A
+ * constant HEY names, never an address read from a log: no other client address is kept anywhere.
+ */
+export const RAETO_ACCOUNT_STATEMENT_WRITER = '0x9d420a047ee7cdc4fcbcbe891308306543ee2dff' as const;
+/** Raeto's statement tags: `account.statement` and `account.correction` (tag2 `genesis`, `period`, `paused` or `closed`). */
+export const ACCOUNT_STATEMENT_TAG_PREFIX = 'account.' as const;
+
 /** Where a feedback value fell, read as `value / 10^valueDecimals`; 100 sits in the top bucket of the 0–100 range. */
 export const ERC8004_FEEDBACK_VALUE_BUCKETS = ['below0', 'from0to20', 'from20to40', 'from40to60', 'from60to80', 'from80to100', 'above100'] as const;
 export type Erc8004FeedbackValueBucket = (typeof ERC8004_FEEDBACK_VALUE_BUCKETS)[number];
@@ -65,8 +82,11 @@ export const emptyFeedbackValueCounts = (): Erc8004FeedbackValueCounts => ({ bel
 
 export type Erc8004FeedbackWindowInput = { rpcUrl: string; fromBlock: number; toBlock: number; event: Erc8004FeedbackEvent; agent: number };
 
-/** One block's counts. `values` is empty counts for a revocation window. `at` is null when the log carried no time. */
-export type Erc8004FeedbackBlock = { blockNumber: number; feedback: number; revoked: number; values: Erc8004FeedbackValueCounts; at: Date | null };
+/**
+ * One block's counts. `values` is empty counts for a revocation window and never holds a statement. `at` is null when
+ * the log carried no time.
+ */
+export type Erc8004FeedbackBlock = { blockNumber: number; feedback: number; revoked: number; statements: number; statementsRevoked: number; values: Erc8004FeedbackValueCounts; at: Date | null };
 
 export type Erc8004FeedbackWindow = { fromBlock: number; toBlock: number; event: Erc8004FeedbackEvent; blocks: Erc8004FeedbackBlock[] };
 
@@ -122,6 +142,36 @@ export function readFeedbackValue(data: string): { value: bigint; decimals: numb
   return { value, decimals: Number(decimals) };
 }
 
+const STATEMENT_WRITER_TOPIC = `0x${'0'.repeat(24)}${RAETO_ACCOUNT_STATEMENT_WRITER.slice(2)}`;
+const STATEMENT_TAG_PREFIX_HEX = Buffer.from(ACCOUNT_STATEMENT_TAG_PREFIX, 'utf8').toString('hex');
+
+/** Pure: the log's client (topic 2) is Raeto's statement writer. Compared lower-case; the client is never kept. */
+export const fromStatementWriter = (topics: readonly string[]): boolean => topics[2]?.toLowerCase() === STATEMENT_WRITER_TOPIC;
+
+/**
+ * Pure: whether a `NewFeedback` log's tag1 begins with `account.`, read from the log data — the ABI string the fourth
+ * head word points at (`feedbackIndex`, `value`, `valueDecimals`, then tag1's offset). Null when the offset or the length
+ * points outside the data, the offset is not word-aligned or inside the head, or the bytes are not UTF-8. The tag is
+ * compared here and never returned.
+ */
+export function feedbackTag1IsAccountStatement(data: string): boolean | null {
+  const body = data.slice(2);
+  if (!/^([0-9a-fA-F]{2})*$/.test(body) || body.length < 8 * WORD) return null;
+  const size = BigInt(body.length / 2);
+  const offset = BigInt(`0x${body.slice(3 * WORD, 4 * WORD)}`);
+  if (offset % 32n !== 0n || offset < 8n * 32n || offset + 32n > size) return null;
+  const start = Number(offset) * 2;
+  const length = BigInt(`0x${body.slice(start, start + WORD)}`);
+  if (offset + 32n + length > size) return null;
+  const bytes = body.slice(start + WORD, start + WORD + Number(length) * 2);
+  try {
+    new TextDecoder('utf-8', { fatal: true }).decode(Buffer.from(bytes, 'hex'));
+  } catch {
+    return null;
+  }
+  return bytes.toLowerCase().startsWith(STATEMENT_TAG_PREFIX_HEX);
+}
+
 function answerSchema(input: Erc8004FeedbackWindowInput) {
   const topic = topicFor(input.event);
   const agent = agentTopic(input.agent);
@@ -150,11 +200,19 @@ function answerSchema(input: Erc8004FeedbackWindowInput) {
           context.addIssue({ code: z.ZodIssueCode.custom, message: 'a NewFeedback log whose value cannot be read' });
           return;
         }
+        // The writer's log must say what it is: a statement or feedback, never a guess.
+        if (input.event === 'new' && log.removed !== true && fromStatementWriter(log.topics) && feedbackTag1IsAccountStatement(log.data) === null) {
+          context.addIssue({ code: z.ZodIssueCode.custom, message: 'a NewFeedback log from the statement writer whose tag cannot be read' });
+          return;
+        }
       }
     });
 }
 
-/** Pure: per-block counts from validated logs of one event. Nothing but the block, its time and the counts survives. */
+/**
+ * Pure: per-block counts from validated logs of one event. Nothing but the block, its time and the counts survives; an
+ * account statement (and the writer's revocation) is counted apart from feedback and never bucketed.
+ */
 export function countFeedbackLogs(logs: readonly FeedbackLog[], event: Erc8004FeedbackEvent): Erc8004FeedbackBlock[] {
   const seen = new Set<string>();
   const blocks = new Map<number, Erc8004FeedbackBlock>();
@@ -169,17 +227,24 @@ export function countFeedbackLogs(logs: readonly FeedbackLog[], event: Erc8004Fe
     const at = Number.isFinite(seconds) && seconds > 0 ? new Date(seconds * 1000) : null;
     let block = blocks.get(blockNumber);
     if (!block) {
-      block = { blockNumber, feedback: 0, revoked: 0, values: emptyFeedbackValueCounts(), at };
+      block = { blockNumber, feedback: 0, revoked: 0, statements: 0, statementsRevoked: 0, values: emptyFeedbackValueCounts(), at };
       blocks.set(blockNumber, block);
     }
     if (!block.at && at) block.at = at;
+    const writer = fromStatementWriter(log.topics);
     if (event === 'revoked') {
-      block.revoked += 1;
+      // The writer posts statements only; a revocation from it withdraws a statement, never feedback.
+      if (writer) block.statementsRevoked += 1;
+      else block.revoked += 1;
       continue;
     }
     const read = readFeedbackValue(log.data);
     // The schema refused an unreadable value; this keeps the pure function total.
     if (!read) continue;
+    if (writer && feedbackTag1IsAccountStatement(log.data) === true) {
+      block.statements += 1;
+      continue;
+    }
     block.feedback += 1;
     block.values[feedbackValueBucket(read.value, read.decimals)] += 1;
   }

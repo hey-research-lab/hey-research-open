@@ -43,8 +43,8 @@ describe('cardShipPhrase (public UX review, 2026-09-28)', () => {
    */
   it('names a verified contract by what happened, not as a deployment', () => {
     const verified = { eventType: 'CONTRACT_DEPLOY', sourceKind: 'CONTRACT', title: 'Verified contract source: VerdantToken', publishedAt: new Date('2026-09-28T11:00:00Z') };
-    expect(cardShipPhrase(verified, { now })).toEqual({ what: 'Contract source verified', when: '1h ago' });
-    expect(shipKindLabel(verified)).toBe('Contract source verified');
+    expect(cardShipPhrase(verified, { now })).toEqual({ what: 'Contract source published', when: '1h ago' });
+    expect(shipKindLabel(verified)).toBe('Contract source published');
     // A deployment a builder reported is still a deployment.
     expect(shipKindLabel({ eventType: 'CONTRACT_DEPLOY', sourceKind: 'BUILDER_SUBMISSION' })).toBe('Contract deployed');
     expect(shipKindLabel({ eventType: 'CONTRACT_DEPLOY' })).toBe('Contract deployed');
@@ -56,7 +56,7 @@ describe('cardShipPhrase (public UX review, 2026-09-28)', () => {
         now,
       }),
     );
-    expect(html).toContain('Contract source verified');
+    expect(html).toContain('Contract source published');
     expect(html).not.toContain('Contract deployed');
   });
 

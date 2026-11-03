@@ -9,7 +9,10 @@ import {
   activityPresentation,
   NO_BUILDER_SIGNAL,
   showsNoBuilderSignal,
+  resumedBuildingHelp,
+  STILL_BUILDING_EMPTY_HELP,
   STILL_BUILDING_HELP,
+  STILL_BUILDING_LIST_HELP,
   TokenMarketChip,
   tokenMarketLabel,
   TokenVerificationChip,
@@ -27,6 +30,20 @@ describe('the strict lists in words', () => {
       expect(help.replace(/Verified Builders?/g, '')).not.toMatch(/\b(un)?verified\b/i);
     }
     expect(UNDER_THE_RADAR_HELP).toMatch(/^Counted building, with at least two meaningful ships in 30 days/);
+  });
+
+  it('names hbm-v31\'s withholds in the Still Building list note, and sends a reader to Ships for the week (2026-11-03 full audit, F8)', () => {
+    for (const help of [STILL_BUILDING_LIST_HELP, STILL_BUILDING_EMPTY_HELP]) {
+      expect(help.replace(/Verified Builders?/g, '')).not.toMatch(/\b(un)?verified\b/i);
+      expect(help).toContain('$1,000 of 24-hour volume');
+      expect(help).toContain('a token HEY cannot tell from a lookalike');
+      expect(help).toContain('builder sources all stopped answering');
+      expect(help).toContain('Not a buy signal');
+    }
+    const resumed = resumedBuildingHelp({ resumedWithinDays: 14, dormancyGapDays: 60 });
+    expect(resumed).toContain('in the last 14 days after 60 days or more');
+    expect(resumed).toContain('on Ships, under This week, by project');
+    expect(resumed).not.toMatch(/are on This week\./);
   });
 });
 

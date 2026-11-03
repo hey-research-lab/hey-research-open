@@ -6,7 +6,9 @@
 # hours in practice) and fails when a route answers a server error
 # or nothing at all, answers slower than its limit three times running, or /api/health does not say "ok". A failed
 # scheduled run is GitHub's e-mail to whoever last changed the schedule; if the repository secrets
-# TELEGRAM_BOT_TOKEN and TELEGRAM_ALERT_CHAT_ID are set, a failure is also sent there.
+# EDGE_PROBE_TELEGRAM_BOT_TOKEN and EDGE_PROBE_TELEGRAM_CHAT_ID are set, a failure is also sent there. They belong to
+# a bot made for this alert alone, never the HEY bot readers talk to (2026-11-03 full audit, own-repos P3-15): a
+# public repository's workflow is the wrong place for a token whose leak would hand someone the production bot.
 #
 # No credential is needed and nothing is written: plain public reads, labelled `hey-internal/edge-probe` so HEY's
 # analytics never count them as a reader.
@@ -92,8 +94,8 @@ jobs:
       - name: Tell Telegram
         if: failure()
         env:
-          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          TOKEN: ${{ secrets.EDGE_PROBE_TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.EDGE_PROBE_TELEGRAM_CHAT_ID }}
           DETAIL: ${{ steps.probe.outputs.detail }}
           RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |

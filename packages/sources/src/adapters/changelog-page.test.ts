@@ -50,6 +50,35 @@ describe('an HTML changelog page', () => {
     expect(isHtmlPage(readFixture('feed-rss.xml'))).toBe(false);
   });
 
+  it('never makes a date group’s container an entry, and dates each entry by the day stamp above it (2026-11-03, full audit P2-2)', () => {
+    // A page that stamps each day once above that day's entries, all under one undated <h1>.
+    const entries = parseChangelogPage(readFixture('changelog-page-date-groups.html'), 'https://orbit.example/updates');
+    expect(entries.map((entry) => [entry.title, entry.publishedAt?.toISOString().slice(0, 10)])).toEqual([
+      // "What shipped" is the page's container: before, it was an entry dated by the first day's stamp.
+      ["Today's featured story follows the new crew", '2026-11-02'],
+      ['Open a proof in a popup instead of a new tab', '2026-11-02'],
+      // Before, the last entry of a day took the next (older) day's stamp below it.
+      ['Mint a collectible from the dashboard', '2026-11-01'],
+      ['Orbit is live on mainnet', '2026-10-28'],
+    ]);
+  });
+
+  it('reads a time that follows its own heading as before, and keeps a one-day page’s container out', () => {
+    // The classic layout: the <time> sits right under the heading it dates.
+    const classic =
+      '<html><body><h1>Releases</h1><h2>v2.0.0</h2><p><time datetime="2026-10-01">1 Oct</time> The vault ships.</p><h3>Added</h3><p>A vault.</p><h3>Fixed</h3><p>Rounding.</p><h2>v1.9.0</h2><p><time datetime="2026-09-20">20 Sep</time> Swaps.</p></body></html>';
+    expect(parseChangelogPage(classic, 'https://neon.example/releases').map((entry) => [entry.title, entry.publishedAt?.toISOString().slice(0, 10)])).toEqual([
+      ['v2.0.0', '2026-10-01'],
+      ['v1.9.0', '2026-09-20'],
+    ]);
+    const oneDay =
+      '<html><body><h1>What shipped</h1><p>Every release, the app and the SDK, with links to the source for each one.</p><div><time datetime="2026-11-02">2026-11-02</time></div><article><span>app</span><h3>Agent exploration page</h3><p>Browse every agent.</p></article><article><span>app</span><h3>A new homepage</h3><p>Metrics up front.</p></article></body></html>';
+    expect(parseChangelogPage(oneDay, 'https://orbit.example/updates').map((entry) => [entry.title, entry.publishedAt?.toISOString().slice(0, 10)])).toEqual([
+      ['Agent exploration page', '2026-11-02'],
+      ['A new homepage', '2026-11-02'],
+    ]);
+  });
+
   it('stays linear on hostile markup: unclosed headings and a flood of tags', () => {
     const hostile = `<html><body>${'<h2 '.repeat(20_000)}${'<h2>2026-09-01</h2><p>x</p>'.repeat(200)}</body></html>`;
     const started = Date.now();

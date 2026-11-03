@@ -213,6 +213,28 @@ export const STILL_BUILDING_HELP = 'Kept shipping while its token’s valuation 
 export const UNDER_THE_RADAR_HELP =
   'Counted building, with at least two meaningful ships in 30 days, while the token’s market attention is typical or lower and trails that building, relative to the other projects HEY measures (a Discovery Gap above zero). Measured only on an active market HEY read in the last day, with at least $1,000 of 24-hour volume; never a launch pool. Not a list of cheap tokens, and not a buy signal.';
 
+/**
+ * What the Still Building list holds, printed above it on / and /explore, and its empty state (2026-11-03 full audit,
+ * frontend F8): written in `home-filters.tsx` until then, it named the launch pool and the thin market but not hbm-v31's
+ * three withholds — under $1,000 of 24-hour volume, a token HEY cannot tell from a lookalike, every builder source
+ * unavailable. The one sentence beside `STILL_BUILDING_HELP`; `explain/facts/activity.ts` (`stillBuildingRuleText`)
+ * states the full rule.
+ */
+export const STILL_BUILDING_LIST_HELP =
+  'Counted ships during a market drawdown HEY itself tracked, on an active market HEY can measure: never a launch pool, a thin market or one with under $1,000 of 24-hour volume, a token HEY cannot tell from a lookalike, or a project whose builder sources all stopped answering. It describes building, not the token. Not a buy signal.';
+
+/** Why the Still Building list can be empty: the list's own definition, then what it needs. */
+export const STILL_BUILDING_EMPTY_HELP = `Still Building is strict by design. ${STILL_BUILDING_LIST_HELP} It needs both recent ships and a drawdown HEY tracked, so it is often empty.`;
+
+/**
+ * What Resumed building means, for its empty state (2026-11-03 full audit, frontend F8): the scorer's own numbers
+ * (`ACTIVITY`, passed in so this module reads no config), and the one door the week's movers sit behind since R1 folded
+ * This week into Ships: "This week, by project" on /ships.
+ */
+export function resumedBuildingHelp(rule: { resumedWithinDays: number; dormancyGapDays: number }): string {
+  return `Resumed building means a project shipped again in the last ${rule.resumedWithinDays} days after ${rule.dormancyGapDays} days or more with nothing HEY observed, and HEY was reading its sources through the whole gap. It is strict by design, so it is often empty. Projects that were quiet or dormant a week ago and ship now are on Ships, under This week, by project.`;
+}
+
 export function StillBuildingBadge({ className }: { className?: string }) {
   return (
     <span

@@ -17,7 +17,7 @@ import {
 
 /**
  * Bounded X research reads (2026-10-20, founder; CLAUDE.md cost rule 7, the "bounded X research" amendment;
- * docs/audits/2026-10-20-brief/X_CONTRACTS.md §1.3). Five GET reads, every one documented by twitterapi.io and
+ * a private HEY record §1.3). Five GET reads, every one documented by twitterapi.io and
  * none live-tested before this was written — the fixtures follow the documented shapes:
  *
  *  - `GET /twitter/tweets?tweet_ids=<≤50 ids>` (g): re-reads posts HEY already holds. A post the answer leaves out —

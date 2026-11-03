@@ -23,6 +23,7 @@ import { ActivityChip, activityPresentation, type ActivityStatusValue, isLaunchP
 import { ContractAddress, ExternalRef } from './token-identity';
 import { cardTokenLock, TokenLockChip, type TokenLockFacts } from './token-lock';
 import { BrandNotice, type BrandNoticeData } from './brand-notice';
+import { RelativeTimeText } from './relative-time';
 
 /**
  * Project card (Card V7, 2026-09-03; recomposed in the public IA pass,
@@ -223,7 +224,11 @@ export type CardPreviewFacts = {
   activityStatus: ActivityStatusValue;
   unknownReason?: ReturnType<typeof unknownActivityReason>;
   /** The latest meaningful ship as the card phrased it; `what` is absent when only its date is known. */
-  latest?: { id?: string; what?: string; when: string; at: string };
+  /**
+   * `live` (2026-11-03 full audit, F12): when `when` is `live` followed by the age, the browser keeps the age true in a
+   * stored page (`RelativeTimeText`); absent for a code week, whose words are the week's.
+   */
+  latest?: { id?: string; what?: string; when: string; at: string; live?: string };
   /** The market as the card may print it: a valuation only where `cardShowsValuation` holds, else the status in words. */
   market: { label: string; value?: string; note?: string };
   /** The token check in the R2 words; absent for a project with no tracked token or an unread check. */
@@ -348,9 +353,9 @@ export function cardPreviewFacts(
     activityStatus: project.activityStatus,
     ...(unknownActivityReason(project) ? { unknownReason: unknownActivityReason(project) } : {}),
     ...(latest && latestPhrase
-      ? { latest: { id: latest.id, what: latestPhrase.what, when: latestPhrase.when, at: latest.publishedAt.toISOString() } }
+      ? { latest: { id: latest.id, what: latestPhrase.what, when: latestPhrase.when, at: latest.publishedAt.toISOString(), ...(latest.eventType === 'CODE_ACTIVITY' ? {} : { live: '' }) } }
       : lastShipAt
-        ? { latest: { when: `Shipped ${formatRelativeTime(lastShipAt, now)}`, at: lastShipAt.toISOString() } }
+        ? { latest: { when: `Shipped ${formatRelativeTime(lastShipAt, now)}`, at: lastShipAt.toISOString(), live: 'Shipped ' } }
         : {}),
     market: !hasToken
       ? { label: 'No token tracked' }
@@ -670,7 +675,7 @@ export function ProjectCard({
               data-testid="card-last-ship"
               className="whitespace-nowrap tabular-nums text-hey-muted"
             >
-              · {latestPhrase.when}
+              · {latest.eventType === 'CODE_ACTIVITY' ? latestPhrase.when : <RelativeTimeText at={latest.publishedAt.toISOString()} initial={latestPhrase.when} />}
             </time>
           </p>
         ) : !ship && lastShipAt ? (
@@ -679,7 +684,7 @@ export function ProjectCard({
             data-testid="card-last-ship"
             className="text-[13px] leading-5 tabular-nums text-hey-muted"
           >
-            Shipped {formatRelativeTime(lastShipAt, now)}
+            Shipped <RelativeTimeText at={lastShipAt.toISOString()} initial={formatRelativeTime(lastShipAt, now)} />
           </time>
         ) : null}
       </div>

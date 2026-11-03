@@ -304,8 +304,12 @@ export function formatEventType(eventType: string): string {
   );
 }
 
-/** What a verified-contract ship records: the explorer verified its source, not a deployment HEY saw. */
-export const CONTRACT_SOURCE_VERIFIED_LABEL = 'Contract source verified';
+/**
+ * What a verified-contract ship records: the explorer published its source, not a deployment HEY saw. "Published", never
+ * "verified" (founder ruling R2: the word is Verified Builder's; 2026-11-03 full audit, finding 6). The name keeps the
+ * stored kind it labels.
+ */
+export const CONTRACT_SOURCE_VERIFIED_LABEL = 'Contract source published';
 
 /**
  * A ship's kind by what happened (2026-10-03, full audit): the one place a

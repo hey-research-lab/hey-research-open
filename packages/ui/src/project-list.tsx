@@ -5,6 +5,7 @@ import { emailSafe } from './email-safe';
 import { BrandNotice } from './brand-notice';
 import { cardIdentity, cardPreviewFacts, FDV_HELP, type CardPreviewFacts, type ProjectCardData } from './project-card';
 import { ProjectLogo } from './project-logo';
+import { RelativeTimeText } from './relative-time';
 import { ShipWeeksChart, type ShipWeekSeriesData } from './ship-weeks';
 import { ActivityChip } from './status';
 import { valuationDisplay } from '@hey/scoring/valuation-display';
@@ -62,7 +63,7 @@ const COLUMN_CLASS: Record<(typeof PROJECT_LIST_COLUMNS)[number], string> = {
 
 /** The key under the list: what the bars count, what they compare, and the week still running. */
 export const SHIP_WEEKS_KEY =
-  '8 weeks: counted ships per UTC week, oldest first. Bars compare weeks within one project only; the last bar is this week so far, drawn lighter. A dotted week is one HEY had not read yet, never a zero; a flat tick is a week read with no counted ship.';
+  '8 weeks: counted ships per UTC week, oldest first. Bars compare weeks within one project only; the last bar is this week so far, drawn lighter. A dotted week is one HEY did not read building for, never a zero; a flat tick is a week read with no counted ship.';
 
 /**
  * A code week's line names its repository (UI audit, 2026-10-30): every running code week reads "Code changes", so a
@@ -196,7 +197,7 @@ export function ProjectListRow({ project, weeks, now, disclosure, preview, hideS
               </span>
             ) : null}
             <time dateTime={facts.latest.at} className="v2-row-ship-age" data-testid="row-last-ship">
-              {facts.latest.when}
+              {facts.latest.live !== undefined ? <RelativeTimeText at={facts.latest.at} initial={facts.latest.when} prefix={facts.latest.live} /> : facts.latest.when}
             </time>
           </>
         ) : (

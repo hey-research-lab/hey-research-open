@@ -170,7 +170,7 @@
  * other null gap carries its reason too. The population the others are
  * ranked against, their percentiles and gaps, and Still Building are
  * unchanged. On production on the day: 9 gaps and 5 Under the Radar badges
- * withdrawn (see docs/FOUNDER_DECISIONS_2026_09_30.md).
+ * withdrawn (see a private HEY record).
  */
 /*
  * hbm-v19 (2026-09-30, founder delegation "Still Building on thin markets"):
@@ -222,7 +222,7 @@
  * rescued by the chain pool index, withheld), 1 stored Under the Radar flag on
  * a gap at or below zero (orbio-so, -1.5), and 2,780 of 4,691 published
  * states moving from NOT_HELD to NOT_MEASURED
- * (docs/FOUNDER_DECISIONS_2026_09_30.md).
+ * (a private HEY record).
  */
 /*
  * hbm-v22 (2026-10-02, founder delegation 2026-10-02, outsider-audit
@@ -246,7 +246,7 @@
  * scoring rule (they change the evidence, not the rules): date-stamped
  * automated tags are rolling tags (101 ships, 39 counted, on 8 projects), a
  * reader's comment is not a ship, and a sitemap, oEmbed document or comments
- * feed is never a release feed nor coverage (docs/FOUNDER_DECISIONS_2026_09_30.md,
+ * feed is never a release feed nor coverage (a private HEY record,
  * "2026-10-02 shipping-signal repair").
  */
 /*

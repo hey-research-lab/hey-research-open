@@ -8,10 +8,13 @@ import {
   createErc8004FeedbackAdapter,
   emptyFeedbackValueCounts,
   ERC8004_FEEDBACK_REVOKED_TOPIC,
+  feedbackTag1IsAccountStatement,
+  fromStatementWriter,
   ERC8004_NEW_FEEDBACK_TOPIC,
   ERC8004_REPUTATION_REGISTRY_ADDRESS,
   feedbackValueBucket,
   isLogHistoryNotServed,
+  RAETO_ACCOUNT_STATEMENT_WRITER,
   readFeedbackValue,
 } from './erc8004-reputation';
 import { isLogWindowTooLarge } from './rpc-logs';
@@ -64,7 +67,7 @@ describe('ERC-8004 feedback logs', () => {
 
   it('counts revocations per block, with no value', async () => {
     const result = await read('revoked', readFixture('rpc-erc8004-feedback-revoked.json'));
-    expect(result.data!.blocks).toEqual([{ blockNumber: BLOCK + 864_300, feedback: 0, revoked: 1, values: emptyFeedbackValueCounts(), at: new Date('2026-11-03T00:15:00.000Z') }]);
+    expect(result.data!.blocks).toEqual([{ blockNumber: BLOCK + 864_300, feedback: 0, revoked: 1, statements: 0, statementsRevoked: 0, values: emptyFeedbackValueCounts(), at: new Date('2026-11-03T00:15:00.000Z') }]);
     expect(JSON.stringify(result.data)).not.toMatch(/1111/);
   });
 
@@ -144,5 +147,72 @@ describe('feedback values', () => {
 
   it('counts nothing from an empty answer', () => {
     expect(countFeedbackLogs([], 'new')).toEqual([]);
+  });
+});
+
+/**
+ * Raeto's account statements (2026-11-03): weekly entries Raeto posts for HEY's agent from one writer address, tag1
+ * `account.statement` or `account.correction`, the value money moved (6 decimals). The fixtures are encoded with viem
+ * from the registry's ABI: the writer's statement ($1,234.56) and correction (−$12.50) in one block; a stranger using
+ * the same tag (5,000) and the writer with another tag (90) in the next; and the writer revoking its correction.
+ */
+describe('Raeto account statements', () => {
+  const STATEMENT_BLOCK = BLOCK + 1_000_000;
+
+  it('counts the writer’s account.* entries as statements, never feedback and never in a value bucket', async () => {
+    const result = await read('new', readFixture('rpc-erc8004-account-statements.json'));
+    expect(hasData(result)).toBe(true);
+    expect(result.data!.blocks).toEqual([
+      { blockNumber: STATEMENT_BLOCK, feedback: 0, revoked: 0, statements: 2, statementsRevoked: 0, values: emptyFeedbackValueCounts(), at: new Date('2026-11-09T00:05:00.000Z') },
+      // The same tag from another client is feedback, bucketed by its value; the writer with another tag is feedback too.
+      { blockNumber: STATEMENT_BLOCK + 100, feedback: 2, revoked: 0, statements: 0, statementsRevoked: 0, values: { ...emptyFeedbackValueCounts(), above100: 1, from80to100: 1 }, at: new Date('2026-11-09T00:15:00.000Z') },
+    ]);
+    // No client address (the writer's included), tag, value, URI, hash or transaction survives the adapter.
+    expect(JSON.stringify(result.data)).not.toMatch(/9d420a|4444|account\.|correction|period|raeto|1234|ipfs|eeee|0x[0-9a-f]{40}/i);
+  });
+
+  it('counts the writer’s revocation as a statement revocation, not a feedback revocation', async () => {
+    const result = await read('revoked', readFixture('rpc-erc8004-statement-revoked.json'));
+    expect(result.data!.blocks).toEqual([{ blockNumber: STATEMENT_BLOCK + 200, feedback: 0, revoked: 0, statements: 0, statementsRevoked: 1, values: emptyFeedbackValueCounts(), at: new Date('2026-11-09T00:25:00.000Z') }]);
+    // A revocation from anyone else stays a feedback revocation.
+    expect((await read('revoked', readFixture('rpc-erc8004-feedback-revoked.json'))).data!.blocks[0]).toMatchObject({ revoked: 1, statementsRevoked: 0 });
+  });
+
+  it('names the writer by topic, lower-case, and nothing else', () => {
+    const topic = (address: string) => `0x${'0'.repeat(24)}${address.slice(2)}`;
+    expect(RAETO_ACCOUNT_STATEMENT_WRITER).toBe(RAETO_ACCOUNT_STATEMENT_WRITER.toLowerCase());
+    expect(fromStatementWriter(['0x', '0x', topic(RAETO_ACCOUNT_STATEMENT_WRITER)])).toBe(true);
+    expect(fromStatementWriter(['0x', '0x', topic(RAETO_ACCOUNT_STATEMENT_WRITER).toUpperCase().replace('0X', '0x')])).toBe(true);
+    expect(fromStatementWriter(['0x', '0x', topic('0x4444444444444444444444444444444444444444')])).toBe(false);
+    expect(fromStatementWriter(['0x', '0x'])).toBe(false);
+  });
+
+  it('reads tag1 from the log data with bounds checks, and refuses a writer’s log whose tag it cannot read', async () => {
+    const answer = JSON.parse(readFixture('rpc-erc8004-account-statements.json')) as { result: { data: string }[] };
+    const [statement, correction, lookalike, starred] = answer.result.map((log) => log.data);
+    expect([statement, correction, lookalike, starred].map((data) => feedbackTag1IsAccountStatement(data!))).toEqual([true, true, true, false]);
+    // The fixture of ordinary feedback carries tags that are no statement.
+    const ordinary = JSON.parse(readFixture('rpc-erc8004-new-feedback.json')) as { result: { data: string }[] };
+    expect(ordinary.result.every((log) => feedbackTag1IsAccountStatement(log.data) === false)).toBe(true);
+    // The tag's offset (the fourth head word) inside the head, unaligned or past the data; a length past the data; bytes not UTF-8.
+    const body = statement!.slice(2);
+    const word = (value: number) => value.toString(16).padStart(64, '0');
+    const withOffset = (offset: number) => `0x${body.slice(0, 3 * 64)}${word(offset)}${body.slice(4 * 64)}`;
+    expect(feedbackTag1IsAccountStatement(withOffset(0x20))).toBeNull();
+    expect(feedbackTag1IsAccountStatement(withOffset(0x101))).toBeNull();
+    expect(feedbackTag1IsAccountStatement(withOffset(body.length / 2))).toBeNull();
+    const tagStart = 0x100 * 2;
+    expect(feedbackTag1IsAccountStatement(`0x${body.slice(0, tagStart)}${word(1_000_000)}${body.slice(tagStart + 64)}`)).toBeNull();
+    expect(feedbackTag1IsAccountStatement(`0x${body.slice(0, tagStart + 64)}ff${body.slice(tagStart + 66)}`)).toBeNull();
+    expect(feedbackTag1IsAccountStatement('0x')).toBeNull();
+    // A window holding the writer's log with an unreadable tag is refused, never half-counted.
+    answer.result[0]!.data = withOffset(0x20);
+    const refused = await read('new', JSON.stringify(answer));
+    expect(hasData(refused)).toBe(false);
+    expect(refused.errorCode).toBe('INVALID_RESPONSE');
+    // The same unreadable tag from another client is read as today: feedback, its value bucketed.
+    const stranger = JSON.parse(readFixture('rpc-erc8004-new-feedback.json')) as { result: { data: string }[] };
+    stranger.result[0]!.data = `0x${stranger.result[0]!.data.slice(2, 2 + 3 * 64)}${word(0x20)}${stranger.result[0]!.data.slice(2 + 4 * 64)}`;
+    expect(hasData(await read('new', JSON.stringify(stranger)))).toBe(true);
   });
 });

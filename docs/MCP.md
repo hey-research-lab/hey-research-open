@@ -322,8 +322,8 @@ And never:
 ## Discovery: the registry, the handshake, $HEY (2026-09-28)
 
 - **Official MCP Registry.** The entry is `apps/mcp/server.json` (schema
-  `2025-12-11/server.schema.json`, validated in the gate and by
-  `node scripts/release/validate-mcp-server-json.mjs [--live]`): name
+  `2025-12-11/server.schema.json`, validated in the gate and by a release check in HEY's private
+  repository, which can also compare it with the live registry entry): name
   `io.github.hey-research-lab/hey-research`, the hosted remote `https://heyresearch.xyz/mcp`
   (Streamable HTTP) and, since round 4, a second remote for the research profile
   `https://heyresearch.xyz/mcp/research` (the registry schema's `remotes` is an array; the

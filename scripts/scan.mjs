@@ -17,6 +17,12 @@ import { gunzipSync } from 'node:zlib';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const manifest = JSON.parse(readFileSync(join(here, 'manifest.json'), 'utf8'));
 const SKIP_DIRS = new Set(['.git', '.claude', 'node_modules', 'dist', '.next', 'coverage', '.pnpm-store', 'test-results', 'playwright-report']);
+/*
+ * Agent tools' folders (2026-11-03 full audit, own-repos P2-8). Skipped by default, for a scan of a private checkout
+ * whose `.claude` holds worktrees; the export's scan of its staging tree reads them (`includeAgentDirs`), so nothing in
+ * one could leave unscanned even if it were staged (the export refuses to stage one).
+ */
+const AGENT_DIRS = new Set(['.claude', '.codex', '.agents']);
 // A `.lock` file is text and is scanned (2026-10-16); it used to be skipped with the binaries, silently.
 const BINARY = /\.(png|jpg|jpeg|gif|webp|ico|woff2?|ttf|otf|mp4|mov|pdf)$/i;
 /*
@@ -68,7 +74,7 @@ export function tarEntries(buffer) {
   return entries;
 }
 
-export function scanTree(root) {
+export function scanTree(root, { includeAgentDirs = false } = {}) {
   /*
    * Both lists (2026-09-17). `secretLiterals` is this deployment's own hosts,
    * credentials, accounts and paths; it stays in the private repository, and
@@ -125,7 +131,7 @@ export function scanTree(root) {
   };
   const walk = (dir) => {
     for (const entry of readdirSync(dir)) {
-      if (SKIP_DIRS.has(entry)) continue;
+      if (SKIP_DIRS.has(entry) && !(includeAgentDirs && AGENT_DIRS.has(entry))) continue;
       const path = join(dir, entry);
       const stat = statSync(path);
       if (stat.isDirectory()) walk(path);

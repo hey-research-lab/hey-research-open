@@ -276,7 +276,7 @@ event data where the event carries them. Each address was found in the
 launchpad's own app bundle or by tracing a known token's mint transaction, and
 each topic was read from a live log — never computed from an ABI. The full
 verification record, launch counts and the one-off backfill commands are in
-`docs/audit-2026-09-04/launchpad-coverage.md`; the registry itself
+a private HEY record; the registry itself
 (`packages/sources/src/factories/registry.ts`) carries the evidence per entry.
 
 | Launchpad | Factory / launcher on 4663 | Launch topic | Token | Identity in event | Launches (2026-09-03) |
@@ -385,12 +385,12 @@ read API; names come from the token contracts.
 | --- | --- |
 | Source | The canonical Reputation Registry (`0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`, the same address on Robinhood Chain 4663, Ethereum 1 and Base 8453): its `NewFeedback(uint256 indexed agentId, address indexed clientAddress, uint64 feedbackIndex, int128 value, uint8 valueDecimals, string indexed indexedTag1, string tag1, string tag2, string endpoint, string feedbackURI, bytes32 feedbackHash)` and `FeedbackRevoked(uint256 indexed agentId, address indexed clientAddress, uint64 indexed feedbackIndex)` logs for HEY's own agent id on each chain (8783, 56081, 1148006) only, one event per `eth_getLogs` (`SYNC_ERC8004_FEEDBACK`, daily, from the block HEY registered on each chain, resuming after the last block read) |
 | Nodes | Robinhood Chain: the worker's own RPC (nine-million-block windows). Ethereum: `rpc.mevblocker.io` (10,000-block windows; `ethereum-rpc.publicnode.com` refuses logs older than about 10,000 blocks). Base: `base-rpc.publicnode.com` (50,000-block windows). A window a node calls too large is halved; history a node no longer serves stops the chain's read, never skips it |
-| Kept | Per chain and UTC day: new feedback, revocations, both running totals, the day's feedback by value bucket (`value / 10^valueDecimals`: below 0, 0–20, 20–40, 40–60, 60–80, 80–100, above 100) and the block read through (`erc8004_feedback_days`, migration 0315, basis `reconstructed_from_chain`). **No client address, agent id, tag, endpoint, feedback URI or hash, or transaction** |
-| Shown | `/developers/agents/stats` and `/api/agent/stats` (`erc8004Feedback`): per chain totals, last 7 and 30 days, value buckets, the block read through; a chain not read is `null` with `not_read`, never 0. `/developers/agents` says how to give HEY feedback |
+| Kept | Per chain and UTC day: new feedback, revocations, both running totals, the day's feedback by value bucket (`value / 10^valueDecimals`: below 0, 0–20, 20–40, 40–60, 60–80, 80–100, above 100) and the block read through (`erc8004_feedback_days`, migration 0315, basis `reconstructed_from_chain`); since 2026-11-03 (migration 0317) Raeto's account statements apart — an entry from Raeto's one statement writer (`0x9d420a047ee7cdc4fcbcbe891308306543ee2dff`) whose tag1 begins with `account.`, never feedback or a bucket — and that writer's revocations, with running totals. **No other client address, no agent id, tag, endpoint, feedback URI or hash, statement value or transaction** |
+| Shown | `/developers/agents/stats` and `/api/agent/stats` (`erc8004Feedback`): per chain totals, last 7 and 30 days, value buckets, `statementTotals`, the block read through; a chain not read is `null` with `not_read`, never 0. `/developers/agents` says how to give HEY feedback |
 | What it may prove | Nothing about a project or HEY (tier CHAIN, context only): feedback is what other agents chose to submit, never a rating of HEY or a trust score, never identity, a ship, building, a score, an order, a change event, an alert, a webhook or Telegram |
 | Auth / cost | None / free; one budget key a chain: `rpc-erc8004-feedback`, `ethereum-rpc-erc8004-feedback`, `base-rpc-erc8004-feedback` (120 a day each) |
 
-Adapter: `packages/sources/src/adapters/erc8004-reputation.ts` (fixtures `rpc-erc8004-new-feedback.json`, `rpc-erc8004-feedback-revoked.json`, encoded from the registry's ABI).
+Adapter: `packages/sources/src/adapters/erc8004-reputation.ts` (fixtures `rpc-erc8004-new-feedback.json`, `rpc-erc8004-feedback-revoked.json`, `rpc-erc8004-account-statements.json`, `rpc-erc8004-statement-revoked.json`, encoded from the registry's ABI).
 
 ### ERC-8004 Validation Registry (`erc8004_validation`, 2026-11-02)
 

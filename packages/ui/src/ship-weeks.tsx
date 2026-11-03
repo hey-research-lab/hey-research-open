@@ -8,7 +8,8 @@ import { cn } from './cn';
  *  - counted ships: a bar, its height relative to the row's own busiest week (never compared across rows: the chart is
  *    context beside a row the list already ordered, never a rank);
  *  - a measured zero: a short solid tick on the baseline;
- *  - not observed (the week ended before HEY first read the project): no bar and no tick, only a dotted baseline —
+ *  - not observed (the week ended before HEY began reading the project's building, or HEY reads no building for it at
+ *    all): no bar and no tick, only a dotted baseline —
  *    never drawn as 0 (free-data rule 11, machine-layer rule 9).
  *
  * The last week is the one still running, so its mark is drawn lighter (`data-current`): this week so far.
@@ -24,7 +25,7 @@ const plural = (count: number, word: string) => `${count.toLocaleString('en-US')
 /** The chart's text equivalent: "3 counted ships in 8 weeks, oldest first: not observed, 0, 1, 0, 0, 2, 0, 0." */
 export function shipWeeksSentence(series: ShipWeekSeriesData): string {
   const weeks = series.weeks.length;
-  if (series.observed === 0) return `Not observed: HEY had not read this project in these ${weeks} weeks.`;
+  if (series.observed === 0) return `Not observed: HEY did not read this project’s building in these ${weeks} weeks, so no week is a zero.`;
   const list = series.weeks.map((entry) => (entry.ships === null ? 'not observed' : entry.ships.toLocaleString('en-US'))).join(', ');
   return `${plural(series.total, 'counted ship')} in ${weeks} weeks, oldest first: ${list}.`;
 }

@@ -1037,8 +1037,11 @@ rounds the founder opens by hand; none has been opened yet (2026-10-03).
 ## How this repository is produced
 
 A script in the private repository copies the paths listed above, generates a types-only
-`@hey/db`, refuses to publish anything that must not leave (archives are opened and scanned too), installs with the
-private lockfile's exact versions and no install scripts, and pushes one commit per sync. Issues
+`@hey/db`, refuses to publish anything that must not leave (archives are opened and scanned too), verifies the copy
+with the private lockfile's exact versions and no install scripts, and pushes one commit per sync. This repository's
+own CI installs from that same lockfile; there, only the packages named in `pnpm.onlyBuiltDependencies` in
+`package.json` may run a build script. The `pnpm data:*` commands this README and `docs/` mention are HEY's reviewed
+operator commands in the private repository; they are not part of this one. Issues
 and pull requests are welcome here: a change accepted here is applied privately and comes back in
 the next sync.
 
