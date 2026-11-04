@@ -512,6 +512,13 @@ a FACT either cites typed evidence ids or names a basis no evidence id can cite 
 reading, a usage reading, HEY's own registry record, a field of the canonical read, the change
 ledger or a coverage state. A FACT with neither is never published as a FACT.
 
+## The Uniswap v4 hooks directory (2026-11-05)
+
+`/integrations/uniswap/hooks` lists the Uniswap v4 hooks HEY ties to a published project on Robinhood Chain, one row a
+project, with how each tie was made and its receipt, and apart from them the hooks Uniswap's hooklist lists that HEY
+ties to no project. Every hook on the page is also a line of the daily CC BY 4.0 snapshot,
+`/data/latest/hooks.ndjson.gz` (and `hooks.csv`). HEY never publishes the account that created a hook.
+
 ## Agents on Raeto (2026-10-29)
 
 A project whose AI agents run on [Raeto](https://raeto.cc) may turn on Raeto's public activity sharing. HEY then shows,
