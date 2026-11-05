@@ -267,6 +267,15 @@ in `stock_token_feed_readings` (`packages/domain/src/stock-tokens/feed.ts`). It 
 `HEY_STOCK_TOKEN_PRICES_ENABLED`; `/prices` stays off. A pending multiplier that differs from the current one is shown
 as a dated corporate action notice linking https://docs.robinhood.com/rhj/corporate-actions; `/corporate-actions` itself
 is still not read. Context only: never a project's token, usage, valuation or market, never a ranking input.
+
+**Each token's own contract (2026-11-05, founder "buat multiplier stock token baca dari chain"): implemented, ON.** The
+same job first reads every Robinhood Stock Token's ERC-8056 scaled-UI state through Multicall3 (`uiMultiplier()`
+`0xa60bf13d`, `newUIMultiplier()` `0xdc767007`, `effectiveAt()` `0x97a4064f`; sixty tokens a request, about four
+requests a run, budget key `rpc-contract:stock-tokens`) into `stock_token_chain_readings`
+(`packages/domain/src/stock-tokens/chain.ts`, adapter `packages/sources/src/adapters/stock-token-multipliers.ts`, fixture
+`rpc-stock-token-multipliers.json` recorded from chain 4663). An action the contract has scheduled is the token's
+corporate-action notice, with its effective time, even when the feed lists none (SOXX, 2026-11-05). Same rules as the
+feed: display and context only.
 ### Launch factories added 2026-09-04 (on-chain)
 
 Every launchpad below is indexed the way Pons is: `eth_getLogs` on a factory

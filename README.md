@@ -534,7 +534,8 @@ score or order.
 alphabetically by ticker and, under each, the published projects whose own official repository names its contract in
 code — never a test, a fixture or a list. Each entry also shows, from Robinhood's own Stock Token feed and with when HEY
 read it, a corporate action Robinhood announced (the shares-per-token multiplier changing from one figure to another)
-and the sessions the feed lists as tradable. A project page prints one line, "Names Stock Tokens in
+and the sessions the feed lists as tradable. Since 2026-11-05 HEY also reads each token's own contract, so a corporate
+action scheduled on chain is shown with the time it takes effect even when the feed lists none. A project page prints one line, "Names Stock Tokens in
 code: …". A name in code is a reference: it shows neither a dependency nor use. It is context only: a Stock Token is never a project's token, usage, valuation or market, HEY stores no
 on-chain interaction between a project and a Stock Token, and nothing here changes a status, score or order.
 
