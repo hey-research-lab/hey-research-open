@@ -37,6 +37,12 @@ export type StockTokenMultiplierValue = {
 };
 
 const WAD = 10n ** 18n;
+/**
+ * The largest reading kept (2026-11-05 security audit, P3-7): a multiplier below 10^20 (the stored `numeric(38,18)` holds
+ * 20 whole digits) and a time a JavaScript `Date` can hold. Anything beyond is left unread, never written or rounded.
+ */
+const MAX_MULTIPLIER = 10n ** 20n * WAD;
+const MAX_EFFECTIVE_AT = 8_640_000_000_000n;
 
 /** An 18-decimal fixed-point word as exact decimal text, trailing zeros trimmed. */
 export function wadToDecimal(value: bigint): string {
@@ -55,7 +61,7 @@ export function decodeUint256(hex: string): bigint | undefined {
 function readToken(entries: readonly (Call3Result | undefined)[]): StockTokenMultiplierValue['read'] | undefined {
   const [ui, next, at] = entries.map((entry) => (entry?.success ? decodeUint256(entry.returnData) : undefined));
   if (ui === undefined || next === undefined || at === undefined) return undefined;
-  if (ui === 0n || next === 0n || at > BigInt(Number.MAX_SAFE_INTEGER)) return undefined;
+  if (ui === 0n || next === 0n || ui >= MAX_MULTIPLIER || next >= MAX_MULTIPLIER || at > MAX_EFFECTIVE_AT) return undefined;
   return { uiMultiplier: wadToDecimal(ui), newUIMultiplier: wadToDecimal(next), effectiveAt: Number(at) };
 }
 

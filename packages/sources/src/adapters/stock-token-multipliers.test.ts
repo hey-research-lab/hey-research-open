@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { readFixture, stubFetch, testContext } from '../testing';
-import { decodeAggregate3Calls, MULTICALL3_ADDRESS } from './multicall';
+import { decodeAggregate3Calls, encodeAggregate3Result, MULTICALL3_ADDRESS } from './multicall';
 import { createStockTokenMultiplierBatchAdapter, STOCK_TOKEN_MULTIPLIER_CALLS, wadToDecimal } from './stock-token-multipliers';
 
 /**
@@ -50,6 +50,21 @@ describe('createStockTokenMultiplierBatchAdapter', () => {
     const result = await createStockTokenMultiplierBatchAdapter().fetch({ rpcUrl: 'https://rpc.example', tokens: tooMany }, testContext({ fetchImpl: stub.fetchImpl }));
     expect(result.status).not.toBe('fresh');
     expect(stub.requests).toHaveLength(0);
+  });
+
+  it('leaves a reading too large to store or date unread, never written or rounded (2026-11-05 security audit, P3-7)', async () => {
+    const word = (value: bigint) => `0x${value.toString(16).padStart(64, '0')}`;
+    const WAD = 10n ** 18n;
+    const token = (ui: bigint, next: bigint, at: bigint) => [ui, next, at].map((value) => ({ success: true, returnData: word(value) }));
+    const result = encodeAggregate3Result([
+      ...token(WAD, 3n * WAD, 1_793_889_000n),
+      ...token(10n ** 20n * WAD, WAD, 1n),
+      ...token(WAD, WAD, 8_640_000_000_001n),
+    ]);
+    const stub = stubFetch({ status: 200, body: JSON.stringify({ jsonrpc: '2.0', id: 1, result }) });
+    const tokens = [AAPL, SOXX, CRWD];
+    const read = await createStockTokenMultiplierBatchAdapter().fetch({ rpcUrl: 'https://rpc.example', tokens }, testContext({ fetchImpl: stub.fetchImpl }));
+    expect(read.data).toEqual([{ token: AAPL, read: { uiMultiplier: '1', newUIMultiplier: '3', effectiveAt: 1_793_889_000 } }, { token: SOXX }, { token: CRWD }]);
   });
 
   it('writes a fixed-point multiplier as exact decimal text', () => {
