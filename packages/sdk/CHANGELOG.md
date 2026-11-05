@@ -6,6 +6,8 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+## 0.3.3 — 2026-11-05
+
 ### Added (2026-11-02)
 
 - `HeySearchSuggestion` project rows carry optional `slug` and `logoUrl`, as `/api/search/suggest` now sends them.
@@ -45,8 +47,6 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
   deployment are linked by an exact reference, activity on a contract tied to it (`success` always `not_measured`),
   the source's date apart from HEY's, standing and unknowns. New types `HeyChangeStage`, `HeyChangeReporter`,
   `HeyChangeActivityState`, `HeyPartnerChangeExplanation`; `HeyPartnerChange.explanation` (null when not read).
-
-## 0.3.3 — 2026-10-18
 
 Prepared in the repository; published to npm by hand. The API's own dated record is
 [the public API changelog](https://heyresearch.xyz/developers/changelog).

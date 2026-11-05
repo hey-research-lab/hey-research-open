@@ -6,6 +6,15 @@ All notable changes to `@hey-research-lab/mcp` are recorded here. The format fol
 
 ## Unreleased
 
+## 0.3.3 — 2026-11-05
+
+### Changed (2026-11-05)
+
+- Every tool argument carries a description in its input schema (24 had none: `research_answer`'s `capability`,
+  `q`, `days`, `detail` and the rest, `find_projects`' `surface`, `kind` and `minMarketCap`, `get_changes`' `domain`,
+  `type` and `until`, and the arguments of `get_project_timeline`, `explain_fact`, `get_token_market`, `get_contract`,
+  `get_v4_hook`, `project_diff` and `chain_overview`), so a client reads what each takes and its default.
+
 ### Changed (2026-10-25)
 
 - A tool's `slug` argument and a `hey://project/{slug}` resource take a project slug only — letters, digits and
