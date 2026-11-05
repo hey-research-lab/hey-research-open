@@ -579,9 +579,9 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         ]),
         inputSchema: {
           query: z.string().min(2).max(120).optional().describe('Name, $TICKER or 0x contract (or its start).'),
-          surface: z.enum([...SURFACES, ...VIEWS]).optional(),
+          surface: z.enum([...SURFACES, ...VIEWS]).optional().describe('A list to browse (see the tool description); omit to search or filter the whole catalogue.'),
           radar: z.enum(RADAR).optional().describe('With surface=builder-radar: a Radar view.'),
-          kind: z.enum(KINDS).optional(),
+          kind: z.enum(KINDS).optional().describe('Project type.'),
           status: z.enum(STATUSES).optional().describe('Activity status.'),
           narrative: z.string().max(80).optional().describe('Narrative slug, e.g. "ai-agents".'),
           launchpad: z.string().max(40).optional().describe('e.g. "pons", "virtuals".'),
@@ -589,7 +589,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           stage: z.enum(STAGES).optional().describe('Token launch stage.'),
           minLiquidity: z.number().positive().optional().describe('USD; unknown is excluded, never zero.'),
           maxMarketCap: z.number().positive().optional().describe('USD, on the card\'s valuation reading.'),
-          minMarketCap: z.number().positive().optional(),
+          minMarketCap: z.number().positive().optional().describe('USD, on the card\'s valuation reading.'),
           minVolume: z.number().positive().optional().describe('24h volume, USD.'),
           age: z.enum(AGES).optional().describe('Since the first pool opened.'),
           deployed: z.enum(AGES).optional().describe('Since the contract was deployed.'),
@@ -685,10 +685,10 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           project: z.string().max(120).optional().describe('A project slug.'),
           contract: z.string().regex(/^\d{1,10}:0x[0-9a-fA-F]{40}$/).optional().describe('<chainId>:<address>.'),
           // Market Integrity is a domain and a type only where HEY publishes it (2026-09-27): the ledger holds it Terminal-only otherwise.
-          domain: z.array(z.enum(research ? CHANGE_DOMAINS_RESEARCH : options.marketIntegrity ? CHANGE_DOMAINS_WITH_INTEGRITY : CHANGE_DOMAINS_PUBLIC)).optional(),
-          type: z.array(z.enum(research ? (CHANGE_TYPES_RESEARCH as [string, ...string[]]) : options.marketIntegrity ? CHANGE_TYPES_WITH_INTEGRITY : PUBLIC_CHANGE_TYPES)).optional(),
+          domain: z.array(z.enum(research ? CHANGE_DOMAINS_RESEARCH : options.marketIntegrity ? CHANGE_DOMAINS_WITH_INTEGRITY : CHANGE_DOMAINS_PUBLIC)).optional().describe('Keep only these domains.'),
+          type: z.array(z.enum(research ? (CHANGE_TYPES_RESEARCH as [string, ...string[]]) : options.marketIntegrity ? CHANGE_TYPES_WITH_INTEGRITY : PUBLIC_CHANGE_TYPES)).optional().describe('Keep only these event types.'),
           since: z.string().max(40).optional().describe('ISO date: events whose own time is at or after it (events with no source time are left out).'),
-          until: z.string().max(40).optional(),
+          until: z.string().max(40).optional().describe('ISO date: events whose own time is before it.'),
           detectedSince: z.string().max(40).optional().describe('ISO instant: start a sync at the first event HEY recorded at or after it.'),
           after: z.string().max(64).optional().describe('Sync forward from this cursor (c1.0 is the start).'),
           before: z.string().max(64).optional().describe('Browse older than this cursor.'),
@@ -732,7 +732,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         ]),
         inputSchema: {
           slug,
-          lens: z.enum(lenses).optional(),
+          lens: z.enum(lenses).optional().describe(research ? 'Default build.' : 'Default everything.'),
           limit: z.number().int().min(1).max(100).optional().describe('Default 30.'),
           before: z.string().max(400).optional().describe('The cursor the previous answer gave.'),
         },
@@ -762,7 +762,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         ]),
         inputSchema: {
           slug,
-          fact: z.enum(facts as [HeyExplainFact, ...HeyExplainFact[]]).optional(),
+          fact: z.enum(facts as [HeyExplainFact, ...HeyExplainFact[]]).optional().describe('The fact to explain; omit to list them.'),
           source: z.string().max(80).optional().describe('With fact=source.counted: the source id.'),
           event: z.string().max(240).optional().describe('With fact=build.change: a change-ledger id; omit for the latest.'),
         },
@@ -813,7 +813,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         inputSchema: {
           slug,
           days: z.number().int().min(1).max(400).optional().describe('Days of history; default 30.'),
-          include: z.array(z.enum(['moves'])).optional(),
+          include: z.array(z.enum(['moves'])).optional().describe('["moves"] adds day-on-day valuation moves.'),
           min_change_pct: z.number().int().min(5).max(500).optional().describe('With moves: smallest move in percent; default 25.'),
         },
       },
@@ -838,7 +838,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           'Address (chainId default 4663) or slug for all of a project\'s. An unread proxy is "not read", never "not a proxy". Not a safety verdict.',
         ]),
         inputSchema: {
-          address: z.string().regex(ADDRESS).optional(),
+          address: z.string().regex(ADDRESS).optional().describe('A 0x contract address; or give slug.'),
           chainId: z.number().int().optional().describe('Default 4663.'),
           slug: slug.optional().describe('A project slug, for all of its contracts.'),
         },
@@ -866,7 +866,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         ...describe('get_v4_hook', [
           'Who built this Robinhood Chain Uniswap v4 hook? The project HEY ties it to and why (named only while listed; never a creator account), declared callbacks (not a safety verdict), source, hooklist entry, pools by week and unknowns.',
         ]),
-        inputSchema: { address: z.string().regex(ADDRESS) },
+        inputSchema: { address: z.string().regex(ADDRESS).describe('The hook\'s 0x contract address.') },
       },
       async ({ address }) =>
         run('get_v4_hook', apiUrl(`/api/v4-hooks/${address.toLowerCase()}`), async () => {
@@ -884,7 +884,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           'What changed for this project between two dates (YYYY-MM-DD, at most 400 days apart)? Releases and meaningful ships, status, Build Momentum, valuation and liquidity',
           'then and now, and the changes recorded — each from the nearest persisted point with its date and basis. Never a cause.',
         ]),
-        inputSchema: { slug, from: z.string().regex(DAY), to: z.string().regex(DAY) },
+        inputSchema: { slug, from: z.string().regex(DAY).describe('Start day, YYYY-MM-DD.'), to: z.string().regex(DAY).describe('End day, YYYY-MM-DD; at most 400 days after from.') },
       },
       async ({ slug, from, to }) =>
         run('project_diff', apiUrl(`/api/projects/${encodeURIComponent(slug)}/diff`, { from, to }), async () => {
@@ -922,7 +922,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           'unlocks (scheduled HoodLock unlocks with proof), build-market (Build Momentum beside market attention). days names no one; other views name projects.',
         ]),
         inputSchema: {
-          view: z.enum(['days', 'this-week', 'weekly-report', 'unlocks', 'build-market']).optional(),
+          view: z.enum(['days', 'this-week', 'weekly-report', 'unlocks', 'build-market']).optional().describe('Default days.'),
           days: z.number().int().min(1).max(400).optional().describe('days: 1–400 (default 14); unlocks: 1–365 ahead (default 30).'),
           week: z.string().regex(/^\d{4}-W\d{2}$/).optional().describe('weekly-report: e.g. 2026-W37.'),
         },
@@ -979,16 +979,16 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           'what_changed (project or chain, 1–30 days); verify_project (address, project?); compare_builders (2–4, no winner); unknowns (every coverage state). Claims FACT/DERIVED/UNKNOWN with evidence ids; not_found is a status, not isError. Not price advice or a safety verdict.',
         ]),
         inputSchema: {
-          capability: z.enum(AGENT_CAPABILITIES),
-          project: z.string().min(1).max(80).optional(),
-          q: z.string().min(AGENT_Q_MIN).max(AGENT_Q_MAX).optional(),
-          projects: z.array(z.string().min(1).max(80)).min(2).max(4).optional(),
-          address: z.string().regex(ADDRESS).optional(),
-          days: z.number().int().min(1).max(30).optional(),
-          types: z.array(z.string().regex(/^[a-z_]+\.[a-z_]+$/)).min(1).max(20).optional(),
-          limit: z.number().int().min(1).max(50).optional(),
-          building: z.literal('only').optional(),
-          detail: z.enum(['summary', 'full', 'compact']).optional(),
+          capability: z.enum(AGENT_CAPABILITIES).describe('Which answer; each takes the arguments the tool description names.'),
+          project: z.string().min(1).max(80).optional().describe('A project slug.'),
+          q: z.string().min(AGENT_Q_MIN).max(AGENT_Q_MAX).optional().describe('A name or $TICKER; a shared name lists candidates, never a guess.'),
+          projects: z.array(z.string().min(1).max(80)).min(2).max(4).optional().describe('compare_builders: 2 to 4 slugs.'),
+          address: z.string().regex(ADDRESS).optional().describe('A 0x contract address on Robinhood Chain.'),
+          days: z.number().int().min(1).max(30).optional().describe('what_changed: default 7.'),
+          types: z.array(z.string().regex(/^[a-z_]+\.[a-z_]+$/)).min(1).max(20).optional().describe('what_changed: change types to keep, e.g. build.release.'),
+          limit: z.number().int().min(1).max(50).optional().describe('what_changed: events shown, default 25; the total is the whole window.'),
+          building: z.literal('only').optional().describe('what_changed: only events that count as building.'),
+          detail: z.enum(['summary', 'full', 'compact']).optional().describe('Default summary text; full text; compact drops the capability data from the JSON.'),
         },
       },
       async ({ detail, ...args }) => {
