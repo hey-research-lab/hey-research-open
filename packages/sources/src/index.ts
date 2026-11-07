@@ -54,6 +54,7 @@ export * from './adapters/bitquery-creations';
 export * from './adapters/bitquery-creations-recent';
 export * from './adapters/bitquery-surface';
 export * from './adapters/erc20-supply';
+export * from './adapters/erc20-balances';
 export * from './adapters/rpc-logs';
 export * from './adapters/erc8004-registry';
 export * from './adapters/erc8004-reputation';
