@@ -132,7 +132,8 @@ export function readObservation(call: BenchCall, observation: BenchObservation):
     const parsed = agentIntelligenceResponseSchema.safeParse(value);
     return parsed.success ? parsed.data : null;
   };
-  const outcomeOf = (status: unknown): BenchOutcome | 'unexpected' => (status === 'ok' || status === 'not_found' || status === 'invalid_request' || status === 'unavailable' ? status : status === 'moved' ? 'not_found' : 'unexpected');
+  const outcomeOf = (status: unknown): BenchOutcome | 'unexpected' =>
+    status === 'ok' || status === 'ambiguous' || status === 'not_found' || status === 'invalid_request' || status === 'unavailable' ? status : status === 'moved' ? 'not_found' : 'unexpected';
 
   switch (call.transport) {
     case 'rest': {

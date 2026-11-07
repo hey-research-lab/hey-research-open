@@ -13,6 +13,30 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
+## 2026-11-08 — An ambiguous agent query is an answer, slug on the agent contract, unread ships are null, and which days events7d adds up
+
+### Changed
+
+- `GET /api/agent/{capability}` (`research_project`, `builder_status`, `unknowns`): a `q` that several published
+  projects match answers **HTTP 200 with `status: "ambiguous"`** and the candidates, where it answered HTTP 400
+  `status: "invalid_request"`. Growth rule 3 says several matches answer `ambiguous`, and generic clients treat a 4xx as
+  a failure. The candidates are in the new top-level `candidates` and `candidatesTotal` and, unchanged, in
+  `error.candidates` / `error.candidatesTotal` with `error.code: "ambiguous"`; `subject` and `citation` stay null and
+  HEY picks none. The MCP tool `research_answer` no longer marks it `isError`. `status` gains the value `ambiguous` in
+  the OpenAPI schema and the SDK.
+- Truth repair. `GET /api/projects/{slug}`: `ships` is `null`, never `[]`, when HEY recorded no ship and does not
+  measure the project's building (`activityMeasuredSql`: activity unknown, or no builder source it reads and no counted
+  ship), with the new `shipsNotMeasured: { reason: "activity_not_measured", text }`. `[]` stays a measured none.
+  Machine rule 4: unknown is null with its reason.
+
+### Added
+
+- `GET /api/agent/{capability}`: `slug`, the same as `project`, on `research_project`, `builder_status` and `unknowns`
+  (an old slug answers 308 to the current one as `project`; sending both is refused).
+- `events7dDays`, `events7dFromDay` and `events7dToDay` on `GET /api/projects/{slug}`'s `onchainActivity` and the
+  snapshot's `onchain`: how many UTC days `events7d` adds up, and which. Below 7 the figure is no week's total.
+  `events7d` keeps its meaning.
+
 ## 2026-11-03 — A Proof of Ship window HEY never read is not measured, two new validator declines, and Proof of Ship on NEAR
 
 ### Changed

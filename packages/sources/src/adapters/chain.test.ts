@@ -78,4 +78,17 @@ describe('blockscout PRO listing of verified contracts (2026-09-12)', () => {
     expect(result.data?.nextPage).toBeUndefined();
     expect(JSON.stringify(result)).not.toContain('proapi_secret');
   });
+
+  it('closes the window with an end timestamp when asked, so a re-read page holds the same rows (2026-11-08)', async () => {
+    const stub = stubFetch({ status: 200, body: readFixture('blockscout-pro-listcontracts.json') });
+    const since = new Date('2026-11-06T00:00:00Z');
+    const until = new Date('2026-11-06T09:30:00Z');
+    await createBlockscoutVerifiedAdapter().fetch(
+      { baseUrl: 'https://api.blockscout.com', chainId: 4663, apiKey: 'proapi_secret', since, until, nextPage: { page: 54 } },
+      testContext({ fetchImpl: stub.fetchImpl }),
+    );
+    expect(stub.requests[0]?.url).toBe(
+      `https://api.blockscout.com/v2/api?module=contract&action=listcontracts&filter=verified&page=54&offset=100&verified_at_start_timestamp=${Math.floor(since.getTime() / 1000)}&verified_at_end_timestamp=${Math.floor(until.getTime() / 1000)}&chain_id=4663&apikey=proapi_secret`,
+    );
+  });
 });

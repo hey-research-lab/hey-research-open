@@ -72,18 +72,35 @@ export type AgentSubjectRequest = AgentCapabilityRequestOf<SubjectCapability>;
 
 export type ParsedAgentRequest = { ok: true; request: AgentCapabilityRequest } | { ok: false; code: 'unknown_capability' | 'invalid_request'; message: string };
 
-export function parseAgentRequest(raw: unknown): ParsedAgentRequest {
-  const capability = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as { capability?: unknown }).capability : undefined;
+/**
+ * `slug` is the subject capabilities' other name for `project` (2026-11-08, system audit lane 4 item 10, additive):
+ * every `/api/projects/{slug}` route names the identifier `slug`, so agents send `?slug=` and were refused. It is read
+ * exactly as `project` is — a published slug, or an old slug that redirects — and echoed as `project`. Sending both
+ * is refused, as any identifier given twice is.
+ */
+function withSlugAsProject(raw: unknown, capability: string): { ok: true; raw: unknown } | { ok: false; message: string } {
+  if (!(SUBJECT_CAPABILITIES as readonly string[]).includes(capability) || !raw || typeof raw !== 'object' || Array.isArray(raw) || !('slug' in raw)) return { ok: true, raw };
+  const { slug: sent, ...rest } = raw as Record<string, unknown>;
+  if (sent === undefined) return { ok: true, raw: rest };
+  if (rest.project !== undefined) return { ok: false, message: `${capability}: slug and project name the same thing; give one.` };
+  return { ok: true, raw: { ...rest, project: sent } };
+}
+
+export function parseAgentRequest(input: unknown): ParsedAgentRequest {
+  const capability = input && typeof input === 'object' && !Array.isArray(input) ? (input as { capability?: unknown }).capability : undefined;
   if (typeof capability !== 'string' || !(AGENT_CAPABILITIES as readonly string[]).includes(capability)) {
     return { ok: false, code: 'unknown_capability', message: `capability must be one of: ${AGENT_CAPABILITIES.join(', ')}.` };
   }
+  const aliased = withSlugAsProject(input, capability);
+  if (!aliased.ok) return { ok: false, code: 'invalid_request', message: aliased.message };
+  const raw = aliased.raw;
   const parsed = agentRequestSchema.safeParse(raw, ZOD_MESSAGES);
   if (parsed.success) {
     const request = parsed.data;
     if ((SUBJECT_CAPABILITIES as readonly string[]).includes(request.capability)) {
       const subject = request as AgentSubjectRequest;
       const given = [subject.project, subject.q, subject.address].filter((value) => value !== undefined).length;
-      if (given !== 1) return { ok: false, code: 'invalid_request', message: `${request.capability}: name exactly one of project, q (a name or $TICKER) or address.` };
+      if (given !== 1) return { ok: false, code: 'invalid_request', message: `${request.capability}: name exactly one of project (or slug), q (a name or $TICKER) or address.` };
     }
     return { ok: true, request };
   }
@@ -112,15 +129,15 @@ export function parseAgentRequest(raw: unknown): ParsedAgentRequest {
 /** A parameter name safe to say back: an identifier, short (the MCP argument guard's rule). */
 const SAYABLE_PARAMETER = /^[A-Za-z_][A-Za-z0-9_]{0,39}$/;
 
-const KNOWN_PARAMS: ReadonlySet<string> = new Set(['capability', 'project', 'projects', 'address', 'q', 'days', 'types', 'limit', 'building', 'chainId']);
+const KNOWN_PARAMS: ReadonlySet<string> = new Set(['capability', 'project', 'slug', 'projects', 'address', 'q', 'days', 'types', 'limit', 'building', 'chainId']);
 
 const TAKES: Readonly<Record<AgentCapability, string>> = {
-  research_project: 'project, q or address (one of them), and chainId',
+  research_project: 'project (or slug), q or address (one of them), and chainId',
   what_changed: 'project, days, types, limit, building and chainId',
-  builder_status: 'project, q or address (one of them), and chainId',
+  builder_status: 'project (or slug), q or address (one of them), and chainId',
   verify_project: 'address, project and chainId',
   compare_builders: 'projects and chainId',
-  unknowns: 'project, q or address (one of them), and chainId',
+  unknowns: 'project (or slug), q or address (one of them), and chainId',
   chain_brief: 'chainId only',
 };
 const takes = (capability: AgentCapability): string => TAKES[capability];

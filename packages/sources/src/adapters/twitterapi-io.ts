@@ -624,3 +624,49 @@ export function createTwitterApiIoSearchUsersAdapter(): SourceAdapter<XSearchUse
     },
   };
 }
+
+/*
+ * HEY's own twitterapi.io account balance (2026-11-08, system audit lane 2): `GET /oapi/my/info`, the credits left on
+ * the account HEY pays for. Plumbing, never research: it reads nothing about X or a project, only how much HEY can
+ * still spend, so the ops chat hears before every X read stops on an empty balance. The answer is
+ * `{ recharge_credits, total_bonus_credits }` (shape read from the live API on 2026-11-08; the saved fixture's
+ * numbers are invented). `recharge_credits` is the paid balance HEY counts down; the bonus figure is kept only as the
+ * provider states it, never added to the balance, since the answer does not say whether it is what is left.
+ */
+export type XAccountInfoInput = { apiKey: string; baseUrl?: string };
+export type XAccountBalance = {
+  /** The paid credits left on the account, as the provider states them. */
+  rechargeCredits: number;
+  /** The bonus credits figure, as the provider states it; absent when the answer carries none. */
+  bonusCredits?: number;
+};
+
+/** Far above any balance HEY would buy (10M credits are $100): a figure past it is not one HEY believes. */
+const MAX_BALANCE_CREDITS = 1_000_000_000_000;
+const ACCOUNT_INFO_MAX_BYTES = 16 * 1024;
+const creditFigure = z.number().int().min(-MAX_BALANCE_CREDITS).max(MAX_BALANCE_CREDITS);
+const accountInfoSchema = z.object({ recharge_credits: creditFigure, total_bonus_credits: creditFigure.nullish() }).passthrough();
+
+export function createTwitterApiIoAccountInfoAdapter(): SourceAdapter<XAccountInfoInput, XAccountBalance> {
+  return {
+    name: 'twitterapi-io:account-info',
+    canHandle: (input) => input.apiKey.length > 0,
+    async fetch(input, ctx: SourceContext): Promise<SourceResult<XAccountBalance>> {
+      if (!this.canHandle(input)) return errorResult(ctx, 'INVALID_RESPONSE', 'no key; nothing was asked');
+      const base = (input.baseUrl ?? TWITTERAPI_IO_BASE_URL).replace(/\/+$/, '');
+      return performSourceFetch(
+        ctx,
+        { url: `${base}/oapi/my/info`, headers: { 'x-api-key': input.apiKey, accept: 'application/json' }, conditional: false, allowedContentTypes: ['application/json'], maxBytes: ACCOUNT_INFO_MAX_BYTES },
+        {
+          schema: accountInfoSchema,
+          parse: (body) => JSON.parse(body) as unknown,
+          cacheTtlSeconds: 3_600,
+          normalize: (raw, response): XAccountBalance => {
+            if (!answeredByApi(response, base)) throw wrongHost();
+            return { rechargeCredits: raw.recharge_credits, ...(typeof raw.total_bonus_credits === 'number' ? { bonusCredits: raw.total_bonus_credits } : {}) };
+          },
+        },
+      );
+    },
+  };
+}

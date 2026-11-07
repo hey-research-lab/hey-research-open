@@ -362,8 +362,8 @@ And never:
   `research_answer`) and ~24 KB of text with no line an agent could cite. So: `research_answer`
   takes `q` (a name or `$TICKER`) or `address` beside `project` on `research_project`,
   `builder_status` and `unknowns` — exactly one — through the one search matcher (one exact match
-  answers with `subject.resolvedFrom`; several answer `isError` with `error.candidates`, the slugs to
-  send back; none `not_published`); every answer carries `citation.text` ("Source: HEY Research Lab,
+  answers with `subject.resolvedFrom`; several answer `status: ambiguous` with `candidates`, the slugs to
+  send back — an answer since 2026-11-08, no longer `isError`; none `not_published`); every answer carries `citation.text` ("Source: HEY Research Lab,
   builder research for Robinhood Chain — <page>, as of <date>, rules <version>") and it is the tool
   text's last line whatever the 24 KB cap cuts; the text is the lean `summary` by default (answer,
   claims, unknowns, links, citation; `detail: "full"` for the data, freshness and evidence lines; the

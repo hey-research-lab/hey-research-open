@@ -306,7 +306,8 @@ export type HeyAgentChainBriefData = {
 type HeyAgentBase = {
   schema: 'hey.agent-intelligence-response';
   schemaVersion: '1';
-  status: 'ok' | 'not_found' | 'moved' | 'invalid_request' | 'unavailable';
+  /** `ambiguous` (2026-11-08): several published projects match a `q`; `candidates` lists them and HEY picks none (HTTP 200; `invalid_request` 400 before). */
+  status: 'ok' | 'ambiguous' | 'not_found' | 'moved' | 'invalid_request' | 'unavailable';
   query: { chainId: number; project?: string; projects?: string[]; address?: string; q?: string; days?: number; types?: string[]; limit?: number; building?: 'only'; ignoredParameters?: string[] };
   chain: { chainId: number; name: string };
   subject: {
@@ -339,6 +340,10 @@ type HeyAgentBase = {
   boundaries: { notAdvice: true; notProvided: string[]; marketIsContextOnly: true; disclaimer: HeyAgentText };
   /** `candidates` (2026-10-14, additive, code `ambiguous`): the published projects a `q` could mean, in the matcher's order; HEY picks none. */
   error?: { code: string; message: HeyAgentText; movedTo?: string; candidates?: HeyAgentCandidate[]; candidatesTotal?: { count: number; atLeast: boolean } };
+  /** With `status: ambiguous` (2026-11-08, additive): the published projects a `q` could mean, the same list as `error.candidates`; HEY picks none. */
+  candidates?: HeyAgentCandidate[];
+  /** With `candidates` (2026-11-08, additive): how many matched; `atLeast` when there may be more. */
+  candidatesTotal?: { count: number; atLeast: boolean };
   /** Round 4 (2026-09-30, additive): `hey_own_token` when `$HEY`'s project is in the answer; it changes no figure, order or tag. */
   disclosures?: { code: 'hey_own_token'; statement: HeyAgentText; projects: string[] }[];
   asOf: string;
@@ -358,10 +363,11 @@ export type HeyAgentResponseOf<C extends HeyAgentCapability> = Extract<HeyAgentR
 /**
  * The parameters each capability takes; the server refuses any other. research_project, builder_status
  * and unknowns take the slug, or `q` (a name or $TICKER, resolved through HEY's project search: one exact
- * match answers with `subject.resolvedFrom`, several are `invalid_request` `ambiguous` with
- * `error.candidates`, none is `not_found` `not_published`), or `address` — exactly one (2026-10-14, additive).
+ * match answers with `subject.resolvedFrom`, several answer `status: ambiguous` with `candidates` (2026-11-08;
+ * `invalid_request` before), none is `not_found` `not_published`), or `address` — exactly one (2026-10-14, additive).
+ * `slug` (2026-11-08, additive) is the same as `project`, the name `/api/projects/{slug}` uses.
  */
-export type HeyAgentSubjectQuery = { project: string } | { q: string } | { address: string };
+export type HeyAgentSubjectQuery = { project: string } | { slug: string } | { q: string } | { address: string };
 export type HeyAgentQuery = {
   research_project: HeyAgentSubjectQuery;
   what_changed: { project?: string; days?: number; types?: readonly string[]; limit?: number; building?: 'only' };

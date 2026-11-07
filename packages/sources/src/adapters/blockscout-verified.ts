@@ -58,6 +58,13 @@ export type BlockscoutVerifiedInput = {
    * and pages by address, so the caller keeps time in this filter.
    */
   since?: Date | undefined;
+  /**
+   * PRO API only: list contracts verified at or before this moment
+   * (`verified_at_end_timestamp`, 2026-11-08). With both ends the listing is a
+   * closed window that no later verification moves, so a page stepped over in
+   * it can be read again later and hold the same rows.
+   */
+  until?: Date | undefined;
 };
 
 /** One page of the PRO API's `listcontracts`: name and compiler only, no timestamps, no proxy flag. */
@@ -94,7 +101,11 @@ export function createBlockscoutVerifiedAdapter(): SourceAdapter<
 
 /**
  * The PRO API's Etherscan-style listing: `page`/`offset` paging, a
- * `verified_at_start_timestamp` floor, and only a name and compiler per row.
+ * `verified_at_start_timestamp` floor (and, for a re-read, a
+ * `verified_at_end_timestamp` ceiling), and only a name and compiler per row.
+ * Blockscout orders the rows by when it first indexed each contract, so a
+ * pass with no ceiling only ever moves rows later, never past a page not yet
+ * read.
  * Proxy and scam flags are unknown here (false); the upgrade watcher reads
  * proxies from the chain itself.
  */
@@ -107,6 +118,7 @@ async function fetchPro(input: BlockscoutVerifiedInput, ctx: SourceContext): Pro
     page,
     offset: PRO_PAGE_SIZE,
     ...(input.since ? { verified_at_start_timestamp: Math.floor(input.since.getTime() / 1000) } : {}),
+    ...(input.until ? { verified_at_end_timestamp: Math.floor(input.until.getTime() / 1000) } : {}),
   });
   const result = await performSourceFetch(
     ctx,

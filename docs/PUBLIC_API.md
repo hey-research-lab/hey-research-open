@@ -765,7 +765,12 @@ changed meaning.
 
 - `ships` — the project's newest five ships, each as `GET /api/ships?project=` would list it. A bare
   contract deployment is a launch, not a ship, and appears on none of the ship surfaces; the project
-  page's own timeline still shows it.
+  page's own timeline still shows it. **`null` (2026-11-08, machine rule 4)** when HEY recorded no ship
+  and does not measure the project's building (`activityMeasuredSql`: activity `UNKNOWN`, or no builder
+  source HEY reads and no counted ship in the scorer's window): an empty list there read as "measured,
+  none shipped". The new `shipsNotMeasured` (`{ "reason": "activity_not_measured", "text": "…" }`) says
+  why, and is absent whenever `ships` is a list. `[]` stays a measured none, and a ship HEY recorded is
+  listed whatever the rule says.
 - `stillBuildingEvidence` — present whenever `stillBuilding` is true, on the dossier as on the listing.
 
 ### The official X account's state (2026-10-18)
@@ -2170,6 +2175,11 @@ Added 2026-09-26, all optional and absent when HEY did not measure them:
   more than three days behind: the series ends where HEY stopped reading, not where the contract
   went quiet.
 
+`events7d` adds up the days HEY could read in the last week, not always seven. Since 2026-11-08
+(additive) `events7dDays` says how many UTC days it adds up and `events7dFromDay` / `events7dToDay`
+which; below 7 the figure is no week's total (the window also holds the newest day, so it can be 8).
+All three are absent with `events7d`, on the dossier's `onchainActivity` and the snapshot's `onchain`.
+
 A project's `onchainActivity` in `GET /api/projects/{slug}` gained four optional fields on
 2026-09-14, present only on days a decoding source filled: `calls24h`, `transactions24h`,
 `methods` and `eventKinds`. The last two are how many *different* method names were called and
@@ -2889,12 +2899,12 @@ its gap list, peers, the token and contract reads) through pure composers in
 
 | Capability | Question | Parameters |
 | --- | --- | --- |
-| `research_project` | What is HEY's current research view of this project? | `project`, `q` or `address` (exactly one) |
+| `research_project` | What is HEY's current research view of this project? | `project` (or `slug`), `q` or `address` (exactly one) |
 | `what_changed` | What changed with this project, or on Robinhood Chain, in the last N days? | `project?`, `days` 1–30 (default 7), `types?` (comma-separated change types), `limit` 1–50 (default 25) |
-| `builder_status` | Is this project still building, and why does HEY say so? | `project`, `q` or `address` (exactly one) |
+| `builder_status` | Is this project still building, and why does HEY say so? | `project` (or `slug`), `q` or `address` (exactly one) |
 | `verify_project` | Does this contract or token appear to belong to this project? | `address`, `project?` |
 | `compare_builders` | How do these projects' building records compare over 30 days? | `projects` (2–4, comma-separated) |
-| `unknowns` | What does HEY not know about this project or token? | `project`, `q` or `address` (exactly one) |
+| `unknowns` | What does HEY not know about this project or token? | `project` (or `slug`), `q` or `address` (exactly one) |
 
 **One call from any identifier (2026-10-14, additive).** `research_project`, `builder_status` and
 `unknowns` take the slug (`project`), or `q` — a project name or `$TICKER`, 2–64 characters — or a
@@ -2902,14 +2912,19 @@ its gap list, peers, the token and contract reads) through pure composers in
 (`/api/search/suggest`, the A2A plain-text path, the Telegram bot): one exact match answers, and the
 answer says so in `subject.resolvedFrom` (`{ "q": "$CHIT" }` or `{ "address": "0x…" }`) while
 `links.self` and the citation name the slug it resolved to (`?project=chit`) and `query` echoes what
-was asked; several matches answer `status: invalid_request` with `error.code: ambiguous` and
-`error.candidates` (slug, name as a source's words, the tracked token — in the matcher's order; HEY
-picks none; send one back as `project`) — a single non-exact match answers the same way, its message
+was asked; several matches answer **HTTP 200 with `status: ambiguous`** (2026-11-08; before, HTTP 400
+`status: invalid_request`) and `candidates` (slug, name as a source's words, the page, the tracked token,
+its ticker, activity and catalog status — in the matcher's order; HEY picks none; send one back as
+`project`) with `candidatesTotal`; the same list stays under `error.candidates` with
+`error.code: ambiguous` — a single non-exact match answers the same way, its message
 naming it as the closest rather than "more than one" (2026-10-16); no match answers `status: not_found` with
 `error.code: not_published`, a statement about HEY's index, never about the project. An `address`
 resolves to the published project HEY records it under (its token, a declared or follow-up
 contract); for `unknowns` a contract with no project is still an answer about the contract itself.
 Before this, `?q=$CHIT` answered 400 "project: Required" and every agent paid two round trips.
+`slug` (2026-11-08, additive) is the same parameter as `project` on these three capabilities — the
+name every `/api/projects/{slug}` route uses — read the same way (an old slug answers 308 to the
+current one, as `project`); sending both is refused.
 
 Every answer carries:
 

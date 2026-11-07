@@ -293,9 +293,18 @@ async function attemptOnce(
       if (isAbort(error)) {
         throw new SourceError('TIMEOUT', `request to ${urlForMessage(currentUrl)} timed out`);
       }
+      /*
+       * The connection error's own code and the URL asked, when the runtime gives one (2026-11-08): undici says only
+       * "fetch failed" and keeps `ECONNREFUSED` on its cause, so a refused host read the same as any other failure and
+       * the site pass could not tell a dead host from one bad page (`siteHostDown`).
+       */
+      const cause = error instanceof Error ? (error as { cause?: unknown }).cause : undefined;
+      const causeCode = cause && typeof cause === 'object' && typeof (cause as { code?: unknown }).code === 'string' ? (cause as { code: string }).code : undefined;
       throw new SourceError(
         'NETWORK',
-        error instanceof Error ? withoutUrlQueries(error.message) : `network failure for ${urlForMessage(currentUrl)}`,
+        error instanceof Error
+          ? `${withoutUrlQueries(error.message)}${causeCode && /^[A-Z_]+$/.test(causeCode) ? ` (${causeCode}) for ${urlForMessage(currentUrl)}` : ''}`
+          : `network failure for ${urlForMessage(currentUrl)}`,
       );
     }
 

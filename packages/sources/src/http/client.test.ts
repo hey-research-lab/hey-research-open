@@ -350,6 +350,13 @@ describe('error messages never carry a query string', () => {
     );
   });
 
+  it('names a connection error\'s code and the URL asked, without its query (2026-11-08)', async () => {
+    const refused = new TypeError('fetch failed', { cause: Object.assign(new Error('connect ECONNREFUSED 1.2.3.4:443'), { code: 'ECONNREFUSED' }) });
+    expect((await failure(stubFetch({ throws: refused }))).message).toBe('fetch failed (ECONNREFUSED) for https://api.blockscout.com/v2/api');
+    // No code, no suffix: the message reads as before.
+    expect((await failure(stubFetch({ throws: new TypeError('fetch failed') }))).message).toBe('fetch failed');
+  });
+
   it('cuts userinfo, query and fragment, keeps scheme, host, port and path', () => {
     expect(urlForMessage('https://user:pw@rpc.example.com:8443/v1/x?api_key=k&token=t#frag')).toBe('https://rpc.example.com:8443/v1/x');
     expect(urlForMessage('not a url')).toBe('an unparseable URL');

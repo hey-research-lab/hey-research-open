@@ -38,7 +38,9 @@ export const ADAPTER_REQUIRED_FIELDS = ['answer', 'answerStatus', 'claims', 'unk
 /** The HTTP status a REST answer carries: the body is the same envelope in every case. */
 export function restStatusOf(response: Pick<AgentIntelligenceResponse, 'status'>): number {
   switch (response.status) {
+    // `ambiguous` (2026-11-08): several projects match a name or ticker; an answer listing them, never an error the client must parse a 4xx for.
     case 'ok':
+    case 'ambiguous':
       return 200;
     case 'moved':
       return 308;

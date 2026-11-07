@@ -729,7 +729,7 @@ discovery: `packages/domain/src/builders/discover-code.ts`; candidates carry
 | Reads | `GET /twitter/user/info` and `/twitter/user/batch_info_by_ids` for the **official** account a published project's own sources name (state, stable id, handle, created date, verification flags, profile links); `GET /twitter/user/last_tweets` for a confirmed account's own newest posts (no retweets of others, no replies), kept 90 days; HEY's fixed discovery queries and the name search for a project with no live X, kept as leads only |
 | Never | A firehose, anyone else's account, followers, following, mentions or any engagement figure |
 | What it may prove | Identity context and discovery leads (tier DISCOVERY, context only). A mutual site link corroborates the X account itself and nothing else; a posted repository counts only through GitHub's own pointback; never a ship, building, a score, an order, publication, a change event, an alert, a webhook or a Telegram delivery |
-| Cost | Metered credits under `twitterapi-io-credits`: 60,000 a day (≈ $0.60), declined beyond it and carried to the next day; off until `TWITTERAPI_IO_ENABLED` and `TWITTERAPI_IO_KEY` are set |
+| Cost | Metered credits under `twitterapi-io-credits`: 60,000 a day (≈ $0.60), declined beyond it and carried to the next day; off until `TWITTERAPI_IO_ENABLED` and `TWITTERAPI_IO_KEY` are set. Since 2026-11-08 the account's own balance (`GET /oapi/my/info`) is read once a day on `twitterapi-io-balance` (plumbing, four a day) so operators hear before it runs out |
 
 ### npm registry (2026-09-05)
 

@@ -395,7 +395,8 @@ export type AmbiguousCandidate = {
 
 /**
  * A name or ticker that several published projects could be (AG-01): an
- * `invalid_request` that lists the candidates — slug, name as a source's
+ * answer with `status: ambiguous` (2026-11-08; `invalid_request` before, the
+ * candidates then only under `error`) that lists the candidates — slug, name as a source's
  * words, the tracked token, its ticker, activity status and catalog status
  * (2026-10-17, AG-3) — in the order the caller gave (research readiness,
  * then activity), and picks none. `total` is how many matched, so a list of
@@ -423,8 +424,10 @@ export function ambiguousRefusal<C extends AgentCapability>(ctx: AgentComposeCon
     listed.length === 1 && count === 1
       ? `No published project has exactly that name or ticker; the closest is ${listed[0]!.slug}. HEY does not guess: send it as project, or the contract as address.`
       : `More than one published project matches that name or ticker: ${listed.map((candidate) => candidate.slug).join(', ')}${of}. HEY does not guess: send one of them as project, or the contract as address.`;
-  const base = refusal(ctx, capability, 'invalid_request', AMBIGUOUS_CODE, message);
-  return { ...base, error: { ...base.error!, candidates: listed, ...(total ? { candidatesTotal: { count, atLeast: total.atLeast } } : {}) } } as AgentResponseOf<C>;
+  const base = refusal(ctx, capability, 'ambiguous', AMBIGUOUS_CODE, message);
+  const counted = total ? { candidatesTotal: { count, atLeast: total.atLeast } } : {};
+  // The list top-level (2026-11-08, growth rule 3) and, as before, under `error` with code `ambiguous` (machine rule 10: additive).
+  return { ...base, error: { ...base.error!, candidates: listed, ...counted }, candidates: listed, ...counted } as AgentResponseOf<C>;
 }
 
 /** No published project for the name, ticker or contract asked about (AG-01): a statement about HEY's index, never about the project. */

@@ -40,6 +40,8 @@ import { AGENT_UNKNOWN_CATEGORIES } from './unknowns';
  */
 export const AGENT_SCHEMA = 'hey.agent-intelligence-response' as const;
 export const AGENT_SCHEMA_VERSION = '1' as const;
+/** How an answer ended (`status`): `ambiguous` added 2026-11-08 (several projects match a `q`; HEY picks none). */
+export const AGENT_RESPONSE_STATUSES = ['ok', 'ambiguous', 'not_found', 'moved', 'invalid_request', 'unavailable'] as const;
 
 /** Hard maxima, so an answer's size is bounded whatever the record holds. */
 export const AGENT_LIMITS = {
@@ -558,7 +560,13 @@ export const agentDisclosureSchema = z
 const base = {
   schema: z.literal(AGENT_SCHEMA),
   schemaVersion: z.literal(AGENT_SCHEMA_VERSION),
-  status: z.enum(['ok', 'not_found', 'moved', 'invalid_request', 'unavailable']),
+  /**
+   * `ambiguous` (2026-11-08, system audit lane 4 item 10): a `q` that several published projects match — growth rule 3's
+   * "several answer ambiguous with candidates and no pick". An answer, not an error (HTTP 200 on REST): `candidates`
+   * lists them and HEY picks none. It was `invalid_request` (HTTP 400) with the same candidates under `error` before;
+   * `error` still carries them (code `ambiguous`).
+   */
+  status: z.enum(AGENT_RESPONSE_STATUSES),
   query: z
     .object({
       chainId: z.number().int(),
@@ -626,6 +634,14 @@ const base = {
   citation: citation.nullable(),
   boundaries,
   error: errorSchema.optional(),
+  /**
+   * With `status: ambiguous` (2026-11-08, additive): the published projects the `q` could mean, in the matcher's order —
+   * slug, name, page, tracked token, ticker, activity and catalog status — the same list as `error.candidates`. HEY picks
+   * none; send one back as `project`. Absent on every other answer.
+   */
+  candidates: z.array(candidate).max(8).optional(),
+  /** With `candidates` (2026-11-08, additive): how many published projects matched, of which `candidates` lists the first; `atLeast` when there may be more. */
+  candidatesTotal: z.object({ count: z.number().int().min(0), atLeast: z.boolean() }).strict().optional(),
   /** Round 4 (2026-09-30, additive): present only when a disclosure applies. */
   disclosures: z.array(agentDisclosureSchema).max(4).optional(),
   asOf: iso,

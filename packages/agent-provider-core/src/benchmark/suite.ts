@@ -49,7 +49,7 @@ export type BenchCall =
  * What the answer must be. `outcome` is the contract status (or, for the
  * transports' own refusals, `no_capability`, `rpc_error`, `tool_error`).
  */
-export type BenchOutcome = 'ok' | 'not_found' | 'invalid_request' | 'unavailable' | 'no_capability' | 'rpc_error' | 'tool_error';
+export type BenchOutcome = 'ok' | 'ambiguous' | 'not_found' | 'invalid_request' | 'unavailable' | 'no_capability' | 'rpc_error' | 'tool_error';
 
 /**
  * The boundary a question tests:

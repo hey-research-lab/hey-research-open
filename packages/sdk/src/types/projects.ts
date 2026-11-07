@@ -367,8 +367,13 @@ export type HeyUnderTheRadar = { state: 'HELD' | 'NOT_HELD' | 'NOT_MEASURED'; re
 
 export type HeyProjectDetail = HeyProject & {
   longDescription?: string;
-  /** The newest ships, as `/api/ships?project=` would list them. */
-  ships: HeyShip[];
+  /**
+   * The newest ships, as `/api/ships?project=` would list them. `null` (2026-11-08) when HEY recorded none and does not
+   * measure the project's building, so it cannot say none shipped; `shipsNotMeasured` says why. `[]` is a measured none.
+   */
+  ships: HeyShip[] | null;
+  /** With `ships: null` (2026-11-08, additive): why. */
+  shipsNotMeasured?: { reason: 'activity_not_measured'; text: string };
   /** Deprecated alias: on registry and launchpad pages it held the outside listing date. Read `firstRecordedByHeyAt` (2026-09-26). */
   firstSeenAt: string;
   /** When HEY first recorded the project: knowledge time, never an outside date (2026-09-26). */
@@ -446,7 +451,12 @@ export type HeyProjectDetail = HeyProject & {
      * hours to `readAt`, not that UTC day. A measured count all the same, never unknown. Absent when it counts a whole day.
      */
     partialDay?: { readAt: string };
+    /** Events over the days HEY read in the last week: `events7dDays` of them, never a full week unless that says 7. */
     events7d?: number;
+    /** How many UTC days `events7d` adds up, and the first and last (2026-11-08, additive). Absent with `events7d`. */
+    events7dDays?: number;
+    events7dFromDay?: string;
+    events7dToDay?: string;
     /** Days HEY holds a row for. */
     daysCovered: number;
     /** Days HEY could read events from; below `daysCovered` when the decoder is blind. */

@@ -607,6 +607,10 @@ export type HeyProjectSnapshot = {
      */
     partialDay?: { readAt: string };
     events7d?: number;
+    /** How many UTC days `events7d` adds up, and which (2026-11-08, additive): below 7 it is no week's total. Absent with `events7d`. */
+    events7dDays?: number;
+    events7dFromDay?: string;
+    events7dToDay?: string;
     calls24h?: number;
     daysCovered: number;
     daysMeasured: number;

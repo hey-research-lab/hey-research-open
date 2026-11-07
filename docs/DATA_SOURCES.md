@@ -38,7 +38,7 @@ depends on a live API.
 | `github-repo` | Repository activity window | 30 min | Stars are display context, never a score input |
 | `github-releases` | Releases → `GITHUB_RELEASE` ShipEvents | 30 min | Drafts excluded; stable `externalId` for dedupe; budget 6,000 req/day |
 | `github-commits` | Human commits in the window → one capped `CODE_ACTIVITY` ShipEvent per repository per ISO week | 30 min | Bots, dependency bumps and merge churn excluded; budget 6,000 req/day |
-| `website` | Page metadata + feed discovery | 6 h | SSRF guarded, 2 MB cap, HTML content-type only, socket pinned to the checked address; `DISCOVER_SITE_FEEDS` sweeps registered WEBSITE and DOCS sources, ten a tick |
+| `website` | Page metadata + feed discovery | 6 h | SSRF guarded, 2 MB cap, HTML content-type only, socket pinned to the checked address; `DISCOVER_SITE_FEEDS` sweeps registered WEBSITE and DOCS sources, forty a tick, the latest against its tier's `site_reads` window first; since 2026-11-08 one read answers every due row of the same URL (each keeps its own record, feeds and candidates; a 304 only rows with the same validators), and a host down twice in a row (name unresolved, connection refused, HTTP 521/522/523/530) has the failure recorded on its other due rows instead of each asking it |
 | `feed` | RSS/Atom/changelog entries | 2 h | Max 50 entries; summaries tag-stripped |
 | `sourcify` | Verified contract source | 24 h | Optional — a miss is `missing`, never an error |
 | `coingecko-markets` | Price, market cap, FDV, volume for up to 250 CoinGecko ids per call | 1 h | Matched to tokens by `(chain, address)` from the registry; a `0` figure is absent; source `coingecko` |
@@ -75,6 +75,10 @@ Blockscout PRO API (`api.blockscout.com`, its Etherscan-style `/v2/api?module=�
 HEY holds a PRO key; the free starter plan (100K credits a day, 5 requests a second)
 covers HEY's volume. Without a key the reads still target the instance and degrade honestly.
 The key is only ever a query parameter on the request; every echoed URL is redacted.
+A listing page the sweep steps over after two failures is kept in its sync cursor with the closed window it was
+listed in and read again later as that page of `verified_at_start_timestamp`…`verified_at_end_timestamp`
+(at most three re-reads a run, back-off 1 → 16 h, six attempts; a page whose re-reads all fail stays on record in
+`givenUpPages`, never dropped — 2026-11-08).
 
 ### HEY Scan's distribution from the explorer (Blockscout API, free tier, 2026-10-10)
 

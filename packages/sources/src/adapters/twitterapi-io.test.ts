@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { readFixture, stubFetch, testContext } from '../testing';
 import {
   contractAddressesIn,
+  createTwitterApiIoAccountInfoAdapter,
   createTwitterApiIoLastPostsAdapter,
   createTwitterApiIoUserInfoAdapter,
   TWITTERAPI_IO_BASE_URL,
@@ -219,6 +220,48 @@ describe('twitterapi.io newest posts read', () => {
     const stub = stubFetch(json('{}'));
     const result = await adapter.fetch({ apiKey: KEY, userId: 'agentos_hq' }, testContext({ fetchImpl: stub.fetchImpl }));
     expect(result.status).toBe('error');
+    expect(stub.callCount()).toBe(0);
+  });
+});
+
+describe('twitterapi.io account balance (2026-11-08)', () => {
+  const adapter = createTwitterApiIoAccountInfoAdapter();
+
+  it('asks /oapi/my/info with the key in X-API-Key and keeps the two credit figures only', async () => {
+    const stub = stubFetch(json(readFixture('twitterapi-io-my-info.json')));
+    const result = await adapter.fetch({ apiKey: KEY }, testContext({ fetchImpl: stub.fetchImpl }));
+    expect(stub.callCount()).toBe(1);
+    expect(stub.requests[0]!.url).toBe(`${TWITTERAPI_IO_BASE_URL}/oapi/my/info`);
+    expect(new Headers(stub.requests[0]!.init?.headers).get('x-api-key')).toBe(KEY);
+    expect(result.status).toBe('fresh');
+    expect(result.data).toEqual({ rechargeCredits: 1_234_567, bonusCredits: 50_000 });
+    // Plumbing, not a metered X read: the balance costs no credits of the day's ceiling.
+    expect(result.meteredUnits).toBeUndefined();
+  });
+
+  it('reads an answer with no bonus figure, and a balance of 0 as 0', async () => {
+    const result = await adapter.fetch({ apiKey: KEY }, testContext({ fetchImpl: stubFetch(json('{"recharge_credits":0}')).fetchImpl }));
+    expect(result.data).toEqual({ rechargeCredits: 0 });
+  });
+
+  it('refuses a figure that is not an integer, a missing balance, and an answer from another host', async () => {
+    const malformed = await adapter.fetch({ apiKey: KEY }, testContext({ fetchImpl: stubFetch(json(readFixture('twitterapi-io-my-info-malformed.json'))).fetchImpl }));
+    expect(malformed.status).toBe('error');
+    expect(malformed.data).toBeUndefined();
+    const missing = await adapter.fetch({ apiKey: KEY }, testContext({ fetchImpl: stubFetch(json('{"total_bonus_credits":5}')).fetchImpl }));
+    expect(missing.status).toBe('error');
+    const moved = await adapter.fetch({ apiKey: KEY }, testContext({ fetchImpl: stubFetch({ ...json(readFixture('twitterapi-io-my-info.json')), url: 'https://evil.example/oapi/my/info' }).fetchImpl }));
+    expect(moved.status).toBe('error');
+    expect(moved.errorMessage).toMatch(/another host/);
+  });
+
+  it('reports a refusal with its status, and asks nothing without a key', async () => {
+    const refused = await adapter.fetch({ apiKey: KEY }, testContext({ fetchImpl: stubFetch({ status: 402, body: '{"msg":"insufficient credits"}', headers: { 'content-type': 'application/json' } }).fetchImpl }));
+    expect(refused.status).toBe('error');
+    expect(refused.httpStatus).toBe(402);
+    const stub = stubFetch(json('{}'));
+    const none = await adapter.fetch({ apiKey: '' }, testContext({ fetchImpl: stub.fetchImpl }));
+    expect(none.status).toBe('error');
     expect(stub.callCount()).toBe(0);
   });
 });

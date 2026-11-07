@@ -6,6 +6,21 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+### Changed (2026-11-08)
+
+- `HeyAgentResponse.status` may be `ambiguous`: a `q` that several published projects match now answers 200 with
+  `status: 'ambiguous'` and the new top-level `candidates` / `candidatesTotal` (the same list is still under
+  `error.candidates`, code `ambiguous`). It was `invalid_request` (HTTP 400) before. HEY picks none.
+- `HeyProjectDetail.ships` is `HeyShip[] | null`: `null`, with the new `shipsNotMeasured` (`reason:
+  'activity_not_measured'`, `text`), when HEY recorded no ship and does not measure the project's building. `[]` stays a
+  measured none.
+
+### Added (2026-11-08)
+
+- `HeyAgentSubjectQuery` takes `{ slug }`, the same as `{ project }`, for research_project, builder_status and unknowns.
+- `events7dDays`, `events7dFromDay` and `events7dToDay` on `HeyProjectDetail.onchainActivity` and
+  `HeyProjectSnapshot.onchain`: how many UTC days `events7d` adds up, and which. Below 7 it is no week's total.
+
 ## 0.3.3 — 2026-11-05
 
 ### Added (2026-11-02)
