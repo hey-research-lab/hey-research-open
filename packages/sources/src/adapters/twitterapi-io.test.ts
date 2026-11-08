@@ -11,7 +11,9 @@ import {
   TWITTERAPI_IO_POST_CREDITS,
   TWITTERAPI_IO_PROFILE_CREDITS,
   X_POST_TEXT_MAX,
+  resolveXShortLink,
   xProfileImageUrl,
+  xShortLinkOf,
 } from './twitterapi-io';
 
 /**
@@ -278,5 +280,51 @@ describe('contract addresses in a post', () => {
   it('ignores a hash, a short hex and an address glued to more hex', () => {
     expect(contractAddressesIn(`tx 0x${'a'.repeat(64)} short 0x1234 glued 0x${'b'.repeat(41)}`)).toEqual([]);
     expect(contractAddressesIn(null)).toEqual([]);
+  });
+});
+
+
+describe('X short links on a profile (2026-11-08)', () => {
+  const adapter = createTwitterApiIoUserInfoAdapter();
+
+  it('keeps a profile website that arrives only as a t.co link apart, never as a destination', async () => {
+    const stub = stubFetch(json(readFixture('twitterapi-io-user-shortlink-only.json')));
+    const result = await adapter.fetch({ apiKey: KEY, userName: 'shortlink_hq' }, testContext({ fetchImpl: stub.fetchImpl }));
+    expect(result.status).toBe('fresh');
+    expect(result.data).toMatchObject({ kind: 'ACTIVE', profileUrls: [], profileShortLinks: ['https://t.co/X3ZZQwi2hB'] });
+  });
+
+  it('keeps no short link when the answer expanded the links itself', async () => {
+    const stub = stubFetch(json(readFixture('twitterapi-io-user-active-live.json')));
+    const result = await adapter.fetch({ apiKey: KEY, userName: 'agentos_hq' }, testContext({ fetchImpl: stub.fetchImpl }));
+    expect(result.data && 'profileShortLinks' in result.data).toBe(false);
+  });
+
+  it('reads where a t.co link leads from its redirect, asking t.co alone', async () => {
+    const asked: { url: string; init?: RequestInit }[] = [];
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      asked.push({ url, init });
+      return new Response(null, { status: 301, headers: { location: 'https://t0ll.example/' } });
+    }) as unknown as typeof fetch;
+    expect(await resolveXShortLink('https://t.co/X3ZZQwi2hB', { fetchImpl })).toBe('https://t0ll.example/');
+    expect(asked).toHaveLength(1);
+    expect(asked[0]!.url).toBe('https://t.co/X3ZZQwi2hB');
+    expect(asked[0]!.init).toMatchObject({ method: 'HEAD', redirect: 'manual' });
+  });
+
+  it('asks nothing for a link that is not a t.co short link, and refuses odd answers', async () => {
+    let calls = 0;
+    const answer = (status: number, location?: string) =>
+      (async () => {
+        calls += 1;
+        return new Response(null, { status, headers: location ? { location } : {} });
+      }) as unknown as typeof fetch;
+    expect(await resolveXShortLink('https://evil.example/t.co/abc', { fetchImpl: answer(301, 'https://x.example/') })).toBeUndefined();
+    expect(await resolveXShortLink('https://t.co/abc/def', { fetchImpl: answer(301, 'https://x.example/') })).toBeUndefined();
+    expect(calls).toBe(0);
+    expect(await resolveXShortLink('https://t.co/X3ZZQwi2hB', { fetchImpl: answer(200) })).toBeUndefined();
+    expect(await resolveXShortLink('https://t.co/X3ZZQwi2hB', { fetchImpl: answer(301, 'javascript:alert(1)') })).toBeUndefined();
+    expect(await resolveXShortLink('https://t.co/X3ZZQwi2hB', { fetchImpl: answer(301, 'https://t.co/loop1') })).toBeUndefined();
+    expect(xShortLinkOf('http://t.co/X3ZZQwi2hB')).toBe('https://t.co/X3ZZQwi2hB');
   });
 });

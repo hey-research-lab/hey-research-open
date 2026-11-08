@@ -57,6 +57,12 @@ export type XAccountReading =
       verifiedType?: string;
       /** The links on the profile: the bio's and the profile website's expanded URLs, http(s) only. */
       profileUrls: string[];
+      /**
+       * X's own short links (`https://t.co/…`) the answer gave with no expanded URL beside them (2026-11-08): the profile
+       * website of some accounts reaches HEY only as `data.url` = a t.co link, its entities empty (Toll's t0ll.xyz).
+       * Never a destination by themselves; the sweep follows each one redirect (`resolveXShortLink`) to learn it.
+       */
+      profileShortLinks?: string[];
       /** The account's own profile picture at 400×400 (`xProfileImageUrl`); absent for X's default picture or none. */
       profileImageUrl?: string;
     }
@@ -167,6 +173,43 @@ export function boundedText(value: string | null | undefined, max: number): stri
   return clean.length > max ? `${clean.slice(0, max - 1).join('')}…` : clean.join('');
 }
 
+/** X's own short link (`https://t.co/<code>`), normalised, or undefined. */
+export function xShortLinkOf(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return undefined;
+    if (parsed.hostname.toLowerCase() !== 't.co' || !/^\/[A-Za-z0-9]{4,20}$/.test(parsed.pathname) || parsed.search || parsed.username || parsed.password) return undefined;
+    return `https://t.co${parsed.pathname}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Where one X short link leads, read from its redirect and never followed (2026-11-08). Only `https://t.co/<code>` is
+ * ever asked, with HEAD and `redirect: 'manual'`, so HEY connects to X's link service alone and never to the
+ * destination; the answer is the `Location` of a 301/302/307/308 when that is an http(s) URL, else undefined. A failed
+ * or odd answer is undefined, never an error: the profile then reads as it did before, with no site link.
+ */
+export async function resolveXShortLink(
+  url: string,
+  options: { fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+): Promise<string | undefined> {
+  const short = xShortLinkOf(url);
+  if (!short) return undefined;
+  const fetchImpl = options.fetchImpl ?? fetch;
+  try {
+    const response = await fetchImpl(short, { method: 'HEAD', redirect: 'manual', signal: AbortSignal.timeout(options.timeoutMs ?? 8_000) });
+    if (![301, 302, 307, 308].includes(response.status)) return undefined;
+    const location = response.headers.get('location');
+    const target = cleanUrl(location);
+    return target && xShortLinkOf(target) === undefined ? target : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** An http(s) URL of sane length, or undefined; X's own short links are not a destination. */
 function cleanUrl(value: string | null | undefined): string | undefined {
   if (!value) return undefined;
@@ -262,6 +305,8 @@ function readingOfUser(data: z.infer<typeof userData>): XAccountReading | { erro
   const createdAt = parseDate(data.createdAt);
   const verifiedType = boundedText(data.verifiedType, 40);
   const profileImageUrl = xProfileImageUrl(data.profilePicture);
+  // A t.co link with nothing expanded beside it: kept apart, so the sweep can learn where it leads (2026-11-08).
+  const shortLinks = expanded.some((url) => cleanUrl(url)) ? [] : [data.url].map(xShortLinkOf).filter((url): url is string => url !== undefined);
   return {
     kind: 'ACTIVE',
     userId: idOf(data.id),
@@ -271,6 +316,7 @@ function readingOfUser(data: z.infer<typeof userData>): XAccountReading | { erro
     ...(typeof data.isBlueVerified === 'boolean' ? { isBlueVerified: data.isBlueVerified } : {}),
     ...(verifiedType ? { verifiedType } : {}),
     profileUrls: uniqueUrls([...expanded, data.url], MAX_PROFILE_URLS),
+    ...(shortLinks.length > 0 ? { profileShortLinks: shortLinks } : {}),
     ...(profileImageUrl ? { profileImageUrl } : {}),
   };
 }

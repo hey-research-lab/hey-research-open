@@ -6,6 +6,16 @@ All notable changes to `@hey-research-lab/mcp` are recorded here. The format fol
 
 ## Unreleased
 
+## 0.3.4 — 2026-11-08
+
+### Fixed (2026-11-08)
+
+- The agent tools (`research_project`, `builder_status`, `unknowns`) accept `status: "ambiguous"` in their output schema.
+  Since 2026-11-08 the API answers a `q` that several published projects match with 200, `status: "ambiguous"` and the
+  candidates; 0.3.3's schema listed only `ok`, `not_found`, `moved`, `invalid_request` and `unavailable`, so a client
+  validating the output saw an error instead of the candidates. Bundles SDK 0.3.4 (`{ slug }` subject queries,
+  `ships: null` with `shipsNotMeasured`, `events7dDays`).
+
 ## 0.3.3 — 2026-11-05
 
 ### Changed (2026-11-05)

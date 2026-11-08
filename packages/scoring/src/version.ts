@@ -448,7 +448,16 @@
  * a frozen $213.66 made a market "too thin" that the classifier judged on
  * another reading, and a frozen $5,000 passed as a measured, traded market.
  */
-export const SCORING_VERSION = 'hbm-v32' as const;
+/*
+ * hbm-v33 (2026-11-08, founder approval "ok tambah tie-break tu"): no weight, threshold or formula changes. When two
+ * readings of a token's tracked high are exactly equal — the same close in the candle history, or the same price and
+ * valuation among snapshots — the high is dated by the LAST of them (`day desc`, `observed_at desc`). Under hbm-v32 the
+ * tie was undefined: the full-cohort statement and a smaller batch picked different dates for the same 97 projects on
+ * 2026-11-08, and the date feeds Still Building's drawdown age and its ships-since-decline count. The last date is the
+ * conservative one: a decline counted from later can only make the drawdown younger and the ships after it fewer, so it
+ * withholds, never awards.
+ */
+export const SCORING_VERSION = 'hbm-v33' as const;
 /** Every version a stored snapshot may carry; each has a note above. */
-export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32'] as const;
+export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33'] as const;
 export type ScoringVersion = (typeof SCORING_VERSIONS)[number];

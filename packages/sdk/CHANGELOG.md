@@ -6,6 +6,8 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+## 0.3.4 — 2026-11-08
+
 ### Changed (2026-11-08)
 
 - `HeyAgentResponse.status` may be `ambiguous`: a `q` that several published projects match now answers 200 with

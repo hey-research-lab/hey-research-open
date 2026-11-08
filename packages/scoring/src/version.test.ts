@@ -90,7 +90,7 @@ describe('scoring version', () => {
      * digest is the bug this test exists to catch.
      */
     expect({ version: SCORING_VERSION, rules: RULES_DIGEST }).toEqual({
-      version: 'hbm-v32',
+      version: 'hbm-v33',
       rules: '7629d23766104ade',
     });
   });
