@@ -265,7 +265,7 @@ the site.
   two measures, not one figure moving.
 - **Says what a week of commits changed, at the API's strength** (2026-09-27): in
   `get_project_timeline` a code week carries `DERIVED what changed (<classifierVersion>, today
-  commit-substance-v4): changed code | documentation or maintenance only | substance not fully read`
+  commit-substance-v5): changed code | documentation or maintenance only | substance not fully read`
   and the API's own sentence; in `get_changes` a `build.code_activity` event carries the same verdict and the
   FACT count of commits read. A documentation-only week says it is not counted as building; an
   unread week says it is unread, never that it is documentation. No commit message or author is

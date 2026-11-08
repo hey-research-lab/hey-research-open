@@ -13,6 +13,24 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
+## 2026-11-09 — Two new reasons HEY holds an official X link
+
+### Added
+
+- `officialX.linkHeld` (every project card and profile, the SDK's `HeyOfficialX`) gains two values, additive:
+  `copied_pair`, when HEY holds an account copied onto the page with its listing or launch that reads as another
+  party's (a named brand's account or site, a famous host, or a Business- or Government-verified account created at
+  least a year before a launchpad token HEY has not verified); and `account_of_another_page`, when another published
+  page shows the same active account and stands behind it (its token is verified, or the account links that page's
+  site back) while this page has neither. Pages print a dated line in place of the link. Do not link or tag either.
+  An account held this way no longer counts toward `has=x` or a card's completeness, as for the other holds.
+
+### Changed
+
+- Truth repair. A project's official X is no longer replaced by the one X account its website links unless that
+  account's own profile links the website back. A listing's account that a site read held as context is restored when
+  HEY reads it active and linking the project's site.
+
 ## 2026-11-08 — An ambiguous agent query is an answer, slug on the agent contract, unread ships are null, and which days events7d adds up
 
 ### Changed

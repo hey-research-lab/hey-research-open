@@ -1,5 +1,6 @@
 import type { HeyExplainedFact } from '@hey-research-lab/sdk';
 import { ACTIVITY_STATUS_WORDS, type ActivityStatusWordsKey } from '@hey/scoring/activity-words';
+import { INTEGRATION_RECORD_SENTENCE } from '@hey/scoring/research-level-words';
 
 import { ageBucket, familyFreshness, type RefreshTier } from '../freshness';
 import type { AgentClaim, AgentEvidenceRef, AgentResponseOf, AgentUnknown } from '../schema';
@@ -36,6 +37,12 @@ export type BuilderStatusInput = {
   builderSources?: { observedAt: string | null; staleAfterHours: number; tier?: RefreshTier };
   /** The tracked token's verification (2026-09-30): a MISMATCH says the building does not apply to that token. */
   tokenVerification?: { status: 'VERIFIED' | 'UNVERIFIED' | 'MISMATCH'; reason?: string } | null;
+  /**
+   * The gate holds the page as an integration record (R3, 2026-10-28; 2026-11-09 additive): the answer says the
+   * page's sentence, so a status read off a repository with no Robinhood Chain evidence is never taken for a
+   * Robinhood Chain builder's.
+   */
+  integrationRecord?: boolean;
   isEvidenceId?: (id: string) => boolean;
 };
 
@@ -124,10 +131,12 @@ export function composeBuilderStatus(ctx: AgentComposeContext, input: BuilderSta
 
   // The tracked token's standing, when the project's own site names another contract (2026-09-30): the status is the project's, never that token's.
   const tokenClause = input.tokenVerification?.status === 'MISMATCH' ? ' The token HEY tracks for it is not the one its own site names, so this building does not apply to that token.' : '';
+  // The page's own sentence for an integration record (2026-11-09 data-trust audit, lane E issue 1).
+  const integrationClause = input.integrationRecord === true ? ` ${INTEGRATION_RECORD_SENTENCE}` : '';
   const answer =
     activity.state === 'UNKNOWN'
-      ? derivedText(`${project.slug}: HEY does not measure its building. ${activity.reason} This is a gap in HEY's sources, not a finding about the team.${tokenClause}`)
-      : derivedText(`${project.slug}: ${status} under HEY's activity rule (${version}). ${activity.reason}${tokenClause} This is a record of development, not a view on the token.`);
+      ? derivedText(`${project.slug}: HEY does not measure its building. ${activity.reason} This is a gap in HEY's sources, not a finding about the team.${integrationClause}${tokenClause}`)
+      : derivedText(`${project.slug}: ${status} under HEY's activity rule (${version}). ${activity.reason}${integrationClause}${tokenClause} This is a record of development, not a view on the token.`);
 
   return envelope(ctx, {
     capability: 'builder_status',

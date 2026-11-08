@@ -313,7 +313,8 @@ export type HeyEvidenceReceipt =
       countedAs?: 'context' | 'withdrawn';
       /**
        * With `context_only`: which rule holds a follow-up deployment as context (2026-09-27) —
-       * `held_by_another_project`, `shared_deployer`, `serial_launcher_deployer` (the account
+       * `held_by_another_project`, `deployer_not_held` (the deployer is not one HEY records for this
+       * project, 2026-11-09), `shared_deployer`, `serial_launcher_deployer` (the account
        * launches contracts for many projects), `launch_window` (sent within 24 h of the token's own
        * creation: launch provenance, 2026-10-09), `token_mismatch` or `deployer_not_tied`.
        */
@@ -537,6 +538,12 @@ export type HeyProjectSnapshot = {
     projectKind: string;
     researchLevel: string;
     catalogStatus: string;
+    /** Whether HEY holds Robinhood Chain evidence for the project (2026-11-09, additive). */
+    chainEvidence?: boolean;
+    /** An integration record: no Robinhood Chain evidence, ships recorded, never a Verified Builder (2026-11-09, additive). */
+    integrationRecord?: boolean;
+    /** The page's own sentence for it, present only when `integrationRecord` is true. */
+    integrationRecordSentence?: string;
     primaryNarrative?: { slug: string; name: string };
     token?: { chainId: number; contractAddress: string };
     /** `true` when this is `$HEY`, HEY's own token, researched by the same rules (2026-09-30, additive); absent otherwise. */

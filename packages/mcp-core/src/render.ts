@@ -294,6 +294,9 @@ export function officialXWords(officialX: NonNullable<HeyProject['officialX']>):
   if (officialX.linkHeld === 'links_other_project') return `X account @${officialX.handle} links another project's site, not this one's; link held${checked}`;
   // A moderator held the account as not the project's (2026-10-19).
   if (officialX.linkHeld === 'not_the_project') return `X account @${officialX.handle} is not this project's account; link held by a moderator`;
+  // HEY's own holds (2026-11-09): a borrowed account copied onto the page, or another HEY page's account.
+  if (officialX.linkHeld === 'copied_pair') return `X account @${officialX.handle} reads as another party's account, not this project's; link held${checked}`;
+  if (officialX.linkHeld === 'account_of_another_page') return `X account @${officialX.handle} is another HEY page's account, not this one's; link held${checked}`;
   if (xStatus === 'SUSPENDED' || xStatus === 'UNAVAILABLE' || xStatus === 'NOT_FOUND') return `X account @${officialX.handle} ${xStatus === 'NOT_FOUND' ? 'not found' : xStatus.toLowerCase()}${checked}`;
   // The account's profile links the project's own site (founder ruling 1, 2026-10-18): trust in the account, nothing more.
   if (officialX.corroboration === 'mutual_site_link') return `X account @${officialX.handle} links back to the project's site${checked}`;
@@ -325,6 +328,9 @@ export function projectLine(project: HeyProject, now?: Date): string {
           ? 'UNKNOWN activity: too few public sources to say either way'
           : `DERIVED ${project.activityStatus.toLowerCase()}`,
   );
+  // Not a Robinhood Chain builder, said beside the status it would otherwise be read as (2026-11-09 data-trust audit, lane E issue 1).
+  if (project.integrationRecord === true) parts.push('integration record: no Robinhood Chain evidence, not a Verified Builder');
+  else if (project.chainEvidence === false) parts.push('no Robinhood Chain evidence held');
   if (project.stillBuilding) {
     const evidence = stillBuildingEvidence(project);
     parts.push(evidence ? `STILL BUILDING (${evidence})` : 'STILL BUILDING');
@@ -420,6 +426,23 @@ export function renderProjects(page: HeyPage<HeyProject>, now?: Date): string {
   const lines = page.items.map((project) => projectLine(project, now));
   const more = page.nextOffset === undefined ? undefined : `For more, call find_projects again with the same arguments and offset=${page.nextOffset}.`;
   const shown = `${shownOf(page.items.length, page.total, more)} (published projects)`;
+  /*
+   * How many of the rows shown hold no Robinhood Chain evidence (2026-11-09 data-trust audit, lane E issue 1): a
+   * status filter over every published project counts repositories that only list the chain in a config beside the
+   * chain's builders, so "Showing 6 of 283" read as twice the chain's shipping projects. Only rows that carry the
+   * field are counted; an older API that does not send it leaves the line out.
+   */
+  const withField = page.items.filter((project) => typeof project.chainEvidence === 'boolean');
+  const offChain = withField.filter((project) => project.chainEvidence === false).length;
+  const integrationRecords = page.items.filter((project) => project.integrationRecord === true).length;
+  const chainEvidenceLine =
+    withField.length === 0
+      ? ''
+      : offChain === 0
+        ? `\nEvery project shown holds Robinhood Chain evidence.`
+        : `\n${offChain} of the ${page.items.length} shown hold no Robinhood Chain evidence${integrationRecords > 0 ? ` (${integrationRecords} of them integration records: ships recorded, not Verified Builders)` : ''}; HEY never counts them among Robinhood Chain builders. ${
+            page.catalogue?.listScope === 'robinhood_chain_verified_builders' ? '' : 'surface=shipping-now (or another builder surface) lists Robinhood Chain builders only.'
+          }`.trimEnd();
   const stillBuilding = page.items.some((project) => project.stillBuilding) ? `\n\n${STILL_BUILDING_MEANING}` : '';
   // A market order over rows that mostly lack the figure must say so (Market Lens, 2026-09-12).
   const coverage = page.catalogue?.marketCoverage;
@@ -434,7 +457,7 @@ export function renderProjects(page: HeyPage<HeyProject>, now?: Date): string {
           : `\nOf ${coverage.base} matching projects: ${coverage.activeMarket} traded in the last day, ${coverage.liveMarket} whose market is not gone, ${coverage.verifiedToken} whose project names the token's contract, ${coverage.marketCap} with a valuation reading.`
     : '';
 
-  return `${shown}${denominator}\n${queryEcho(page.query)}\nActivity is DERIVED from recorded ships (UNKNOWN where HEY holds no builder source or has not researched the record); market figures are FACT readings with their provider, context only.\n\n${lines.join('\n')}${stillBuilding}\n\n${page.disclaimer}`;
+  return `${shown}${chainEvidenceLine}${denominator}\n${queryEcho(page.query)}\nActivity is DERIVED from recorded ships (UNKNOWN where HEY holds no builder source or has not researched the record); market figures are FACT readings with their provider, context only.\n\n${lines.join('\n')}${stillBuilding}\n\n${page.disclaimer}`;
 }
 
 /**

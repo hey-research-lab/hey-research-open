@@ -711,7 +711,7 @@ changed meaning.
 ```json
 "codeSubstance": {
   "verdict": "SUBSTANTIVE",
-  "classifierVersion": "commit-substance-v4",
+  "classifierVersion": "commit-substance-v5",
   "countsAsBuilding": true,
   "commitsListed": 14, "commitsRead": 3, "changedCode": 1,
   "documentationOrMaintenance": 2, "substanceUnknown": 0, "notRead": 11,
@@ -727,7 +727,7 @@ changed meaning.
 
 - The counts are **FACT**s about the human, non-merge commits HEY listed and read (`files` counts
   changed files by class over the commits read). `verdict` is **DERIVED** by `classifierVersion`;
-  the current rules are `commit-substance-v4` (scoring `hbm-v29`, 2026-10-15), and every week says
+  the current rules are `commit-substance-v5` (scoring `hbm-v34`, 2026-11-09), and every week says
   which rules read it.
 - `SUBSTANTIVE`: at least one commit changed source code, tests or configuration beyond whitespace.
   CI configuration alone (`.github/workflows/…`) is maintenance, not building (`ci_only`, since
@@ -750,7 +750,9 @@ changed meaning.
     automation", `sampled: true`) when the sample is read and too few could, `UNKNOWN` until then;
   - `automated_only` — every commit HEY holds for the week came from a bot account or an automated
     stream (a templated subject repeated on a clock, or one carrying its own changing timestamp or
-    figures), and HEY holds at least as many as the week's summary counted.
+    figures, or — since `commit-substance-v5` / `hbm-v34`, 2026-11-09 — one templated subject with a
+    changing number or date stamp committed 50 times in an ISO week or 4 times a day on 3 days of one
+    week, whatever its clock), and HEY holds at least as many as the week's summary counted.
   Bot and automated-stream commits are never counted toward a week; `automatedCommits` is how many
   HEY held and set aside (commit-substance-v3, additive, 2026-10-02).
 - A `LOW_INFORMATION` week is not listed by `/api/ships` or a project's `ships[]` (they list
@@ -784,7 +786,7 @@ account found:
 | `status` | `ACTIVE` \| `SUSPENDED` \| `UNAVAILABLE` \| `NOT_FOUND` \| `null` | The last read's state. `null` when HEY holds no read of this handle — never a default. |
 | `statusReason` | `not_read` \| `read_failed` | Sent only beside `status: null`. |
 | `checkedAt` | ISO 8601 \| `null` | When that read was made; `null` when none answered. |
-| `linkHeld` | `handle_reassigned` \| `links_other_project` \| `not_the_project` \| `null` | Additive (founder ruling, 2026-10-18). `handle_reassigned`: the handle now answers for a different X account than the one HEY first read (by X's stable user id). HEY holds the link — its pages print "The handle @x now belongs to a different X account than the one HEY first read — checked 2026-10-18; a moderator confirms before it is linked again." — until a moderator confirms the new account. `links_other_project` (additive, 2026-10-18): the account's own profile links another published project's site and not this project's — the handle is that project's account; pages print "@x links to other.example, another project's site, not this one's — checked 2026-10-18." `not_the_project` (additive, 2026-10-19): a moderator held the account as not the project's. Do not link any of them. `null` otherwise. |
+| `linkHeld` | `handle_reassigned` \| `links_other_project` \| `not_the_project` \| `copied_pair` \| `account_of_another_page` \| `null` | Additive (founder ruling, 2026-10-18). `handle_reassigned`: the handle now answers for a different X account than the one HEY first read (by X's stable user id). HEY holds the link — its pages print "The handle @x now belongs to a different X account than the one HEY first read — checked 2026-10-18; a moderator confirms before it is linked again." — until a moderator confirms the new account. `links_other_project` (additive, 2026-10-18): the account's own profile links another published project's site and not this project's — the handle is that project's account; pages print "@x links to other.example, another project's site, not this one's — checked 2026-10-18." `not_the_project` (additive, 2026-10-19): a moderator held the account as not the project's. `copied_pair` (additive, 2026-11-09): HEY holds an account copied onto the page with its listing or launch that reads as another party's — a named brand's, a famous host's, or a Business- or Government-verified account a year older than a launchpad token HEY has not verified; pages print "@x reads as another party's account, not this project's — checked 2026-11-09." `account_of_another_page` (additive, 2026-11-09): another published page shows the same active account and stands behind it (a verified token or the account linking its site back) while this page has neither; pages print "@x is another HEY page's account, not this one's — checked 2026-11-09." Do not link any of them. `null` otherwise. |
 | `corroboration` | `mutual_site_link` \| `null` | Additive (founder ruling, 2026-10-18). The account's own profile links the project's own site (`websiteUrl`), the site that links the account: a mutual link, which corroborates the X account itself as the project's own. `null` when it does not hold or HEY cannot say (no site, profile not read, the site changed since the read). |
 | `corroborationCheckedAt` | ISO 8601 \| `null` | The read that found the mutual link; `null` with `corroboration: null`. |
 | `foundByHey` | boolean | Additive (2026-10-19): `true` when HEY found the account by the project's name and no person has verified it yet — never a mutual link, no posts shown, never tagged. |
@@ -2108,6 +2110,13 @@ Added 2026-09-25, all optional and absent when HEY holds nothing:
   of the liquidity the market reading reports, so these pools and this depth describe another pool
   than the reading's; absent when the index holds it or a figure is unknown. A Uniswap v4 pool id
   in the reading no longer decides it: the index has held v4 pools since 2026-09-26.
+  Since 2026-11-09 (additive) `figuresWithheld` says why a figure is not given, never as 0:
+  `v4_pools_not_indexed` — the day rests on a row keyed by the Uniswap v4 PoolManager, from
+  before the index keyed each v4 pool by its PoolId, so `pools`, `liquidityUsd` and
+  `depthOnePctUsd` are absent; `index_misses_reading_pool` — as `indexMissesReadingPool`, and
+  `depthOnePctUsd` is absent; `depth_below_measurable_share` — the depth is under 0.01% of the
+  reading's liquidity and is absent. One-sided pools (the side that is not the token under 1% of
+  the pool) are left out of `liquidityUsd` and `depthOnePctUsd` since the same day.
 - `distribution` — a summary of HEY's snapshot of the token's largest balances: `day`,
   `observedAt`, `holdersTotal` (distinct addresses holding a balance — addresses, never people),
   `top10SharePct`, `top50SharePct` (burned and pooled supply left out), `burnedSharePct`,

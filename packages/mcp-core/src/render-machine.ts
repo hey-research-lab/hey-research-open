@@ -29,6 +29,7 @@ import type {
 import { evidenceBackingWords, looksLikeEvidenceId, quoteExternal, stillBuildingStateOf, summaryIsSourceText, tokenNotTheProjectsWords, valuationWithheldClause } from '@hey/agent-provider-core';
 import { DISCOVERY_GAP_WITHHELD_WORDS, STILL_BUILDING_WITHHELD_WORDS as SCORING_STILL_BUILDING_WITHHELD_WORDS } from '@hey/scoring/withheld-words';
 import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
+import { INTEGRATION_RECORD_SENTENCE } from '@hey/scoring/research-level-words';
 
 import { activityTag, atPrecision, composedWords, derivedWords, liquidityWords, money, officialXWords, quotedName, recordTag, shownOf, STILL_BUILDING_MEANING, stillBuildingEvidence, summaryWords, TAG_LEGEND, tokenMarketWords, valuationWord } from './render';
 
@@ -200,6 +201,9 @@ export function renderSnapshot(s: HeyProjectSnapshot, now?: Date): string {
 
   lines.push('## Identity');
   lines.push(`- DERIVED research level: ${pretty(i.researchLevel)}; catalogue: ${pretty(i.catalogStatus)}; kind: ${pretty(i.projectKind)}${i.primaryNarrative ? `; narrative: ${quoteExternal(i.primaryNarrative.name, 'narrative')}` : ''}`);
+  // An integration record in the page's own sentence (2026-11-09 data-trust audit, lane E issue 1); a project with no chain evidence says so.
+  if (i.integrationRecord === true) lines.push(`- DERIVED ${INTEGRATION_RECORD_SENTENCE}`);
+  else if (i.chainEvidence === false) lines.push('- DERIVED HEY holds no Robinhood Chain evidence for this project (no token, contract or registry listing on the chain): it is not counted among Robinhood Chain builders.');
   lines.push(`- FACT first recorded by HEY ${i.firstRecordedByHeyAt.slice(0, 10)} (HEY's knowledge time)${i.externalListedAt ? `; listed by ${i.externalListedSource ?? 'an outside registry'} ${i.externalListedAt.slice(0, 10)} (their date, not HEY's)` : ''}`);
   lines.push(i.token ? `- FACT token: chain ${i.token.chainId}, contract ${i.token.contractAddress}` : '- FACT no token recorded — this is a project page, not a token.');
   // The official X account, in the project line's own words (2026-10-22 audit INV-7): a held link is a rule HEY applied.

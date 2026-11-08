@@ -704,6 +704,63 @@ function resolveUrl(href: string, baseUrl?: string): string | undefined {
   }
 }
 
+/** Script files a page names that extraction keeps, before any host rule: a bound on a hostile page. */
+export const MAX_SCRIPT_SOURCES = 64;
+
+/**
+ * The script files a page loads, in document order (2026-11-09, data-trust audit lane C P1-1): every
+ * `<script src>` and every `<link rel="modulepreload" href>`, resolved against `baseUrl`, deduplicated, at
+ * most {@link MAX_SCRIPT_SOURCES}. A `<script>` whose `type` is a data block (`application/json`,
+ * `application/ld+json`, `text/template` …) is not a script. One left-to-right pass like `scanTags`: the next
+ * `>` is found once and reused, and a tag over `MAX_TAG_CHARS` is skipped, so a page of unclosed tags costs
+ * one search. Which of these HEY reads — same registrable host only — is the caller's rule
+ * (`adapters/site-script.ts`).
+ */
+export function extractScriptSources(html: string, baseUrl: string): string[] {
+  const page = html.length > MAX_HTML_SCAN_CHARS ? html.slice(0, MAX_HTML_SCAN_CHARS) : html;
+  const lower = page.toLowerCase();
+  const found: string[] = [];
+  const seen = new Set<string>();
+  let close = -1;
+  let open = lower.indexOf('<');
+  while (open !== -1 && found.length < MAX_SCRIPT_SOURCES) {
+    const name = lower.startsWith('script', open + 1) ? 'script' : lower.startsWith('link', open + 1) ? 'link' : undefined;
+    const boundary = name ? lower.charCodeAt(open + 1 + name.length) : NaN;
+    if (!name || !(isSpace(boundary) || boundary === 47 || boundary === 62)) {
+      open = lower.indexOf('<', open + 1);
+      continue;
+    }
+    if (close < open) close = lower.indexOf('>', open);
+    if (close === -1) break;
+    if (close - open > MAX_TAG_CHARS) {
+      open = lower.indexOf('<', open + 1);
+      continue;
+    }
+    const attributes = parseAttributes(page.slice(open, close + 1));
+    let href: string | undefined;
+    if (name === 'script') {
+      const type = attr(attributes, 'type')?.toLowerCase() ?? '';
+      const isScript = type === '' || type === 'module' || /^(?:text|application)\/(?:x-)?(?:java|ecma)script$/.test(type);
+      if (isScript) href = attr(attributes, 'src');
+    } else if ((attr(attributes, 'rel')?.toLowerCase().split(/\s+/) ?? []).includes('modulepreload')) {
+      href = attr(attributes, 'href');
+    }
+    const resolved = href ? resolveUrl(href, baseUrl) : undefined;
+    if (resolved && /^https?:/i.test(resolved)) {
+      const key = resolved.replace(/#.*$/, '');
+      if (!seen.has(key)) {
+        seen.add(key);
+        found.push(key);
+      }
+    }
+    open = lower.indexOf('<', close + 1);
+  }
+  return found;
+}
+
+/** The whole 2 MB the website adapter accepts: a script tag at the foot of a long page is still the page's. */
+const MAX_HTML_SCAN_CHARS = 2 * 1024 * 1024;
+
 /** Conventional locations to probe for update feeds (PRD V4 section 27). */
 export const FEED_DISCOVERY_PATHS = [
   '/rss.xml',

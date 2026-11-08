@@ -96,3 +96,12 @@ export function verifiedBuilderScopeWords(input: { researchLevel: string | null 
   if (input.researchLevel !== 'VERIFIED_BUILDER') return undefined;
   return input.isClaimed ? VERIFIED_BUILDER_SCOPE_WORDS.claimed : VERIFIED_BUILDER_SCOPE_WORDS.unclaimed;
 }
+
+/**
+ * The integration record's one sentence (2026-10-15, founder ruling "integrators vs builders": yes; reworded by R3,
+ * 2026-10-28, to what every record shares). One string for the project page (`IntegrationRecordNote`), the API's
+ * agent answers and the MCP text (2026-11-09 data-trust audit, lane E issue 1): a machine reader met "shipping
+ * consistently" where the page said the project is not a Verified Builder. The gate's stored reason decides it.
+ */
+export const INTEGRATION_RECORD_SENTENCE =
+  'Integration record: HEY holds no Robinhood Chain evidence for this project (no token, contract or registry listing on the chain), so its ships are recorded here but it is not a Verified Builder.';

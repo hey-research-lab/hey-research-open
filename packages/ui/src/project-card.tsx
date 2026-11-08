@@ -190,7 +190,7 @@ export type ProjectCardData = {
     url: string;
     withheldLine?: string | undefined;
     status?: 'ACTIVE' | 'SUSPENDED' | 'UNAVAILABLE' | 'NOT_FOUND' | null | undefined;
-    linkHeld?: 'handle_reassigned' | 'links_other_project' | 'not_the_project' | undefined;
+    linkHeld?: 'handle_reassigned' | 'links_other_project' | 'not_the_project' | 'copied_pair' | 'account_of_another_page' | undefined;
   };
   websiteUrl?: string;
   /** Kept for callers that still pass the fuller domain shape. */

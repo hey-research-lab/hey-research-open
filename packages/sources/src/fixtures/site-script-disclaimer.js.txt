@@ -1,0 +1,1 @@
+const COPY={footer:"Thanks to the community behind 0x8e62a1b3c4d5e6f7081928374655647382910abc, a community token, not issued or endorsed by Hoodrat. It has no role in the software."};export default COPY;

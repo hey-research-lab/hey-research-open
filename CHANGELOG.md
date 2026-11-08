@@ -4,6 +4,10 @@ What changed, and when, for anyone reading the code or building on the API. Date
 change reached production. Older entries are condensed; the private repository keeps the full
 record.
 
+## 2026-11-09
+
+- **A site's own script can name its token (2026-11-09).** When a project's homepage does not name its contract, HEY reads up to eight of the site's own script files on the same host, by the homepage's rules ("listed among others", "disclaimed"), through the same SSRF guard and budget. A naming found there is `website_mention_context = 'bundle'` and verifies the token as the homepage would (`site_names_contract`); a file HEY cannot read decides nothing.
+
 ## 2026-10-30
 
 - **A list/card toggle for builder lists (2026-10-30).** Explore's Builders view and a narrative page's list stay a list by default; two icon buttons at the end of the order row switch them to the card grid. The choice is kept in the URL (`?view=cards`) and in the reader's browser, the projects keep the list's order in both views, and a valuation on a card still shows only on a market HEY measures. The Token projects view stays cards only.

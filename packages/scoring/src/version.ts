@@ -457,7 +457,16 @@
  * conservative one: a decline counted from later can only make the drawdown younger and the ships after it fewer, so it
  * withholds, never awards.
  */
-export const SCORING_VERSION = 'hbm-v33' as const;
+/*
+ * hbm-v34 (2026-11-09, founder delegation, data-trust audit lane B finding 3): no weight or formula changes. What counts
+ * in a code week moves to commit-substance-v5: one templated subject carrying a changing number or date stamp, at a
+ * stream's rate — 50 commits in one ISO week, or 4 a day on 3 days of one week (`AUTOMATION_RATE`) — is an automated
+ * stream however irregular its clock. Under hbm-v33 a stream needed a regular clock or two changing figures, so 168
+ * "progress-<N>" commits in 66 hours made `sproutagentai-mevhood` a Verified Builder. Commits already stored are
+ * re-judged by `pnpm data:commit-substance --rejudge-streams [--apply]`; HEY's own "Open-source sync" weeks are judged
+ * by the same rule. It only withholds; fly-ai is held until 13 Nov 2026 19:38 UTC (`CLASSIFICATION_RULE_HOLDS`).
+ */
+export const SCORING_VERSION = 'hbm-v34' as const;
 /** Every version a stored snapshot may carry; each has a note above. */
-export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33'] as const;
+export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33', 'hbm-v34'] as const;
 export type ScoringVersion = (typeof SCORING_VERSIONS)[number];

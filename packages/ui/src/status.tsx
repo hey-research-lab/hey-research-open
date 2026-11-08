@@ -357,10 +357,15 @@ export function asTokenMarketStatus(value: string | null | undefined): StoredTok
 }
 
 const TOKEN_MARKET_PRESENTATION: Record<TokenMarketStatusValue, { label: string; help: string; tone: MarketTone }> = {
-  ACTIVE_MARKET: { label: TOKEN_MARKET_LABELS.ACTIVE_MARKET, help: 'The tracked token has liquidity and traded in the last 24 hours.', tone: 'neutral' },
+  /*
+   * Which volume decided it, in words (2026-11-09 data-trust audit, lane E issue 3): the classifier takes the larger of
+   * the reading's own 24h volume and HEY's record of on-chain trades from within a day of that reading, so "traded in
+   * the last 24 hours" sat beside "24h volume $0" on 53 tokens whose reading carried none.
+   */
+  ACTIVE_MARKET: { label: TOKEN_MARKET_LABELS.ACTIVE_MARKET, help: 'The tracked token has liquidity, and trading volume was read for it within a day of its newest market reading — in that reading, or in HEY’s record of on-chain trades.', tone: 'neutral' },
   LOW_LIQUIDITY: { label: TOKEN_MARKET_LABELS.LOW_LIQUIDITY, help: 'The tracked token has a small pool. Trades move the price a lot.', tone: 'neutral' },
   NO_LIQUIDITY: { label: TOKEN_MARKET_LABELS.NO_LIQUIDITY, help: 'HEY found no meaningful liquidity for the tracked token.', tone: 'neutral' },
-  TRADING_INACTIVE: { label: TOKEN_MARKET_LABELS.TRADING_INACTIVE, help: 'The tracked token has liquidity but recorded no trades in the last 24 hours.', tone: 'neutral' },
+  TRADING_INACTIVE: { label: TOKEN_MARKET_LABELS.TRADING_INACTIVE, help: 'The tracked token has liquidity, but no trading volume was read for it within a day of its newest market reading.', tone: 'neutral' },
   LIQUIDITY_REMOVED: { label: TOKEN_MARKET_LABELS.LIQUIDITY_REMOVED, help: 'HEY recorded meaningful liquidity earlier; it is no longer there. A fact HEY observed, not a verdict on why.', tone: 'neutral' },
   MARKET_ABANDONED: { label: TOKEN_MARKET_LABELS.MARKET_ABANDONED, help: 'HEY recorded a market earlier and has not been able to read one for weeks.', tone: 'muted' },
   INSUFFICIENT_DATA: { label: TOKEN_MARKET_LABELS.INSUFFICIENT_DATA, help: 'HEY has not read enough market data to describe this token.', tone: 'muted' },

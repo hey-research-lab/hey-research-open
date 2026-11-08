@@ -24,7 +24,8 @@ const daysAgo = (days: number) => hoursAgo(days * 24);
 
 describe('token-market-2026-10-16', () => {
   it('is the rules version', () => {
-    expect(TOKEN_MARKET_RULES_VERSION).toBe('token-market-2026-10-16');
+    // Or a later version: token-market-2026-11-09 keeps every rule this file holds.
+    expect(TOKEN_MARKET_RULES_VERSION >= 'token-market-2026-10-16').toBe(true);
     expect(TOKEN_MARKET.activeLiquidityMaxDays).toBe(7);
     expect(TOKEN_MARKET.repeatedVolumeMaxHours).toBe(36);
   });

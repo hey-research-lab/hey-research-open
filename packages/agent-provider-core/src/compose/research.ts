@@ -1,5 +1,6 @@
 import type { HeyProjectSnapshot, HeySummaryLine } from '@hey-research-lab/sdk';
 import type { DiscoveryGapWithheldReason, StillBuildingWithheldReason } from '@hey/scoring/withheld-words';
+import { INTEGRATION_RECORD_SENTENCE } from '@hey/scoring/research-level-words';
 
 import { ageBucket, familyFreshness, SNAPSHOT_SOURCE_FAMILY, type AgentFreshnessEntry, type RefreshTier } from '../freshness';
 import type { AgentChange, AgentClaim, AgentFreshness, AgentResponseOf, AgentSourceType } from '../schema';
@@ -476,7 +477,13 @@ export function composeResearch(ctx: AgentComposeContext, input: ResearchInput):
   const machineLead = `${slug}: activity status ${status}${shipWords}; ${eventWords}.`;
   // HEY's flagship answer in the answer itself when it holds (PA-6): building ahead of market attention, by HEY's rule.
   const radarWords = radar?.state === 'HELD' ? ` HEY holds it Under the Radar: building ahead of market attention${gapWords}.` : '';
-  const answer = derivedText(`${plainLead ? `${plainLead} ` : ''}${machineLead}${radarWords}${tokenWords} ${unknownWords}`);
+  /*
+   * An integration record says so in the answer itself (2026-11-09 data-trust audit, lane E issue 1): the page prints
+   * the sentence under the name, and an agent read "shipping consistently" with nothing to say the project holds no
+   * Robinhood Chain evidence and is not a Verified Builder. The page's own sentence, never a second wording.
+   */
+  const integrationWords = snapshot.identity.integrationRecord === true ? ` ${INTEGRATION_RECORD_SENTENCE}` : '';
+  const answer = derivedText(`${plainLead ? `${plainLead} ` : ''}${machineLead}${integrationWords}${radarWords}${tokenWords} ${unknownWords}`);
 
   const u = snapshot.usage;
   return envelope(ctx, {
@@ -498,6 +505,9 @@ export function composeResearch(ctx: AgentComposeContext, input: ResearchInput):
         projectKind: snapshot.identity.projectKind,
         researchLevel: snapshot.identity.researchLevel,
         catalogStatus: snapshot.identity.catalogStatus,
+        // Additive (2026-11-09): the snapshot's own facts, absent where the snapshot does not carry them.
+        ...(snapshot.identity.chainEvidence === undefined ? {} : { chainEvidence: snapshot.identity.chainEvidence }),
+        ...(snapshot.identity.integrationRecord === undefined ? {} : { integrationRecord: snapshot.identity.integrationRecord }),
         narrative: snapshot.identity.primaryNarrative ? { slug: snapshot.identity.primaryNarrative.slug, name: derivedText(snapshot.identity.primaryNarrative.name, 80) } : null,
         firstRecordedByHeyAt: snapshot.identity.firstRecordedByHeyAt,
         websiteUrl: snapshot.identity.websiteUrl && /^https?:\/\/\S{1,600}$/.test(snapshot.identity.websiteUrl) ? snapshot.identity.websiteUrl : null,

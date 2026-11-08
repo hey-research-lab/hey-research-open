@@ -127,6 +127,10 @@ export type HeyAgentResearchData = {
     projectKind: string;
     researchLevel: string;
     catalogStatus: string;
+    /** Whether HEY holds Robinhood Chain evidence for the project (2026-11-09, additive). */
+    chainEvidence?: boolean;
+    /** An integration record: no Robinhood Chain evidence, ships recorded, never a Verified Builder (2026-11-09, additive). */
+    integrationRecord?: boolean;
     narrative: { slug: string; name: HeyAgentText } | null;
     firstRecordedByHeyAt: string;
     websiteUrl: string | null;

@@ -27,7 +27,7 @@ import { isDependencyBumpPatch } from './dependency-bump';
  * beyond whitespace; LOW_INFORMATION when every file is README, docs,
  * dependency lockfile, generated, asset, whitespace-only or a pure rename.
  */
-export const COMMIT_SUBSTANCE_VERSION = 'commit-substance-v4' as const;
+export const COMMIT_SUBSTANCE_VERSION = 'commit-substance-v5' as const;
 
 /*
  * commit-substance-v2 (2026-09-27, founder ruling: "data tak kira"): a data

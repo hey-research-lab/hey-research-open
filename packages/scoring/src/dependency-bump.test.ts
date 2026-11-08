@@ -23,9 +23,9 @@ const commitOf = (...files: CommitFileInput[]) => classifyCommit({ files, filesT
 
 const LOW = { substance: 'LOW_INFORMATION', reasons: ['dependency_bump'], classifierVersion: COMMIT_SUBSTANCE_VERSION };
 
-describe('commit-substance-v4: version', () => {
-  it('is v4', () => {
-    expect(COMMIT_SUBSTANCE_VERSION).toBe('commit-substance-v4');
+describe('commit-substance version', () => {
+  it('is v5 (v4 added dependency bumps; v5, 2026-11-09, streams by rate)', () => {
+    expect(COMMIT_SUBSTANCE_VERSION).toBe('commit-substance-v5');
   });
 });
 

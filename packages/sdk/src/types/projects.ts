@@ -58,9 +58,12 @@ export type HeyOfficialX = {
    * Additive (2026-10-18): `handle_reassigned` when the handle now answers for a different X account than the one
    * HEY first read; HEY holds the link until a moderator confirms. `links_other_project` (additive, 2026-10-18) when
    * the account's profile links another published project's site and not this one's. `not_the_project` (additive,
-   * 2026-10-19) when a moderator held the account as not the project's. Do not link any of them. Null otherwise.
+   * 2026-10-19) when a moderator held the account as not the project's. `copied_pair` (additive, 2026-11-09) when HEY
+   * holds a borrowed account copied onto the page with its listing or launch; `account_of_another_page` (additive,
+   * 2026-11-09) when another published page shows the same account and stands behind it while this page does not. Do
+   * not link any of them. Null otherwise.
    */
-  linkHeld: 'handle_reassigned' | 'links_other_project' | 'not_the_project' | null;
+  linkHeld: 'handle_reassigned' | 'links_other_project' | 'not_the_project' | 'copied_pair' | 'account_of_another_page' | null;
   /**
    * Additive (2026-10-18): `mutual_site_link` when the account's profile links the project's own site, as of
    * `corroborationCheckedAt` — trust in the X account itself, never a score or an order. Null otherwise.
@@ -134,6 +137,16 @@ export type HeyProject = {
   priceChange24hPct?: number;
   /** Whether HEY holds a repository, org, changelog or feed to read building from; false explains an UNKNOWN status. */
   hasBuilderSource?: boolean;
+  /**
+   * Whether HEY holds Robinhood Chain evidence for the project — a token, a verified contract, a registry listing or
+   * the chain evidence the builder tabs filter on (2026-11-09, additive). False is a measured "none": such a project
+   * is never counted among Robinhood Chain builders.
+   */
+  chainEvidence?: boolean;
+  /** The page is an integration record: no Robinhood Chain evidence, ships recorded, never a Verified Builder (2026-11-09, additive). */
+  integrationRecord?: boolean;
+  /** The page's own sentence for an integration record; present only when `integrationRecord` is true. */
+  integrationRecordSentence?: string;
   websiteUrl?: string;
   /**
    * The project's official X account: `handle` and `url` as before. Additive (2026-10-18): `status` is what
@@ -1013,6 +1026,12 @@ export type HeyShipsQuery = {
   has?: HeyCardFact[];
   /** Default `latest`; `detected` is the order to page along when mirroring. */
   sort?: 'latest' | 'marketCap' | 'activity' | 'detected';
+  /**
+   * 2026-11-09, additive: `records` (default) is every ship record, as always; `feed` folds a repository's releases of
+   * a day and a deploy run as `/ships` does; `counted` folds the same way over counted ships only, so a project's code
+   * weeks across its repositories are one item a week — `/ships`' default list.
+   */
+  view?: 'records' | 'feed' | 'counted';
   /** 1–48; default 24. */
   limit?: number;
   offset?: number;

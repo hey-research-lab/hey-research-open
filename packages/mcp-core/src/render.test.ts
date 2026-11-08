@@ -196,6 +196,29 @@ describe('find_projects', () => {
     expect(text).not.toMatch(NO_GARBAGE);
   });
 
+  it('says how many shown hold no Robinhood Chain evidence, and names an integration record on its line (2026-11-09, lane E issue 1)', () => {
+    const [first, second] = fx.projectsPage.items;
+    const gem: HeyProject = { ...first!, slug: 'gemwalletcom-wallet', name: 'Gem Wallet', chainEvidence: false, integrationRecord: true };
+    const listed: HeyProject = { ...second!, chainEvidence: false, integrationRecord: false };
+    const onChain: HeyProject = { ...first!, chainEvidence: true, integrationRecord: false };
+    const text = renderProjects({ ...fx.projectsPage, items: [gem, listed, onChain], total: 283 }, NOW);
+    expect(text).toContain('2 of the 3 shown hold no Robinhood Chain evidence (1 of them integration records: ships recorded, not Verified Builders); HEY never counts them among Robinhood Chain builders.');
+    expect(text).toContain('surface=shipping-now');
+    expect(projectLine(gem, NOW)).toContain('integration record: no Robinhood Chain evidence, not a Verified Builder');
+    expect(projectLine(listed, NOW)).toContain('no Robinhood Chain evidence held');
+    expect(projectLine(onChain, NOW)).not.toContain('Robinhood Chain evidence');
+    // A builder surface's page says nothing to correct; an API that sends no field adds no line.
+    expect(renderProjects({ ...fx.projectsPage, items: [onChain] }, NOW)).toContain('Every project shown holds Robinhood Chain evidence.');
+    expect(renderProjects(fx.projectsPage, NOW)).not.toContain('Robinhood Chain evidence');
+  });
+
+  it('a snapshot of an integration record says the page’s sentence under Identity', () => {
+    const text = renderSnapshot({ ...fx.snapshot, identity: { ...fx.snapshot.identity, chainEvidence: false, integrationRecord: true } }, NOW);
+    expect(text).toContain('Integration record: HEY holds no Robinhood Chain evidence for this project');
+    expect(renderSnapshot({ ...fx.snapshot, identity: { ...fx.snapshot.identity, chainEvidence: false, integrationRecord: false } }, NOW)).toContain('it is not counted among Robinhood Chain builders');
+    expect(renderSnapshot(fx.snapshot, NOW)).not.toContain('Integration record');
+  });
+
   it('tells an empty result from a page past the end (M2 G9)', () => {
     expect(renderProjects(page<HeyProject>([], { total: 0 }), NOW)).toContain('No published project matches that.');
     const past = renderProjects(page<HeyProject>([], { total: 40, query: { offset: 48, limit: 24 } }), NOW);

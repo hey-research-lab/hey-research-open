@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { requireData, type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
+import { telegramChannelUrl } from '../telegram-link';
 import { GECKOTERMINAL_DEFAULT_BASE_URL } from './geckoterminal';
 
 /**
@@ -101,7 +102,9 @@ export function createGeckoterminalInfoAdapter(): SourceAdapter<GeckoterminalInf
             const symbol = clean(a.symbol);
             const description = clean(a.description);
             const twitterUrl = handleUrl('https://x.com', a.twitter_handle);
-            const telegramUrl = handleUrl('https://t.me', a.telegram_handle);
+            // A Telegram username or invite on t.me only (2026-11-09, lane D #7): `handleUrl` stripped any host and took a
+            // one-character handle, so `t.me/t`, an x.com URL turned into a t.me link and sticker packs were stored.
+            const telegramUrl = telegramChannelUrl(a.telegram_handle);
             const discordUrl = clean(a.discord_url);
             const farcasterUrl = clean(a.farcaster_url);
             const coingeckoCoinId = clean(a.coingecko_coin_id);

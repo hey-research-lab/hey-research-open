@@ -25,6 +25,18 @@
  * Subjects only automation writes (`[bot] …`, `auto-update …`) are named one
  * by one.
  *
+ * And, since 2026-11-09 (data-trust audit, lane B finding 3; a ship
+ * classification under the founder's delegation), a stream by its rate
+ * (`AUTOMATION_RATE`): one templated subject committed at a pace no person
+ * keeps — at least `perWeek` times in one ISO week, or at least `perDay` times
+ * on each of `days` UTC days of one week — is a stream however irregular its
+ * clock. "Mevy strategy research: progress-<N>" landed 168 times in 66 hours
+ * with gaps from 30 seconds to an hour; a mirror re-committed "Updated on
+ * <date>" 31 and 39 times a day. The template must carry a placeholder that
+ * changes from commit to commit, or a date stamp: "Update worker.js" by hand,
+ * however often, has none, and seven "fix #N" commits in an afternoon are
+ * nowhere near the rate.
+ *
  * Pure: no clock, no I/O. The subject is read in memory and never stored; a
  * commit named here is kept on the record as automated (`is_bot`), never
  * deleted, and never part of a week's verdict.
@@ -41,6 +53,18 @@ export const AUTOMATION = {
   minNumericPlaceholders: 2,
 } as const;
 
+/**
+ * The stream rate (2026-11-09, data-trust audit, lane B finding 3; commit-substance-v5, hbm-v34). It decides which code
+ * weeks count, so the scoring version's rules digest pins it beside `AUTOMATION` (`version.test.ts`).
+ */
+export const AUTOMATION_RATE = {
+  /** Commits of one template in one ISO week that make a stream whatever the clock. */
+  perWeek: 50,
+  /** Or at least this many on each of `days` UTC days of one ISO week. */
+  perDay: 4,
+  days: 3,
+} as const;
+
 export type ListedCommitSubject = {
   sha: string;
   /** The first line of the commit message. */
@@ -54,8 +78,14 @@ export type CommitAutomation = {
   /** Lower-cased sha → why it reads as automation. */
   automated: Map<string, AutomationReason>;
   /** The streams found, for logs and tests: the template, its size, and what made it a stream. */
-  streams: { template: string; commits: number; regular: boolean; varying: 'timestamp' | 'numbers' | 'none' }[];
+  streams: { template: string; commits: number; regular: boolean; varying: 'timestamp' | 'numbers' | 'none'; rate: boolean }[];
 };
+
+/**
+ * One reading's options. `rate: false` reads the v3 rules only: a repository of a page whose Proof of Ship bounty HEY
+ * holds open (`CLASSIFICATION_RULE_HOLDS` in `@hey/domain`) is never counted differently while the bounty is open.
+ */
+export type DetectAutomationOptions = { rate?: boolean };
 
 /** Subjects only automation writes, whatever the account. */
 const AUTOMATED_SUBJECT = /^(\[(bot|auto|automated|automation)\]|(auto|automated)[- ](commit|update|updated|sync|generated|deploy|build|refresh)\b|🤖)/iu;
@@ -119,8 +149,34 @@ export function onRegularClock(times: readonly Date[]): boolean {
   return onClock / gaps.length >= AUTOMATION.regularShare;
 }
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Whether commits of one template land at a stream's rate (`AUTOMATION_RATE`) in some UTC ISO week: `perWeek` in the
+ * week, or `perDay` on each of `days` of its days. Weeks are counted as `isoWeekIndex` (`activity.ts`) counts them.
+ */
+export function atStreamRate(times: readonly Date[]): boolean {
+  const weeks = new Map<number, Map<number, number>>();
+  for (const at of times) {
+    const ms = at.getTime();
+    if (Number.isNaN(ms)) continue;
+    const day = Math.floor(ms / DAY_MS);
+    const week = Math.floor((day + 3) / 7);
+    const days = weeks.get(week) ?? new Map<number, number>();
+    days.set(day, (days.get(day) ?? 0) + 1);
+    weeks.set(week, days);
+  }
+  for (const days of weeks.values()) {
+    const counts = [...days.values()];
+    if (counts.reduce((sum, count) => sum + count, 0) >= AUTOMATION_RATE.perWeek) return true;
+    if (counts.filter((count) => count >= AUTOMATION_RATE.perDay).length >= AUTOMATION_RATE.days) return true;
+  }
+  return false;
+}
+
 /** The commits of one listing that read as automation, and the streams behind them. */
-export function detectAutomatedCommits(commits: readonly ListedCommitSubject[]): CommitAutomation {
+export function detectAutomatedCommits(commits: readonly ListedCommitSubject[], options: DetectAutomationOptions = {}): CommitAutomation {
+  const rateRule = options.rate !== false;
   const automated = new Map<string, AutomationReason>();
   const streams: CommitAutomation['streams'] = [];
   const groups = new Map<string, ListedCommitSubject[]>();
@@ -142,8 +198,14 @@ export function detectAutomatedCommits(commits: readonly ListedCommitSubject[]):
     // The placeholders must actually vary: a fixed "v2" in every subject is part of the words.
     const varying: 'timestamp' | 'numbers' | 'none' =
       distinctSubjects > 1 && timestamps > 0 ? 'timestamp' : distinctSubjects > 1 && numbers >= AUTOMATION.minNumericPlaceholders ? 'numbers' : 'none';
-    if (!regular && varying === 'none') continue;
-    streams.push({ template, commits: members.length, regular, varying });
+    /*
+     * The rate (2026-11-09): a placeholder that changes from commit to commit, or a date stamp even when every commit
+     * repeats it, committed at a pace no person keeps. A template with no placeholder — "update worker.js" — never is.
+     */
+    const stamped = timestamps > 0 || (distinctSubjects > 1 && numbers > 0);
+    const rate = rateRule && !regular && varying === 'none' && stamped && atStreamRate(members.map((member) => member.committedAt));
+    if (!regular && varying === 'none' && !rate) continue;
+    streams.push({ template, commits: members.length, regular, varying, rate });
     for (const member of members) automated.set(member.sha.toLowerCase(), 'automated_stream');
   }
   return { automated, streams };

@@ -69,7 +69,12 @@ export function tradedOnDay(day: { trades: number | null; volumeUsd: number | nu
   return day.trades !== null ? day.trades > 0 : day.volumeUsd !== null && day.volumeUsd > TOKEN_MARKET.inactiveVolumeUsd;
 }
 
-export const MARKET_INTEGRITY_RULES_VERSION = 'mi-v4';
+/*
+ * mi-v5 (2026-11-09, data-trust audit P3, founder delegation): the sustained peak skips a daily close whose valuation
+ * fails the valuation gate (`IntegrityDay.valuationImplausible`), the twin of the stored liquidity high
+ * (token-market-2026-11-09). Only withholds: a lower level can only make a collapse harder to call.
+ */
+export const MARKET_INTEGRITY_RULES_VERSION = 'mi-v5';
 
 export const MARKET_INTEGRITY = {
   /** A market is established once liquidity held at least this much … */
@@ -168,6 +173,12 @@ export type IntegrityDay = {
   trades: number | null;
   /** The source that won the day's liquidity figure, when known. */
   source?: string | null;
+  /**
+   * The day's close fails the valuation gate (2026-11-09, mi-v5): rules 1 and 2 of `valuationPlausibility` on the
+   * close's own valuation and liquidity (`dayCloseValuationImplausibleSql` in `@hey/domain`). Such a close sets no
+   * sustained peak; it is still a day of the series for everything else. Absent: not tripped, or not read.
+   */
+  valuationImplausible?: boolean;
 };
 
 /** A pool the token has been read in (`market_snapshots.pair_address`). Same token, so same identity. */
@@ -307,7 +318,13 @@ const LIVE_REASONS = new Set(['liquidity_and_volume', 'trades_observed']);
  * A single reading can be a provider glitch or a launch-hour spike; a level
  * held across two days is what the market actually carried.
  */
-function sustainedPeak(days: readonly IntegrityDay[]): { usd: number; day: string } | null {
+export function sustainedPeak(all: readonly IntegrityDay[]): { usd: number; day: string } | null {
+  /*
+   * A close beside an implausible valuation is no close here (2026-11-09, mi-v5, data-trust P3): atlantis-coin's $31M
+   * high stood on closes read beside a $349B valuation. Skipped, not zeroed — the closes on either side may still
+   * pair — exactly as `sustained_peak` in `tokens/market-status.ts`, so the stored liquidity high and this one agree.
+   */
+  const days = all.filter((day) => day.liquidityUsd !== null && day.valuationImplausible !== true);
   let best: { usd: number; day: string } | null = null;
   for (let i = 1; i < days.length; i += 1) {
     const a = days[i - 1]!;

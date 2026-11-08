@@ -1,0 +1,12 @@
+// Labrat coin config, loaded by the homepage (the shape of lab-rat.net/coin.js, 2026-11-09 data-trust audit).
+window.LABRAT_COIN = {
+  name: 'Labrat',
+  symbol: 'LABRAT',
+  decimals: 18,
+  chainId: 4663,
+  address: '0xAcA0dE5c1B9e3f2a7D4c6E8b0A1F2d3C4b5A6978',
+  explorer: 'https://robinhoodchain.blockscout.com/token/0xAcA0dE5c1B9e3f2a7D4c6E8b0A1F2d3C4b5A6978',
+};
+document.querySelectorAll('[data-coin-address]').forEach((el) => {
+  el.textContent = window.LABRAT_COIN.address;
+});

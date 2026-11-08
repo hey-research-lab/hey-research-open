@@ -225,6 +225,10 @@ const researchData = z
         projectKind: code,
         researchLevel: code,
         catalogStatus: code,
+        /** Whether HEY holds Robinhood Chain evidence for the project (2026-11-09, additive). */
+        chainEvidence: z.boolean().optional(),
+        /** An integration record: no Robinhood Chain evidence, ships recorded, never a Verified Builder (2026-11-09, additive). */
+        integrationRecord: z.boolean().optional(),
         narrative: z.object({ slug: code, name: agentTextSchema }).strict().nullable(),
         firstRecordedByHeyAt: iso,
         websiteUrl: url.nullable(),

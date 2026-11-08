@@ -4,6 +4,7 @@ import { type SourceAdapter, type SourceContext, type SourceResult } from '../ad
 import { findBadgePlacement, type BadgeTarget } from '../badge-match';
 import { extractHtmlMetadata, type HtmlMetadata } from '../html';
 import { performSourceFetch } from '../http/perform';
+import { sameHostScriptUrls } from '../site-scripts';
 
 /**
  * Generic website metadata (PRD V4 section 27).
@@ -57,6 +58,14 @@ export type WebsiteMetadata = HtmlMetadata & {
   disclaimed?: string[];
   /** Whether the page shows the requested `badge`; absent when none was asked for. */
   badge?: { found: boolean };
+  /**
+   * The page's own script files, when `mentions` were asked and the page names none of them (2026-11-09, data-trust
+   * audit lane C P1-1): at most `MAX_SITE_SCRIPTS` `<script src>` and `<link rel=modulepreload>` files on the page's
+   * registrable host, app code before framework chunks (`sameHostScriptUrls`). A site built in the browser names its
+   * token in one of them; the caller reads them through the site-script adapter, on the same budget and pacing.
+   * Absent when no mention was asked or the page names one.
+   */
+  scriptUrls?: string[];
 };
 
 /** Characters either side of a mention searched for other addresses. */
@@ -182,11 +191,13 @@ export function createWebsiteAdapter(): SourceAdapter<WebsiteInput, WebsiteMetad
             const finalUrl = response.url ?? input.url;
             const wanted = input.mentions ?? [];
             const haystack = wanted.length > 0 ? body.toLowerCase() : '';
+            const mentions = wanted.length > 0 ? contractMentionsIn(haystack, wanted) : undefined;
             return {
               ...extractHtmlMetadata(body, finalUrl),
               url: finalUrl,
               contentHash: hashContent(body),
-              ...(wanted.length > 0 ? mentionsOf(haystack, wanted) : {}),
+              ...(mentions ?? {}),
+              ...(mentions && mentions.mentioned.length === 0 ? { scriptUrls: sameHostScriptUrls(body, finalUrl) } : {}),
               ...(input.badge ? { badge: { found: findBadgePlacement(body, 'html', input.badge).found } } : {}),
             };
           },
@@ -196,7 +207,12 @@ export function createWebsiteAdapter(): SourceAdapter<WebsiteInput, WebsiteMetad
   };
 }
 
-function mentionsOf(haystack: string, wanted: readonly string[]): { mentioned: string[]; listed: string[]; disclaimed: string[] } {
+/**
+ * Which of `wanted` a lower-cased body names, and of those which it names only in a list and which it disowns. The one
+ * set of tests for every body HEY reads for a contract: the page's HTML here, its own script files in
+ * `site-script.ts` (2026-11-09) — never a second copy of the listed or disclaimed rule.
+ */
+export function contractMentionsIn(haystack: string, wanted: readonly string[]): { mentioned: string[]; listed: string[]; disclaimed: string[] } {
   const mentioned = wanted.map((needle) => needle.toLowerCase()).filter((needle) => needle.length > 0 && haystack.includes(needle));
   return { mentioned, listed: listedMentions(haystack, mentioned), disclaimed: disclaimedMentions(haystack, mentioned) };
 }

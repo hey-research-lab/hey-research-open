@@ -52,6 +52,21 @@ describe('geckoterminal info adapter', () => {
     expect(result.data.imageUrl).toBeUndefined();
   });
 
+  // 2026-11-09 data-trust audit, lane D #7: `t.me/t`, an x.com URL and a sticker pack were stored as Telegram.
+  it('keeps only a real Telegram username or invite', async () => {
+    const read = async (telegram_handle: string) => {
+      const body = JSON.stringify({ data: { attributes: { name: 'X', telegram_handle } } });
+      const ctx = testContext({ fetchImpl: stubFetch({ status: 200, body }).fetchImpl });
+      const result = await createGeckoterminalInfoAdapter().fetch({ network: 'robinhood', tokenAddress: address }, ctx);
+      return hasData(result) ? result.data.telegramUrl : 'no data';
+    };
+    for (const handle of ['t', '0', '1', 'https://x.com/cryptocoin', 'https://t.co/AbCdEf12', 'https://t.me/addstickers/DijonDuck', 'https://levu.example/']) {
+      expect(await read(handle), handle).toBeUndefined();
+    }
+    expect(await read('pickles_chat')).toBe('https://t.me/pickles_chat');
+    expect(await read('https://t.me/+AbCdEfGh12')).toBe('https://t.me/+AbCdEfGh12');
+  });
+
   it('reports an unknown token as missing', async () => {
     const ctx = testContext({ fetchImpl: stubFetch({ status: 404, body: '{"errors":[{"status":"404"}]}' }).fetchImpl });
     const result = await createGeckoterminalInfoAdapter().fetch({ network: 'robinhood', tokenAddress: address }, ctx);

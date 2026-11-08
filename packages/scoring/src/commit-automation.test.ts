@@ -15,6 +15,12 @@ const listing = (key: string): ListedCommitSubject[] =>
   (fixture[key] ?? []).map((row) => ({ sha: row.sha, message: row.message, committedAt: new Date(row.committedAt) }));
 
 const at = (minutes: number) => new Date(Date.UTC(2026, 9, 1, 0, 0) + minutes * 60_000);
+/** `count` instants inside one ISO week (from Monday 2026-09-28) whose gaps follow no clock. */
+const irregular = (count: number): Date[] => {
+  const gaps = [3, 90, 11, 240, 45, 7, 400];
+  let minute = -3 * 1440;
+  return Array.from({ length: count }, (_, index) => at((minute += gaps[index % gaps.length]!)));
+};
 
 describe('detectAutomatedCommits — the audit repositories', () => {
   it('names a script posting the same stats line every 25 minutes (SOL_RH)', () => {
@@ -42,6 +48,68 @@ describe('detectAutomatedCommits — the audit repositories', () => {
   it('leaves varied, hand-written subjects alone, whoever typed them (robinhood-chain-alpha)', () => {
     const { automated } = detectAutomatedCommits(listing('chain_alpha_agent_commits'));
     expect(automated.size).toBe(0);
+  });
+});
+
+describe('detectAutomatedCommits — a stream by its rate (2026-11-09, data-trust audit lane B finding 3)', () => {
+  it('names "Mevy strategy research: progress-<N>": one changing counter, an irregular clock, 100 commits in three days', () => {
+    const commits = listing('mevy_progress_stream');
+    const progress = commits.filter((commit) => commit.message.startsWith('Mevy strategy research: progress-'));
+    // The v3 rules alone miss it: no regular clock, one varying number.
+    expect(onRegularClock(progress.map((commit) => commit.committedAt))).toBe(false);
+    expect(detectAutomatedCommits(commits, { rate: false }).automated.size).toBe(0);
+    const { automated, streams } = detectAutomatedCommits(commits);
+    for (const commit of progress) expect(automated.get(commit.sha), commit.message).toBe('automated_stream');
+    expect(streams).toContainEqual(expect.objectContaining({ template: 'mevy strategy research: progress<n>', regular: false, varying: 'none', rate: true }));
+  });
+
+  it('names a mirror re-committing "Updated on <date>" dozens of times a day, the date the same in every subject', () => {
+    const commits = listing('tangem_updated_on');
+    expect(new Set(commits.map((commit) => commit.message)).size).toBe(1);
+    expect(detectAutomatedCommits(commits, { rate: false }).automated.size).toBe(0);
+    const { automated, streams } = detectAutomatedCommits(commits);
+    expect(automated.size).toBe(commits.length);
+    expect(streams[0]).toMatchObject({ template: 'updated on <time>', rate: true });
+  });
+
+  it('reads HEY\'s own "Open-source sync (<hash>)" commits by the same rule (agent-discovery rule 2)', () => {
+    const commits = listing('hey_open_sync');
+    const { automated, streams } = detectAutomatedCommits(commits);
+    // 100 sync commits from 11 Oct to 8 Nov 2026 under two wordings, each at least four a day on three days of one week.
+    // The two whose short hash happens to be all digits template as `(<n>)`, a group of two, and stay as they are.
+    const hexSyncs = commits.filter((commit) => commitSubjectTemplate(commit.message).endsWith('(<hex>)'));
+    expect(hexSyncs.length).toBe(98);
+    for (const commit of hexSyncs) expect(automated.get(commit.sha), commit.message).toBe('automated_stream');
+    expect(streams).toContainEqual(expect.objectContaining({ template: 'open-source sync (<hex>)', rate: true }));
+    expect(streams).toContainEqual(expect.objectContaining({ template: 'sync from hey research lab (<hex>)', rate: true }));
+  });
+
+  it('a person\'s numbered fixes stay hand work, even many in a day', () => {
+    const fixes = [3, 41, 47, 190, 260, 600, 610].map((minute, index) => ({ sha: `f${index}`, message: `fix #${12 + index * 7}`, committedAt: at(minute) }));
+    expect(detectAutomatedCommits(fixes).automated.size).toBe(0);
+    // Two days of four "fix #N" each: under the rate (three such days, or fifty in a week).
+    const twoDays = [3, 41, 190, 600, 1450, 1460, 1790, 2300].map((minute, index) => ({ sha: `g${index}`, message: `fix #${100 + index}`, committedAt: at(minute) }));
+    expect(detectAutomatedCommits(twoDays).automated.size).toBe(0);
+  });
+
+  it('a subject with no placeholder is never a stream by rate, however often a person commits it', () => {
+    const edits = irregular(60).map((committedAt, index) => ({ sha: `u${index}`, message: 'Update worker.js', committedAt }));
+    expect(onRegularClock(edits.map((edit) => edit.committedAt))).toBe(false);
+    expect(detectAutomatedCommits(edits).automated.size).toBe(0);
+  });
+
+  it('a fixed number in every subject is part of the words, not a stamp', () => {
+    const docs = irregular(60).map((committedAt, index) => ({ sha: `d${index}`, message: 'Update v2 docs', committedAt }));
+    expect(detectAutomatedCommits(docs).automated.size).toBe(0);
+  });
+
+  it('counts the rate inside one ISO week: four a day on three days, or fifty in the week', () => {
+    const day = (d: number, minute: number) => new Date(Date.UTC(2026, 9, 26 + d, 0, minute));
+    const threeDays = [0, 1, 2].flatMap((d) => [5, 97, 300, 811].map((minute, index) => ({ sha: `t${d}${index}`, message: `progress-${d * 10 + index}`, committedAt: day(d, minute) })));
+    expect(detectAutomatedCommits(threeDays).automated.size).toBe(12);
+    // The same twelve split across two ISO weeks (Sunday and Monday): no week holds three such days.
+    const split = [0, 6, 7].flatMap((d) => [5, 97, 300, 811].map((minute, index) => ({ sha: `s${d}${index}`, message: `progress-${d * 10 + index}`, committedAt: day(d, minute) })));
+    expect(detectAutomatedCommits(split).automated.size).toBe(0);
   });
 });
 

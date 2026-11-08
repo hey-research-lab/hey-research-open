@@ -512,6 +512,22 @@ a FACT either cites typed evidence ids or names a basis no evidence id can cite 
 reading, a usage reading, HEY's own registry record, a field of the canonical read, the change
 ledger or a coverage state. A FACT with neither is never published as a FACT.
 
+## A site's own script can name its token (2026-11-09)
+
+When a project's homepage HTML does not name its token's contract, HEY reads up to eight of the site's own script files
+(`<script src>` and `<link rel=modulepreload>` on the site's own host, never a CDN or another domain, each at most 2 MB)
+through the same SSRF guard and budget, and asks each exactly what it asks the homepage, the "listed among others" and
+"disclaimed" rules included. A site that names its token only in its JavaScript is then read as naming it, and the page
+says the contract is named in one of the site's own script files. A file HEY cannot read decides nothing.
+
+## An official X account must be the project's (2026-11-09)
+
+A site's one X account replaces the account a listing gave a project only when that account's own profile links the
+site back, and a listing's account held as context the wrong way is restored once HEY reads it active and linking the
+site. A famous company's or office's account on a launchpad meme, and another published page's account on a lookalike,
+are held: no live link, a dated line instead, no posts and no logo. Each only withholds and changes no status, score
+or order.
+
 ## The Uniswap v4 hooks directory (2026-11-05)
 
 `/integrations/uniswap/hooks` lists the Uniswap v4 hooks HEY ties to a published project on Robinhood Chain, one row a

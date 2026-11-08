@@ -206,8 +206,43 @@ export const TOKEN_MARKET = {
  *    active, whatever trades vouch for it (`liquidity_not_current`);
  *  - `tokens.peak_liquidity_usd`, which `hadMarket` reads, is the level held
  *    on two consecutive daily closes (`sustainedPeak`), never one reading.
+ *
+ * token-market-2026-11-09 (data-trust audit, lane C — P1-2, P2-1, P3;
+ * founder delegation). Each only withholds:
+ *  - the removal test's held level is capped at the token's liquidity high
+ *    (`drainHeldToPeak`, `least(held, peak_liquidity_usd)` in the sweep): a
+ *    series that "held" $247K on two readings of a one-sided PoolManager row
+ *    no longer makes "Liquidity no longer detected" of a pool at its own high
+ *    (chinapad, $18,661 against a $18,555 high);
+ *  - HEY's chain pool index keys a Uniswap v4 pool by its PoolId, and a day
+ *    keyed by the PoolManager, or a pool whose quote side is under
+ *    `ONE_SIDED_QUOTE_SHARE` (1%) of it, sets no held level and rescues no
+ *    market (`poolDayTradableLiquiditySql`); it still blocks a drain, as an
+ *    unknown never confirms one;
+ *  - the liquidity high skips a daily close whose valuation fails the
+ *    valuation gate (`valuationPlausibility` rules 1 and 2): atlantis-coin's
+ *    $31M high stood on closes read beside a $349B valuation.
  */
-export const TOKEN_MARKET_RULES_VERSION = 'token-market-2026-10-16' as const;
+export const TOKEN_MARKET_RULES_VERSION = 'token-market-2026-11-09' as const;
+
+/**
+ * The drain's held level, capped at the token's liquidity high (2026-11-09,
+ * data-trust audit P2-1). The held level is the second-highest reading of one
+ * series; the high is the level held on two consecutive daily closes
+ * (`peakLiquidityUsd`). A series can "hold" a figure the market never held —
+ * a one-sided pool row, another source's reading of the same pool ($175K
+ * beside meta-hood's $7,107 high) — and the level the removal test measures
+ * against was then a tenth of that. Capped, the level is recomputed from the
+ * high and the lower of the two levels stands. Only withholds: a lower held
+ * level and a lower drain level can only make a removal harder to confirm.
+ * Absent high: nothing to cap against, as `least()` reads a null.
+ */
+export function drainHeldToPeak(drain: DrainEvidence, peakLiquidityUsd: number | undefined): DrainEvidence {
+  if (peakLiquidityUsd === undefined || !Number.isFinite(peakLiquidityUsd) || drain.heldUsd <= peakLiquidityUsd) return drain;
+  const heldUsd = Math.max(0, peakLiquidityUsd);
+  const levelUsd = Math.max(TOKEN_MARKET.dustLiquidityUsd, Math.min(TOKEN_MARKET.removedMaxAbsoluteUsd, heldUsd * TOKEN_MARKET.removedShareOfPeak));
+  return { ...drain, heldUsd, levelUsd: Math.min(drain.levelUsd, levelUsd) };
+}
 
 /**
  * A drain HEY measured in one series of readings (2026-09-27). The sweep's SQL
@@ -587,7 +622,8 @@ export function classifyTokenMarket(evidence: TokenMarketEvidence): TokenMarketC
    * HEY cannot yet confirm (`removal_unconfirmed`), which claims neither.
    */
   const heldMarket = (evidence.heldLiquidityUsd ?? 0) >= TOKEN_MARKET.removedMinPeakUsd;
-  const drain = evidence.drain;
+  // Never above the token's own liquidity high (2026-11-09, data-trust P2-1): the sweep caps it too.
+  const drain = evidence.drain ? drainHeldToPeak(evidence.drain, evidence.peakLiquidityUsd) : undefined;
   const drained =
     drain !== undefined &&
     drain.heldUsd >= TOKEN_MARKET.removedMinPeakUsd &&
