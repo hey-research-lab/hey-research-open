@@ -441,8 +441,8 @@ export function liquidityImplausible(
 
 export type TokenMarketClassification = {
   status: TokenMarketStatusValue;
-  /** Machine key the page turns into a sentence. */
-  reason: string;
+  /** Machine key the page turns into a sentence: one of {@link TOKEN_MARKET_REASONS} (typed 2026-11-09, state-machine audit §8). */
+  reason: TokenMarketReason;
   /**
    * The reading that makes the market active when it is not the current
    * reading's own pool (2026-10-01, founder ruling F1): the `series` of the
@@ -867,6 +867,13 @@ export const TOKEN_MARKET_REASONS = [
   'volume_unknown',
   'liquidity_not_current',
 ] as const;
+/** The reason `tokens.market_status_reason` holds, as the classifier writes it (2026-11-09, state-machine audit §8). */
+export type TokenMarketReason = (typeof TOKEN_MARKET_REASONS)[number];
+
+/** Whether a stored value is a reason the classifier writes (a reader's narrowing; unknown and null are not). */
+export function isTokenMarketReason(value: string | null | undefined): value is TokenMarketReason {
+  return typeof value === 'string' && (TOKEN_MARKET_REASONS as readonly string[]).includes(value);
+}
 
 /**
  * Whether the current reading's figures may be printed, sorted or filtered on
