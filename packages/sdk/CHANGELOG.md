@@ -6,11 +6,24 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+## 0.3.5 — 2026-11-09
+
 ### Added (2026-11-09)
 
 - `isOk`, `isAmbiguous` and `isNotFound`: type guards on an agent answer's `status`. `isOk` narrows `citation` to
   present, `isAmbiguous` narrows `candidates` to present. `HEY_AGENT_STATUSES` lists every status and `HeyAgentStatus`
   is its type. On REST, `unavailable` and `not_found` both answer HTTP 404 (unchanged): read the body's `status`.
+- `chainEvidence`, `integrationRecord` and `integrationRecordSentence` on a project item, the project and snapshot
+  answers and the agent `identity`. `chainEvidence: false` is a measured none: HEY holds no token, verified contract,
+  registry listing or other Robinhood Chain evidence for the project. An integration record has ships recorded and is
+  never a Verified Builder.
+- `officialX.linkHeld` may be `copied_pair` (a borrowed account copied onto the page with its listing or launch) or
+  `account_of_another_page` (another published page shows the same account and stands behind it). Do not link either.
+- `ships` takes `view: 'records' | 'feed' | 'counted'`. `records` (the default) is unchanged; `feed` folds a
+  repository's releases of a day and a deploy run as `/ships` does; `counted` folds counted ships only.
+- The valuation withheld reasons include `quote_side_thin`: at least 10,000 times the side of the token's pools that is
+  not the token itself.
+- A ship's context reasons include `deployer_not_held`.
 
 ## 0.3.4 — 2026-11-08
 

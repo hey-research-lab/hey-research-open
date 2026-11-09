@@ -6,6 +6,13 @@ All notable changes to `@hey-research-lab/mcp` are recorded here. The format fol
 
 ## Unreleased
 
+## 0.3.5 — 2026-11-09
+
+### Changed (2026-11-09)
+
+- Bundles SDK 0.3.5: the `isOk`, `isAmbiguous` and `isNotFound` guards, `chainEvidence` and `integrationRecord`, the
+  `copied_pair` and `account_of_another_page` X holds, the `ships` `view` and the `quote_side_thin` reason.
+
 ## 0.3.4 — 2026-11-08
 
 ### Fixed (2026-11-08)
