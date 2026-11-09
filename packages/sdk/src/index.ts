@@ -9,6 +9,8 @@ export { DEFAULT_BASE_URL, HeyClient, USER_AGENT, type FetchLike, type HeyClient
 export { HeyApiError, retryAfterSeconds, type HeyApiErrorCode, type HeyApiErrorOptions } from './error';
 export { cursorPages, itemsOf, nextOffsetPages, totalPages } from './paging';
 export { SDK_VERSION } from './version';
+/* How an agent answer ended (2026-11-09, additive): `status` narrowed. */
+export { HEY_AGENT_STATUSES, isAmbiguous, isNotFound, isOk, type HeyAgentStatus } from './agent-status';
 /* Receiving webhooks (2026-09-26): verify, parse, deduplicate. */
 export {
   HeyWebhookError,

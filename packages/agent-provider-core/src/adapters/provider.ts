@@ -1,5 +1,5 @@
 import type { AgentCapabilityRequest, ParsedAgentRequest } from '../request';
-import type { AgentIntelligenceResponse } from '../schema';
+import type { AgentIntelligenceResponse, AgentResponseStatus } from '../schema';
 import { quoteForTransport, type AgentText } from '../text';
 
 /**
@@ -35,24 +35,66 @@ export const ADAPTER_REQUIRED_FIELDS = ['answer', 'answerStatus', 'claims', 'unk
 
 /* ------------------------------------------------------------------ REST */
 
+/**
+ * The HTTP status each answer status carries on REST (2026-11-09, made exhaustive): one table keyed by the
+ * canonical union (`AGENT_RESPONSE_STATUSES`), so a new status fails the build until each door says how it
+ * ends. The body is the same envelope in every case.
+ * - `ambiguous` (2026-11-08): several projects match a name or ticker; an answer listing them, never an error
+ *   the client must parse a 4xx for.
+ * - `unavailable` is 404 like `not_found` (unchanged, machine rule 10): a client that must tell "HEY could not
+ *   read it" from "no such project" reads the body's `status`, never the HTTP code.
+ */
+export const REST_HTTP_STATUS: Readonly<Record<AgentResponseStatus, 200 | 308 | 400 | 404>> = {
+  ok: 200,
+  ambiguous: 200,
+  moved: 308,
+  invalid_request: 400,
+  not_found: 404,
+  unavailable: 404,
+};
+
 /** The HTTP status a REST answer carries: the body is the same envelope in every case. */
 export function restStatusOf(response: Pick<AgentIntelligenceResponse, 'status'>): number {
-  switch (response.status) {
-    // `ambiguous` (2026-11-08): several projects match a name or ticker; an answer listing them, never an error the client must parse a 4xx for.
-    case 'ok':
-    case 'ambiguous':
-      return 200;
-    case 'moved':
-      return 308;
-    case 'invalid_request':
-      return 400;
-    case 'not_found':
-    case 'unavailable':
-      return 404;
-  }
+  return REST_HTTP_STATUS[response.status];
+}
+
+/**
+ * Whether an MCP tool result carrying this answer is `isError` (2026-11-09, made exhaustive): only a malformed
+ * request is the caller's to fix (2026-09-30, adversarial review). `ambiguous`, `not_found`, `moved` and
+ * `unavailable` are answers: they say what HEY holds, and an ambiguous name lists its candidates. The MCP
+ * handshake's sentence is written from this table (`mcp-core`), so the instruction and the behaviour agree.
+ */
+export const MCP_IS_ERROR: Readonly<Record<AgentResponseStatus, boolean>> = {
+  ok: false,
+  ambiguous: false,
+  not_found: false,
+  moved: false,
+  invalid_request: true,
+  unavailable: false,
+};
+
+/** Whether an MCP tool result carrying this answer is `isError`. */
+export function mcpIsErrorOf(response: Pick<AgentIntelligenceResponse, 'status'>): boolean {
+  return MCP_IS_ERROR[response.status];
 }
 
 /* ------------------------------------------------------------------- A2A */
+
+/**
+ * The A2A message's `metadata.status` for each answer status (2026-11-09, made exhaustive; values unchanged,
+ * a partner field, machine rule 10): the skill vocabulary `ok | not_found | unavailable`, so `ambiguous`,
+ * `moved` and `invalid_request` fold into `not_found` there. The canonical status always rides beside it as
+ * `metadata.contractStatus`; an agent that must tell a malformed request or an ambiguous name from "no such
+ * project" reads that.
+ */
+export const A2A_METADATA_STATUS: Readonly<Record<AgentResponseStatus, 'ok' | 'not_found' | 'unavailable'>> = {
+  ok: 'ok',
+  ambiguous: 'not_found',
+  not_found: 'not_found',
+  moved: 'not_found',
+  invalid_request: 'not_found',
+  unavailable: 'unavailable',
+};
 
 /** The A2A skill a capability arrives through, when a message asks for this contract. */
 export const A2A_CONTRACT_OPTION = 'agent-intelligence-v1' as const;

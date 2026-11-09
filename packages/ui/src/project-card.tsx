@@ -173,6 +173,12 @@ export type ProjectCardData = {
   /** "No known affiliation with Robinhood — HEY holds no evidence of one." (2026-10-02): drawn first, above every badge. */
   brandNotice?: BrandNoticeData;
   /**
+   * "An independent project. Not affiliated with or endorsed by Robinhood." (founder ruling 2026-11-09, UI rule 16):
+   * the domain's `ROBINHOOD_NAME_DISCLAIMER`, set by `nameNeedsRobinhoodDisclaimer` when the name carries "Robinhood"
+   * on a page that is not a Robinhood Stock Token's own. Drawn small and muted directly under the name; display only.
+   */
+  nameDisclaimer?: string;
+  /**
    * Supply held at HoodLock, when HEY found a live lock. Absent is the
    * ordinary case and is never drawn as a failing check — context, never a
    * verdict (CLAUDE.md product rule 3).
@@ -627,6 +633,12 @@ export function ProjectCard({
               {name}
             </a>
           </h3>
+          {/* Under the name (2026-11-09): a name carrying "Robinhood" is an independent project's, never Robinhood's. */}
+          {project.nameDisclaimer ? (
+            <p className="mt-0.5 text-[12px] leading-4 text-hey-muted [overflow-wrap:anywhere]" data-testid="name-disclaimer">
+              {project.nameDisclaimer}
+            </p>
+          ) : null}
           {identityParts.length > 0 ? (
             <p className="mt-1 truncate text-[13px] leading-5 text-hey-secondary">
               {identityParts.map((part, index) => (index === 0 ? part : [<span key={`sep-${index}`} aria-hidden="true"> · </span>, part]))}

@@ -33,7 +33,19 @@
  *     stays and is labelled "sources disagree" (`marketSourcesDisagree`, 2×);
  *     at 10× HEY cannot say which figure is the market, so it publishes
  *     neither as the valuation. Like rule 3 it needs the caller's other-source
- *     readings and is not a scorer input.
+ *     readings and is not a scorer input; or
+ *  5. it is at least `VALUATION_QUOTE_SIDE.maxQuoteSideMultiple` (10,000×) the
+ *     market's **quote side** — the side of its pools that is not the token
+ *     (ETH, WETH, USDG, a stablecoin, any other asset), summed over the
+ *     token's pools in HEY's chain pool index on the reading's UTC day or the
+ *     day before (`quote_side_thin`, founder ruling 2026-11-09, "ni kau kena
+ *     fix"; data-trust audit P2-3). Rule 1 compares with both sides of a
+ *     pool, so a pool that is almost all the token's own supply valued at its
+ *     own price passes it: `blorb` printed $94M on $9.4M of "liquidity" whose
+ *     other side HEY's index put at $376 to $2,404. Two-sided liquidity is not
+ *     what a market can pay out; the quote side is. Like rules 3 and 4 it needs
+ *     the caller's chain evidence (`chainIndexQuoteSide`); the scorer passes it
+ *     since hbm-v35.
  *
  * An implausible valuation is never labelled FACT and never used as an input
  * anywhere a valuation is used: the card, the project page, the Terminal,
@@ -50,7 +62,10 @@
  * to print its market cap as though the rest of it were sound.
  *
  * Unknown is never a trip wire. With no positive liquidity reading rule 1 is
- * silent (a missing figure is not a zero), and with the listing unknown —
+ * silent (a missing figure is not a zero); with no index day, a day keyed by
+ * the v4 PoolManager, or an index that holds under a tenth of the reading's
+ * liquidity (it is not reading the market the reading describes) rule 5 is
+ * silent; and with the listing unknown —
  * HEY holds no CoinGecko quote for the token and no registry read to check
  * it against — rule 2 is silent. HEY reads CoinGecko (its registry of
  * Robinhood Chain coins, daily, and its quotes); it reads no CoinMarketCap
@@ -99,14 +114,34 @@ export const VALUATION_SOURCES_DISAGREE = {
   windowMs: 24 * 60 * 60 * 1000,
 } as const;
 
+/**
+ * Rule 5's thresholds (founder ruling 2026-11-09, "ni kau kena fix"; data-trust
+ * audit P2-3). A scorer input since hbm-v35: a valuation this rule withholds
+ * leaves the Discovery Gap's percentile and is no current value for Still
+ * Building, as every other rule's. Withhold only, never awards.
+ */
+export const VALUATION_QUOTE_SIDE = {
+  /** At or above this multiple of the market's quote side, a valuation is not plausible. */
+  maxQuoteSideMultiple: 10_000,
+  /** The index day read: the reading's UTC day, or up to this many days before (the index is refreshed every six hours). */
+  maxAgeDays: 1,
+  /**
+   * The index decides only when it holds at least this share of the reading's own liquidity: below it the index is
+   * not reading the market the reading describes (a pool it does not index — openzaps, $2 of a $194K pool), and the
+   * quote side is unknown, never thin.
+   */
+  minIndexCoverage: 0.1,
+} as const;
+
 /** The rules' version, carried by the explain engine's valuation rule. */
-export const VALUATION_PLAUSIBILITY_VERSION = 'valuation-plausibility-2026-10-09b' as const;
+export const VALUATION_PLAUSIBILITY_VERSION = 'valuation-plausibility-2026-11-09' as const;
 
 export const VALUATION_IMPLAUSIBLE_REASONS = [
   'valuation_over_liquidity',
   'unlisted_over_ceiling',
   'chain_evidence_contradicts',
   'sources_disagree',
+  'quote_side_thin',
 ] as const;
 export type ValuationImplausibleReason = (typeof VALUATION_IMPLAUSIBLE_REASONS)[number];
 
@@ -134,6 +169,17 @@ export type ValuationPlausibilityInput = {
   chainIndexLiquidityUsd?: number | null | undefined;
   /** Each other source's newest price within a day of the reading (rule 4); absent or empty when HEY holds none. */
   otherSourcePricesUsd?: readonly (number | null | undefined)[] | null | undefined;
+  /** HEY's chain pool index on the reading's day (rule 5, 2026-11-09); absent when HEY holds no such day. */
+  chainIndexQuoteSide?: ChainIndexQuoteSide | null | undefined;
+};
+
+/**
+ * One day of HEY's chain pool index, as rule 5 reads it: the side of the token's pools that is not the token, and
+ * every pool's liquidity added (both sides) on the same day. Either absent is unknown.
+ */
+export type ChainIndexQuoteSide = {
+  quoteSideUsd?: number | null | undefined;
+  liquidityUsd?: number | null | undefined;
 };
 
 export type ValuationPlausibility =
@@ -159,6 +205,7 @@ export function valuationPlausibility(input: ValuationPlausibilityInput): Valuat
   ) {
     return { plausible: false, reason: 'valuation_over_liquidity' };
   }
+  if (quoteSideThin(input)) return { plausible: false, reason: 'quote_side_thin' };
   if (chainEvidenceContradicts(input)) return { plausible: false, reason: 'chain_evidence_contradicts' };
   if (otherSourcesDisagree(input)) return { plausible: false, reason: 'sources_disagree' };
   if (
@@ -216,6 +263,62 @@ export function otherSourcesDisagree(
   );
 }
 
+/**
+ * Rule 5 (founder ruling 2026-11-09): the valuation is at least 10,000× the market's quote side in HEY's chain pool
+ * index. Unknown is never a trip wire: no valuation, no positive quote side or index liquidity, no positive liquidity
+ * on the reading, or an index holding under `minIndexCoverage` of the reading's liquidity decides nothing.
+ */
+export function quoteSideThin(
+  input: Pick<ValuationPlausibilityInput, 'marketCapUsd' | 'fdvUsd' | 'liquidityUsd' | 'chainIndexQuoteSide'>,
+): boolean {
+  const value = valuationUnderTest(input);
+  const index = input.chainIndexQuoteSide;
+  if (value === undefined || !index) return false;
+  const { quoteSideUsd, liquidityUsd: indexLiquidityUsd } = index;
+  if (!positive(quoteSideUsd) || !positive(indexLiquidityUsd) || !positive(input.liquidityUsd)) return false;
+  if (indexLiquidityUsd < input.liquidityUsd * VALUATION_QUOTE_SIDE.minIndexCoverage) return false;
+  return value >= quoteSideUsd * VALUATION_QUOTE_SIDE.maxQuoteSideMultiple;
+}
+
+/**
+ * One pool row of an index day, as `chainIndexQuoteSideOf` reads it (`token_pool_venue_days`): `aggregate` is the
+ * `other` row that sums the pools past the ten largest, `notIndexed` the v4 PoolManager's marker.
+ */
+export type ChainIndexQuoteSideVenue = {
+  liquidityUsd?: number | null | undefined;
+  quoteSideUsd?: number | null | undefined;
+  aggregate?: boolean;
+  notIndexed?: boolean;
+};
+
+/**
+ * The quote side of one index day (2026-11-09), the TS twin of `chainIndexQuoteSideSql` in `@hey/domain`. Every
+ * pool counts, one-sided pools included — their quote side is the only quote money they hold, and leaving them out
+ * would leave a wholly one-sided market unmeasured. What HEY cannot read counts at its most generous, so an unknown
+ * never makes a market thin: a pool whose quote side is unpriced, and the `other` row (whose sum may hide unpriced
+ * pools), count their whole liquidity; liquidity in the day's sum that no pool row names (a pool the provider named
+ * no contract for) counts whole too. Undefined — unknown, never 0 — with no pool rows, a PoolManager-keyed day, or
+ * no positive day liquidity.
+ */
+export function chainIndexQuoteSideOf(day: {
+  liquidityUsd?: number | null | undefined;
+  venues: readonly ChainIndexQuoteSideVenue[];
+}): number | undefined {
+  if (!positive(day.liquidityUsd) || day.venues.length === 0) return undefined;
+  if (day.venues.some((venue) => venue.notIndexed)) return undefined;
+  const finite = (value: number | null | undefined): number | undefined =>
+    typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  let quote = 0;
+  let named = 0;
+  for (const venue of day.venues) {
+    const liquidity = finite(venue.liquidityUsd);
+    const side = finite(venue.quoteSideUsd);
+    named += liquidity ?? 0;
+    quote += venue.aggregate || side === undefined ? (liquidity ?? 0) : Math.min(side, liquidity ?? side);
+  }
+  return quote + Math.max(day.liquidityUsd - named, 0);
+}
+
 /** A stored or transported reason read back: one of the list, or undefined for anything else. */
 export function valuationImplausibleReason(value: unknown): ValuationImplausibleReason | undefined {
   return typeof value === 'string' &&
@@ -234,6 +337,7 @@ export const VALUATION_IMPLAUSIBLE_WORDS: Readonly<Record<ValuationImplausibleRe
   unlisted_over_ceiling: `it is above $${VALUATION_PLAUSIBILITY.unlistedCeilingUsd / 1_000_000_000}B on a Robinhood Chain token that no listing HEY reads carries (HEY reads CoinGecko)`,
   chain_evidence_contradicts: `HEY's own chain readings contradict it more than ${VALUATION_CHAIN_EVIDENCE.contradictionMultiple}×: the price of the token's decoded on-chain trades, or the liquidity in HEY's chain pool index on a day the reading barely traded`,
   sources_disagree: `another source priced the token more than ${VALUATION_SOURCES_DISAGREE.maxPriceRatio}× away from this reading within a day, so HEY cannot say which figure is the market`,
+  quote_side_thin: `it is at least ${VALUATION_QUOTE_SIDE.maxQuoteSideMultiple.toLocaleString('en-US')}× the side of the token's pools that is not the token itself (ETH, stablecoins or any other asset) in HEY's chain pool index: the pools' liquidity is almost all the token's own supply`,
 };
 
 /** "Valuation not plausible from the readings HEY has: <reason>." — one sentence, for tooltips, the API and agents. */

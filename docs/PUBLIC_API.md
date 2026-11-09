@@ -380,7 +380,13 @@ readings of the token (the price of its decoded on-chain trades, or its chain po
 liquidity on a day the reading traded under 0.1% of its own). And a fourth, additively, the same
 day: `sources_disagree` — another source's newest price for the token within a day of the reading
 is more than 10× away from it, so HEY cannot say which figure is the market (below 10× the figure
-stays and the dossier's `market.sourcesDisagree` names the other source).
+stays and the dossier's `market.sourcesDisagree` names the other source). Since 2026-11-09
+(scoring `hbm-v35`) a fifth, additively: `quote_side_thin` — the valuation is at least 10,000× the
+side of the token's pools that is not the token itself (ETH, stablecoins or any other asset), summed
+over the pools HEY's chain pool index holds on the reading's UTC day or the day before, where that
+index holds at least a tenth of the reading's liquidity. Two-sided "liquidity" that is almost all the
+token's own supply is no market. With no index day, a day the index could not split into Uniswap v4
+pools, or an index that holds under a tenth of the reading's liquidity, the rule is silent.
 
 `launchedVia` is present only when HEY observed the launch. "Unknown" and "Independent" are
 how the *card* says provenance is missing; the API omits the field instead, so nothing reads
@@ -1205,6 +1211,10 @@ GET /api/v1/proof-of-ship/tie?slug=predict-fwa
   is one page's current slug while its redirect names another, or no published page's, is `404 not_found`.
 - **While paused:** the route signs nothing, so it answers while the operator has paused attestations and adds
   `attestationsPaused: true`; the attestation itself answers `503 paused` until they resume.
+- **Whether HEY signs now (2026-11-09, additive):** `attestation` is `signing`, `paused` or `not_configured` — the
+  attestation route's own order: a host with no attester key is `not_configured` (the attestation answers
+  `503 not_configured`) whatever the pause says, else the pause decides. `payable: true` means an address is tied, not
+  that HEY signs for it now; read `attestation` for that. A payable answer never carries `reason`.
 - **What it is not:** `cache-control: public, max-age=60`; no provider call; nothing stored. An address here is one
   project's payout tie, never a profile, never compared across projects, never ranked, and it decides nothing on HEY.
 

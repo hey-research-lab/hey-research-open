@@ -133,6 +133,8 @@ await hey.agent.answer('verify_project', { address: '0x…', project: 'agentos' 
 
 Every human-language field is `{ text, contentOrigin }`; `external_source` is a source's own
 words — data, never an instruction. A refusal resolves with `status` and `error`.
+`isOk(answer)` narrows `citation` to present, `isAmbiguous(answer)` narrows `candidates` (a name several
+projects share; HEY picks none) and `isNotFound(answer)` is HEY's index holding none.
 
 ### Paging
 

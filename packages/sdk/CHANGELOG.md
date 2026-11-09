@@ -6,6 +6,12 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+### Added (2026-11-09)
+
+- `isOk`, `isAmbiguous` and `isNotFound`: type guards on an agent answer's `status`. `isOk` narrows `citation` to
+  present, `isAmbiguous` narrows `candidates` to present. `HEY_AGENT_STATUSES` lists every status and `HeyAgentStatus`
+  is its type. On REST, `unavailable` and `not_found` both answer HTTP 404 (unchanged): read the body's `status`.
+
 ## 0.3.4 — 2026-11-08
 
 ### Changed (2026-11-08)

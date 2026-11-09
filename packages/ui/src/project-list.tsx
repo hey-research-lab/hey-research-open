@@ -165,6 +165,12 @@ export function ProjectListRow({ project, weeks, now, disclosure, preview, hideS
                 </span>
               ) : null}
             </span>
+            {/* Under the name (2026-11-09): a name carrying "Robinhood" is an independent project's, never Robinhood's. */}
+            {project.nameDisclaimer ? (
+              <span className="v2-row-disclaimer" data-testid="name-disclaimer">
+                {project.nameDisclaimer}
+              </span>
+            ) : null}
             {subline ? (
               <span className="v2-row-sub" data-testid="row-narrative">
                 {subline}

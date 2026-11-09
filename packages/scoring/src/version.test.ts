@@ -21,7 +21,7 @@ import {
 } from './config';
 import { AUTOMATION, AUTOMATION_RATE } from './commit-automation';
 import { BURST, COMMIT_SUBSTANCE_VERSION } from './commit-substance';
-import { VALUATION_CHAIN_EVIDENCE, VALUATION_PLAUSIBILITY, VALUATION_SOURCES_DISAGREE } from './valuation-plausibility';
+import { VALUATION_CHAIN_EVIDENCE, VALUATION_PLAUSIBILITY, VALUATION_QUOTE_SIDE, VALUATION_SOURCES_DISAGREE } from './valuation-plausibility';
 import { SCORING_VERSION, SCORING_VERSIONS } from './version';
 
 /**
@@ -63,6 +63,8 @@ const RULES_DIGEST = createHash('sha256')
       // The valuation gate's rules 3 and 4 decide the scorer's valuation too (hbm-v26).
       VALUATION_CHAIN_EVIDENCE,
       VALUATION_SOURCES_DISAGREE,
+      // The gate's rule 5: a valuation 10,000× its market's quote side is no input (hbm-v35).
+      VALUATION_QUOTE_SIDE,
       // DISCOVERY_GAP above carries withholdUnknownActivity: building HEY cannot read gets no gap (hbm-v27).
       // COMMIT_SUBSTANCE_VERSION above: a manifest of version moves only is maintenance (commit-substance-v4, hbm-v29).
       // DISCOVERY_GAP and UNDER_THE_RADAR above: a contested unverified ticker and a stale reading withhold the gap; UTR needs TYPICAL attention or lower (hbm-v30).
@@ -92,8 +94,8 @@ describe('scoring version', () => {
      * digest is the bug this test exists to catch.
      */
     expect({ version: SCORING_VERSION, rules: RULES_DIGEST }).toEqual({
-      version: 'hbm-v34',
-      rules: 'f79600d1b6080678',
+      version: 'hbm-v35',
+      rules: '211d7ae404414132',
     });
   });
 });

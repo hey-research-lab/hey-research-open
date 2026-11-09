@@ -47,6 +47,8 @@ import {
   AGENT_Q_MIN,
   AGENT_RESPONSE_STATUSES,
   AGENT_SCHEMA,
+  MCP_IS_ERROR,
+  mcpIsErrorOf,
   AGENT_SCHEMA_VERSION,
   API_JSON_TEXT_NOTICE,
   HEY_OWN_TOKEN_DISCLOSURE,
@@ -409,6 +411,15 @@ export type HeyMcpOptions = {
   ownToken?: { chainId: number; address: string } | null;
 };
 
+/**
+ * The handshake's sentence about a name several projects share (2026-11-09), written from the one `isError`
+ * table (`MCP_IS_ERROR`): since 2026-11-08 an ambiguous name is an answer with `status: ambiguous` and its
+ * candidates, never `isError`. The instruction cannot drift from what research_answer does.
+ */
+export const AMBIGUOUS_HANDSHAKE_SENTENCE = MCP_IS_ERROR.ambiguous
+  ? 'A name several projects share answers isError with the candidate slugs: send one back as project, never guess.'
+  : 'A name several projects share answers with status ambiguous and the candidates (an answer, not isError): send one candidate\'s slug back as project, never guess.';
+
 /** The site's exposure flag, read the same way: only `public` publishes Market Integrity. Fail closed. */
 export const marketIntegrityFromEnv = (value: string | undefined): boolean => value?.trim().toLowerCase() === 'public';
 
@@ -453,7 +464,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         '- asks who made a contract, or whether it belongs to a project → {"capability":"verify_project","address":"<0x…>"};',
         '- asks what HEY does not know about a project → {"capability":"unknowns","q":"<name>"};',
         '- asks to compare builders → {"capability":"compare_builders","projects":["<slug>","<slug>"]} (no winner).',
-        'A name several projects share answers isError with the candidate slugs: send one back as project, never guess. Its text is the answer line, the tagged claims, the unknowns and the citation; the full JSON (data, freshness, every evidence id) is the resource link and structuredContent ("detail":"compact" leaves the data out of structuredContent, for a client that hands it to the model). Repeat its last line — "Source: HEY Research Lab, builder research for Robinhood Chain — <page>, as of <date>" — with whatever you tell the user.',
+        `${AMBIGUOUS_HANDSHAKE_SENTENCE} Its text is the answer line, the tagged claims, the unknowns and the citation; the full JSON (data, freshness, every evidence id) is the resource link and structuredContent ("detail":"compact" leaves the data out of structuredContent, for a client that hands it to the model). Repeat its last line — "Source: HEY Research Lab, builder research for Robinhood Chain — <page>, as of <date>" — with whatever you tell the user.`,
         research
           ? 'find_projects browses a name, $TICKER or 0x contract to its identity row. The other tools read one record in depth: get_changes, get_project_timeline, get_contract, explain_fact, get_evidence.'
           : 'find_projects browses a name, $TICKER or 0x contract to its identity row, or a surface (still building, under the radar…). The other tools read one record in depth: get_project_snapshot, get_changes, get_contract, explain_fact.',
@@ -1008,7 +1019,7 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
           const answered = (await client.agent.answer(request.capability, query as never)) as AgentIntelligenceResponse;
           // A retired slug the API redirected (PD-5) is said as the contract's own `subject.resolvedFrom.slug`, under the answer line.
           const response = withResolvedSubject(answered, resolvedSlug('project' in request ? request.project : undefined, answered));
-          refused = response.status === 'invalid_request';
+          refused = mcpIsErrorOf(response);
           /*
            * The lean text by default (2026-10-14, AG-04): the answer line, the claims, the unknowns, the links
            * and the citation — about 4 KB — with the whole JSON in structuredContent and at the resource link.

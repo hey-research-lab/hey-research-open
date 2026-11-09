@@ -12,7 +12,10 @@ import {
   VALUATION_IMPLAUSIBLE_WORDS,
   VALUATION_NOT_PLAUSIBLE_WORDS,
   VALUATION_PLAUSIBILITY,
+  VALUATION_QUOTE_SIDE,
   VALUATION_SOURCES_DISAGREE,
+  chainIndexQuoteSideOf,
+  quoteSideThin,
   valuationImplausibleReason,
   valuationNotPlausibleSentence,
   valuationPlausibility,
@@ -30,6 +33,8 @@ describe('the valuation plausibility gate (round 4, 2026-09-30)', () => {
     });
     // Rule 3 apart (2026-10-09): not a scorer input until hbm-v26 is ruled on.
     expect(VALUATION_CHAIN_EVIDENCE).toEqual({ contradictionMultiple: 10, maxAgeDays: 2, indexMaxTurnover: 0.001 });
+    // Rule 5 (founder ruling 2026-11-09, "ni kau kena fix"): a scorer input since hbm-v35.
+    expect(VALUATION_QUOTE_SIDE).toEqual({ maxQuoteSideMultiple: 10_000, maxAgeDays: 1, minIndexCoverage: 0.1 });
   });
 
   describe('rule 1: at least 10,000× the same reading’s liquidity', () => {
@@ -239,6 +244,147 @@ describe('the valuation plausibility gate (round 4, 2026-09-30)', () => {
     });
   });
 
+  describe('rule 5: at least 10,000× the market’s quote side in HEY’s chain pool index (founder ruling 2026-11-09)', () => {
+    /*
+     * blorb on 2026-11-09 (data-trust audit P2-3): VERIFIED, ACTIVE_MARKET, $94M on $9.4M of "liquidity" that is almost
+     * all BLORB; HEY's index puts the side that is not BLORB at $376 to $2,404. Rule 1 compares with both sides: 10×.
+     */
+    const blorb = {
+      fdvUsd: 94_000_000,
+      marketCapUsd: 94_000_000,
+      liquidityUsd: 9_400_000,
+      chainId: RH,
+      priceUsd: 0.094,
+      volume24hUsd: 2_000_000,
+      listing: 'unknown' as const,
+    };
+
+    it('withholds blorb: $94M on $9.4M of two-sided liquidity whose quote side is $1,500', () => {
+      expect(valuationPlausibility(blorb)).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: { quoteSideUsd: 1_500, liquidityUsd: 9_400_000 } })).toEqual({
+        plausible: false,
+        reason: 'quote_side_thin',
+      });
+      // Across the index's own range for blorb, $376 to $2,404: withheld at either end.
+      for (const quoteSideUsd of [376, 2_404])
+        expect(quoteSideThin({ ...blorb, chainIndexQuoteSide: { quoteSideUsd, liquidityUsd: 9_400_000 } })).toBe(true);
+    });
+
+    it('keeps a healthy market: $5M on a quote side of $500K', () => {
+      expect(
+        valuationPlausibility({
+          marketCapUsd: 5_000_000,
+          liquidityUsd: 1_000_000,
+          chainId: RH,
+          chainIndexQuoteSide: { quoteSideUsd: 500_000, liquidityUsd: 1_000_000 },
+        }),
+      ).toEqual({ plausible: true });
+    });
+
+    it('is at 10,000× exactly, and not below', () => {
+      const at = (value: number) =>
+        valuationPlausibility({ fdvUsd: value, liquidityUsd: 100_000, chainIndexQuoteSide: { quoteSideUsd: 100, liquidityUsd: 100_000 } });
+      expect(at(1_000_000)).toEqual({ plausible: false, reason: 'quote_side_thin' });
+      expect(at(999_999)).toEqual({ plausible: true });
+    });
+
+    it('unknown is never a trip wire: no index day, no quote side, no index liquidity, no reading liquidity', () => {
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: undefined })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: null })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: {} })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: { quoteSideUsd: null, liquidityUsd: 9_400_000 } })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: { quoteSideUsd: 0, liquidityUsd: 9_400_000 } })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: { quoteSideUsd: 1_500 } })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, liquidityUsd: undefined, chainIndexQuoteSide: { quoteSideUsd: 1_500, liquidityUsd: 9_400_000 } })).toEqual({ plausible: true });
+      expect(valuationPlausibility({ ...blorb, chainIndexQuoteSide: { quoteSideUsd: Number.NaN, liquidityUsd: 9_400_000 } })).toEqual({ plausible: true });
+    });
+
+    it('the index decides only where it reads the market the reading describes (openzaps: $2 of a $194K pool)', () => {
+      const openzaps = { fdvUsd: 500_000, liquidityUsd: 194_000, volume24hUsd: 125_000, chainId: RH };
+      expect(valuationPlausibility({ ...openzaps, chainIndexQuoteSide: { quoteSideUsd: 1.19, liquidityUsd: 2.38 } })).toEqual({ plausible: true });
+      // A tenth of the reading's liquidity is enough to judge.
+      expect(quoteSideThin({ ...openzaps, chainIndexQuoteSide: { quoteSideUsd: 40, liquidityUsd: 19_400 } })).toBe(true);
+      expect(quoteSideThin({ ...openzaps, chainIndexQuoteSide: { quoteSideUsd: 40, liquidityUsd: 19_399 } })).toBe(false);
+    });
+
+    it('speaks after rule 1 and before rules 3, 4 and 2', () => {
+      const thin = { quoteSideUsd: 1, liquidityUsd: 1_000 };
+      // Rule 1 first.
+      expect(valuationPlausibility({ fdvUsd: 10_000_000, liquidityUsd: 1_000, chainIndexQuoteSide: thin })).toEqual({
+        plausible: false,
+        reason: 'valuation_over_liquidity',
+      });
+      // Before rule 3's trade price and rule 4's other source.
+      expect(
+        valuationPlausibility({
+          fdvUsd: 1_000_000,
+          liquidityUsd: 10_000,
+          priceUsd: 1,
+          chainTradePriceUsd: 0.01,
+          otherSourcePricesUsd: [100],
+          chainIndexQuoteSide: { quoteSideUsd: 50, liquidityUsd: 10_000 },
+        }),
+      ).toEqual({ plausible: false, reason: 'quote_side_thin' });
+      // Before rule 2's ceiling.
+      expect(
+        valuationPlausibility({
+          marketCapUsd: 20_000_000_000,
+          liquidityUsd: 5_000_000,
+          chainId: RH,
+          listing: 'not_listed',
+          chainIndexQuoteSide: { quoteSideUsd: 1_000_000, liquidityUsd: 5_000_000 },
+        }),
+      ).toEqual({ plausible: false, reason: 'quote_side_thin' });
+    });
+
+    it('only withholds: a reading with no valuation is never touched', () => {
+      expect(valuationPlausibility({ liquidityUsd: 9_400_000, chainIndexQuoteSide: { quoteSideUsd: 1, liquidityUsd: 9_400_000 } })).toEqual({
+        plausible: true,
+      });
+    });
+  });
+
+  describe('chainIndexQuoteSideOf: one index day’s quote side, unknown at its most generous', () => {
+    it('sums every pool’s quote side, one-sided pools included', () => {
+      // blorb's shape: one pool almost all BLORB, a second small two-sided one.
+      expect(
+        chainIndexQuoteSideOf({
+          liquidityUsd: 9_400_000,
+          venues: [
+            { liquidityUsd: 9_398_000, quoteSideUsd: 1_200 },
+            { liquidityUsd: 2_000, quoteSideUsd: 300 },
+          ],
+        }),
+      ).toBe(1_500);
+      // A healthy market.
+      expect(chainIndexQuoteSideOf({ liquidityUsd: 1_000_000, venues: [{ liquidityUsd: 1_000_000, quoteSideUsd: 500_000 }] })).toBe(500_000);
+    });
+
+    it('counts an unpriced quote side, the `other` row and liquidity no pool row names as whole liquidity', () => {
+      expect(
+        chainIndexQuoteSideOf({
+          liquidityUsd: 10_000,
+          venues: [
+            { liquidityUsd: 6_000, quoteSideUsd: 10 },
+            { liquidityUsd: 2_000, quoteSideUsd: null },
+            { liquidityUsd: 1_000, quoteSideUsd: 1, aggregate: true },
+          ],
+        }),
+      ).toBe(10 + 2_000 + 1_000 + 1_000);
+      // A quote side above its pool's liquidity is capped at the pool.
+      expect(chainIndexQuoteSideOf({ liquidityUsd: 100, venues: [{ liquidityUsd: 100, quoteSideUsd: 250 }] })).toBe(100);
+    });
+
+    it('is unknown, never 0: no pool rows, a PoolManager-keyed day, no positive day liquidity', () => {
+      expect(chainIndexQuoteSideOf({ liquidityUsd: 9_400_000, venues: [] })).toBeUndefined();
+      expect(
+        chainIndexQuoteSideOf({ liquidityUsd: 9_400_000, venues: [{ liquidityUsd: 9_400_000, quoteSideUsd: 1_500 }, { notIndexed: true }] }),
+      ).toBeUndefined();
+      expect(chainIndexQuoteSideOf({ liquidityUsd: null, venues: [{ liquidityUsd: 100, quoteSideUsd: 1 }] })).toBeUndefined();
+      expect(chainIndexQuoteSideOf({ liquidityUsd: 0, venues: [{ liquidityUsd: 0, quoteSideUsd: 0 }] })).toBeUndefined();
+    });
+  });
+
   it('reads back only its own reason codes', () => {
     for (const reason of VALUATION_IMPLAUSIBLE_REASONS)
       expect(valuationImplausibleReason(reason)).toBe(reason);
@@ -252,6 +398,7 @@ describe('the valuation plausibility gate (round 4, 2026-09-30)', () => {
     expect(VALUATION_IMPLAUSIBLE_WORDS.unlisted_over_ceiling).toContain('$10B');
     expect(VALUATION_IMPLAUSIBLE_WORDS.chain_evidence_contradicts).toContain('10×');
     expect(VALUATION_IMPLAUSIBLE_WORDS.sources_disagree).toContain('10×');
+    expect(VALUATION_IMPLAUSIBLE_WORDS.quote_side_thin).toContain('10,000×');
     for (const reason of VALUATION_IMPLAUSIBLE_REASONS) {
       const sentence = valuationNotPlausibleSentence(reason);
       expect(sentence.startsWith(VALUATION_NOT_PLAUSIBLE_WORDS)).toBe(true);

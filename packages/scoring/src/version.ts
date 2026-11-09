@@ -466,7 +466,20 @@
  * re-judged by `pnpm data:commit-substance --rejudge-streams [--apply]`; HEY's own "Open-source sync" weeks are judged
  * by the same rule. It only withholds; fly-ai is held until 13 Nov 2026 19:38 UTC (`CLASSIFICATION_RULE_HOLDS`).
  */
-export const SCORING_VERSION = 'hbm-v34' as const;
+/*
+ * hbm-v35 (2026-11-09, founder ruling "ni kau kena fix", data-trust audit lane C P2-3): no weight or formula changes.
+ * The valuation gate gains rule 5 (`quote_side_thin`, `VALUATION_QUOTE_SIDE`): a valuation at least 10,000× the market's
+ * quote side — the side of the token's pools that is not the token, summed over every pool HEY's chain pool index holds
+ * on the reading's UTC day or the day before — is not plausible, when that index holds at least a tenth of the
+ * reading's own liquidity. Under hbm-v34 the gate compared a valuation with both sides of a pool only, so `blorb`'s
+ * $94M stood on $9.4M of "liquidity" that was almost all BLORB, its quote side $376 to $2,404 in the index, and fed the
+ * Discovery Gap's market percentile and Still Building. Such a valuation now leaves the percentile (liquidity and volume
+ * renormalised, as for any missing figure) and is no current value for Still Building (`valuation_not_plausible`).
+ * Unknown is never a trip wire: no index day, a PoolManager-keyed day, no pool rows, or an index that holds under a
+ * tenth of the reading's liquidity leaves it silent. It only withholds and never reaches activity status or Build
+ * Momentum.
+ */
+export const SCORING_VERSION = 'hbm-v35' as const;
 /** Every version a stored snapshot may carry; each has a note above. */
-export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33', 'hbm-v34'] as const;
+export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33', 'hbm-v34', 'hbm-v35'] as const;
 export type ScoringVersion = (typeof SCORING_VERSIONS)[number];

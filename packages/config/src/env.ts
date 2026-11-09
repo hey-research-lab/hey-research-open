@@ -1283,6 +1283,14 @@ export function isGithubAppConfigured(env: ServerEnv): boolean {
   return Boolean(env.githubApp.appId && env.githubApp.slug && env.githubApp.privateKey && env.githubApp.webhookSecret);
 }
 
+/**
+ * Whether a Proof of Ship attester key is set on this host (2026-11-09): its presence only, for a surface that says
+ * whether HEY signs (the tie route, the public page, the console) and never holds the key itself.
+ */
+export function isProofOfShipAttesterConfigured(env: ServerEnv): boolean {
+  return Boolean(env.proofOfShip.attesterKey);
+}
+
 /** The opt-in README badge pull request: the app configured and the founder's flag on. Off by default. */
 export function isGithubAppBadgePrEnabled(env: ServerEnv): boolean {
   return isGithubAppConfigured(env) && env.githubApp.badgePrEnabled;

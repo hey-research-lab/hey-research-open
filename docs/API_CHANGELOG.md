@@ -13,7 +13,7 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
-## 2026-11-09 — Two new reasons HEY holds an official X link
+## 2026-11-09 — Two new reasons HEY holds an official X link; Proof of Ship says whether HEY signs now
 
 ### Added
 
@@ -24,12 +24,21 @@ The TypeScript SDK keeps its own changelog in its package; its entries are summa
   page shows the same active account and stands behind it (its token is verified, or the account links that page's
   site back) while this page has neither. Pages print a dated line in place of the link. Do not link or tag either.
   An account held this way no longer counts toward `has=x` or a card's completeness, as for the other holds.
+- `GET /api/v1/proof-of-ship/tie` adds `attestation`: `signing`, `paused` or `not_configured`, by the attestation
+  route's own order (no attester key is `not_configured` whatever the pause says). `payable` keeps its meaning (an
+  address is tied); `attestationsPaused` is unchanged. A payable answer never carries `reason`.
+- A2A: every `SendMessage` answer carries `metadata.contractStatus`, the agent contract's status (`ok`, `ambiguous`,
+  `not_found`, `moved`, `invalid_request`, `unavailable`), the skill path included. `metadata.status` is unchanged.
+- SDK: `isOk`, `isAmbiguous` and `isNotFound` narrow an agent answer by `status`; `HEY_AGENT_STATUSES` lists them.
 
 ### Changed
 
 - Truth repair. A project's official X is no longer replaced by the one X account its website links unless that
   account's own profile links the website back. A listing's account that a site read held as context is restored when
   HEY reads it active and linking the project's site.
+- MCP: the handshake now says what `research_answer` does: a name several projects share answers with
+  `status: ambiguous` and the candidates, not `isError` (since 2026-11-08). Only `invalid_request` is `isError`.
+- On REST, `unavailable` still answers HTTP 404 like `not_found`: read the body's `status` to tell them apart.
 
 ## 2026-11-08 — An ambiguous agent query is an answer, slug on the agent contract, unread ships are null, and which days events7d adds up
 

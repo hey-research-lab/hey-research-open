@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseServerEnv, safeParseServerEnv } from './env';
+import { isProofOfShipAttesterConfigured, parseServerEnv, safeParseServerEnv } from './env';
 import { isNearMainnetAccountId } from './near-account';
 
 /** Proof of Ship (2026-10-24): off unless the attester key is set; the key is never echoed. */
@@ -11,6 +11,7 @@ describe('Proof of Ship configuration', () => {
   it('is off with nothing set, and no key or escrow is invented', () => {
     const env = parseServerEnv(base);
     expect(env.proofOfShip).toEqual({ attesterKey: undefined, escrowAddresses: [], nearEscrows: [] });
+    expect(isProofOfShipAttesterConfigured(env)).toBe(false);
   });
 
   it('turns on with the key, and reads the escrows lower-cased and trimmed', () => {
@@ -20,6 +21,7 @@ describe('Proof of Ship configuration', () => {
       HEY_SHIP_ESCROW_ADDRESSES: ' 0x000000000000000000000000000000000000E5C0, 0x1111111111111111111111111111111111111111 ,',
     });
     expect(env.proofOfShip.attesterKey).toBeTruthy();
+    expect(isProofOfShipAttesterConfigured(env)).toBe(true);
     expect(env.proofOfShip.escrowAddresses).toEqual(['0x000000000000000000000000000000000000e5c0', '0x1111111111111111111111111111111111111111']);
   });
 

@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   AGENT_LIMITS,
+  MCP_IS_ERROR,
   agentIntelligenceResponseSchema,
+  ambiguousRefusal,
   composeBuilderStatus,
   composeChainBrief,
   composeCompare,
@@ -22,7 +24,7 @@ import {
 import { HeyClient, type HeyChangeUpsert, type HeyChangeUpsertRead, type HeyProjectSnapshot, type HeyThisWeek } from '@hey-research-lab/sdk';
 
 import * as fx from './fixtures/api';
-import { createHeyMcpServer } from './server';
+import { AMBIGUOUS_HANDSHAKE_SENTENCE, createHeyMcpServer } from './server';
 
 /**
  * The agent contract composed from the same API-typed fixtures the MCP
@@ -473,5 +475,34 @@ describe('research_answer: one call from any identifier, cited, lean (2026-10-14
     expect(instructions).toContain('{"capability":"research_project","q":"<name or $TICKER>"}');
     expect(instructions).toContain('never guess');
     expect(instructions).toContain('Source: HEY Research Lab, builder research for Robinhood Chain');
+  });
+
+  /*
+   * The handshake says what the code does (2026-11-09): since 2026-11-08 an ambiguous name is an answer with
+   * status ambiguous and its candidates, so the sentence is written from MCP_IS_ERROR and the call is not isError.
+   */
+  it('the handshake text about an ambiguous name matches the isError rule', async () => {
+    const ambiguous = ambiguousRefusal(ctx(`${BASE}/api/agent/research_project?q=agent`), 'research_project', [
+      { slug: 'agentos', name: 'AgentOS', url: `${BASE}/project/agentos` },
+      { slug: 'agentx', name: 'AgentX', url: `${BASE}/project/agentx` },
+    ]);
+    expect(ambiguous.status).toBe('ambiguous');
+    const fetchImpl = async () => respond(ambiguous);
+    const server = createHeyMcpServer(new HeyClient({ baseUrl: BASE, fetchImpl }), () => NOW, { publicBaseUrl: BASE });
+    const client = new Client({ name: 'test', version: '0' });
+    const [a, b] = InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b), client.connect(a)]);
+
+    const instructions = client.getInstructions() ?? '';
+    expect(instructions).toContain(AMBIGUOUS_HANDSHAKE_SENTENCE);
+    expect(MCP_IS_ERROR.ambiguous).toBe(false);
+    expect(AMBIGUOUS_HANDSHAKE_SENTENCE).toContain('status ambiguous');
+    expect(instructions).not.toMatch(/share answers isError/);
+
+    const result = (await client.callTool({ name: 'research_answer', arguments: { capability: 'research_project', q: 'agent' } })) as { content: { text?: string }[]; isError?: boolean; structuredContent?: { status?: string; candidates?: unknown[] } };
+    expect(Boolean(result.isError)).toBe(MCP_IS_ERROR.ambiguous);
+    expect(result.structuredContent?.status).toBe('ambiguous');
+    expect(result.structuredContent?.candidates).toHaveLength(2);
+    expect(result.content[0]?.text ?? '').toContain('agentx');
   });
 });
