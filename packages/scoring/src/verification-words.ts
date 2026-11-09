@@ -102,6 +102,8 @@ const RULES: readonly { match: RegExp; words: (...parts: string[]) => string }[]
   // `research.owner_verified`: "Verified owner (GitHub)".
   { match: /^Verified owner \((.+)\)$/, words: (method) => `Owner proved control (${method})` },
   { match: /^Verified owner$/, words: () => 'Owner proved control' },
+  // The `token_verified` signal's stored title (2026-11-10 live audit), on a surface that prints it as a change line.
+  { match: /^Token verified$/, words: () => TOKEN_VERIFICATION_WORDS.VERIFIED.label },
   // `contract.source_verified` / `_unverified`: the explorer publishes a contract's source.
   { match: /^Contract (\S+) source verified on the explorer$/, words: (address) => `Contract ${address} source published on the explorer` },
   { match: /^Contract (\S+) no longer shown as verified on the explorer$/, words: (address) => `Contract ${address} source no longer shown on the explorer` },

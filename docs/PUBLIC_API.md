@@ -2111,6 +2111,11 @@ Added 2026-09-25, all optional and absent when HEY holds nothing:
   reason is `volume_unknown`); and a Pons V2 launch that graduated into a two-sided Uniswap v4 pool
   seeded with a quote is judged on a reading of that pool by the ordinary thresholds, never as
   `launch_pool_*` — only a reading from before the graduation, or a pool seeded with no quote, is.
+  Since 2026-11-10 (`token-market-2026-11-10`): `liquidity_quote_side_thin` (`INSUFFICIENT_DATA`,
+  live, not measured, labelled "Readings not confirmed") means the reading's valuation is at least
+  10,000× the quote side of HEY's chain pool index on its day — the pool is almost all the token
+  itself — so its liquidity is withheld (never 0) and a daily close beside such a valuation sets no
+  liquidity high.
 - `contract` — `deployer`, `deployerShared` (that deployer launched other projects HEY tracks: a
   launch service, not one team), `creationTx`, `createdAt`. A fact about the contract, never a label
   on a person.

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { readFixture, stubFetch, testContext } from '../testing';
-import { createBlockscoutVerifiedAdapter } from './blockscout-verified';
+import type { FetchLike } from '../adapter';
+import { createBlockscoutVerifiedAdapter, VERIFIED_PAGE_MIN_TIMEOUT_MS } from './blockscout-verified';
 
 /*
  * Keyed only (founder ruling, 2026-09-30). The instance's REST listing sat
@@ -37,5 +38,22 @@ describe('Blockscout verified-contract listing', () => {
     expect(stub.requests[0]?.url.startsWith('https://api.blockscout.com/v2/api?')).toBe(true);
     const headers = (stub.requests[0]?.init?.headers ?? {}) as Record<string, string>;
     expect(String(headers['user-agent'] ?? '')).not.toMatch(/^Mozilla/);
+  });
+
+  it('gives a deep page at least thirty seconds, whatever the shorter source timeout (2026-11-10)', async () => {
+    expect(VERIFIED_PAGE_MIN_TIMEOUT_MS).toBe(30_000);
+    const body = readFixture('blockscout-pro-listcontracts.json');
+    // Answers after 250 ms, past the context's own 100 ms; aborts if the signal fires first.
+    const slow: FetchLike = (_url, init) =>
+      new Promise<Response>((resolve, reject) => {
+        const timer = setTimeout(() => resolve(new Response(body, { status: 200, headers: { 'content-type': 'application/json' } })), 250);
+        init?.signal?.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new DOMException('aborted', 'AbortError'));
+        });
+      });
+    const result = await adapter.fetch(keyed, testContext({ fetchImpl: slow, timeoutMs: 100, retry: { attempts: 1, baseDelayMs: 1, maxDelayMs: 1, sleep: async () => {} } }));
+    expect(result.status).toBe('fresh');
+    expect(result.data?.contracts.length).toBeGreaterThan(0);
   });
 });

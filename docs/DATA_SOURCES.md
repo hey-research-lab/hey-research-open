@@ -115,7 +115,10 @@ cent headroom means at most 3,500 calls a day; a heavy day with the sweep would 
 (≈117% of the tier), and even the live half alone about 5,510. It does not fit, so the sweep was
 not switched. It would also cost the market page its concentration figures (Gini, the median
 balance, "half of the remaining supply"), which only Bitquery computes over every balance, and
-the graph read stays Bitquery's either way.
+the graph read stays Bitquery's either way. (Since 2026-11-08 HEY is on the Blockscout Builder
+plan — 100M credits a month, 20 a call, 15 requests a second — and since 2026-11-10 the ceilings
+are `blockscout` 20,000 and `blockscout-source` 5,000 a day, paced 240 and 120 a minute; the
+sweep's switch was not re-evaluated.)
 
 ### Follow-up deployments (Blockscout PRO API, 2026-09-12)
 
@@ -253,8 +256,9 @@ per contract per UTC day, with the ERC-20 standard surface collapsed into one `e
 undecoded call kept under its selector. It selects no account and no count of accounts (the unit
 test forbids `From`, `Sender`, `Transaction`, `Holder` and `Balance` in the document). A
 `contract_method_coverage` window per contract says which days were read, so a missing day is
-"no call" only inside it. Its budget key is `bitquery-methods`, capped at 87 requests a day — under
-5 % of the plan's million points a month at the measured 19 points a request — and a one-off
+"no call" only inside it. Its budget key is `bitquery-methods`, capped at 333 requests a day — under
+5 % of the plan's million points a month at the measured 5 points a realtime request (87 at the
+September blended average of 19 until 2026-11-10) — and a one-off
 archive backfill reads the same document from
 the `combined` dataset under `bitquery-methods-archive`. The public name of this evidence is
 `decoded_calls`; function names stay on Terminal surfaces (founder decision F3).

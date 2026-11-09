@@ -23,6 +23,8 @@ describe('changeSummaryWords (2026-10-30 UI audit, R2)', () => {
 
   it('reads an ownership claim and an explorer source without the word', () => {
     expect(changeSummaryWords('Verified owner (GitHub)')).toBe('Owner proved control (GitHub)');
+    expect(changeSummaryWords('Verified owner (on-chain signature)')).toBe('Owner proved control (on-chain signature)');
+    expect(changeSummaryWords('Token verified')).toBe('Project names this contract');
     expect(changeSummaryWords('Contract 0xab…cd12 source verified on the explorer')).toBe('Contract 0xab…cd12 source published on the explorer');
     expect(changeSummaryWords('Contract 0xab…cd12 no longer shown as verified on the explorer')).toBe('Contract 0xab…cd12 source no longer shown on the explorer');
   });

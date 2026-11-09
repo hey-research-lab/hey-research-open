@@ -25,8 +25,9 @@ const drainOf = (heldUsd: number, days = 3): DrainEvidence => ({
 
 describe('token-market-2026-11-09', () => {
   it('is the rules version, and Market Integrity moves with it', () => {
-    expect(TOKEN_MARKET_RULES_VERSION).toBe('token-market-2026-11-09');
-    expect(MARKET_INTEGRITY_RULES_VERSION).toBe('mi-v5');
+    // Or a later version: token-market-2026-11-10 (and mi-v6) keep every rule this file holds.
+    expect(TOKEN_MARKET_RULES_VERSION >= 'token-market-2026-11-09').toBe(true);
+    expect(['mi-v5', 'mi-v6']).toContain(MARKET_INTEGRITY_RULES_VERSION);
   });
 });
 

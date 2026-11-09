@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isTelegramChannelUrl, TELEGRAM_LINK_SQL_PATTERN, TELEGRAM_RESERVED_PATHS, telegramChannelUrl, telegramLinkValidRaw } from './telegram-link';
+import { isTelegramChannelUrl, isTelegramMessageLink, TELEGRAM_LINK_SQL_PATTERN, TELEGRAM_RESERVED_PATHS, telegramChannelUrl, telegramLinkValidRaw } from './telegram-link';
 
 /**
  * The Postgres twin, read in JavaScript: the pattern uses only syntax POSIX AREs and JS share (`~*` is the `i` flag),
@@ -48,10 +48,22 @@ describe('a Telegram link HEY may store', () => {
     expect(telegramChannelUrl('https://t.me/pickles_chat/123')).toBe('https://t.me/pickles_chat');
     expect(telegramChannelUrl('https://t.me/+AbCdEfGh12')).toBe('https://t.me/+AbCdEfGh12');
     expect(telegramChannelUrl('https://t.me/joinchat/AbCdEfGh12')).toBe('https://t.me/+AbCdEfGh12');
-    for (const url of ['https://t.me/pickles_chat', 'https://www.t.me/pickles_chat/', 'https://t.me/s/pickles_chat', 'https://t.me/pickles_chat/123', 'https://t.me/+AbCdEfGh12', 'https://t.me/joinchat/AbCdEfGh12', 'https://T.ME/Pickles_Chat?start=1']) {
+    for (const url of ['https://t.me/pickles_chat', 'https://www.t.me/pickles_chat/', 'https://t.me/s/pickles_chat', 'https://t.me/+AbCdEfGh12', 'https://t.me/joinchat/AbCdEfGh12', 'https://T.ME/Pickles_Chat?start=1']) {
       expect(isTelegramChannelUrl(url), url).toBe(true);
+      expect(isTelegramMessageLink(url), url).toBe(false);
       expect(sqlTwin(url), url).toBe(true);
     }
+  });
+
+  /* 2026-11-10 (founder delegation, overnight): evrithng's TELEGRAM source was `t.me/EVRITHNG_APP/1`, one post. */
+  it('reads a message link as its channel when written, and holds one stored as it is', () => {
+    for (const url of ['https://t.me/EVRITHNG_APP/1', 'https://t.me/pickles_chat/123', 'https://t.me/s/pickles_chat/45', 't.me/EVRITHNG_APP/1/']) {
+      expect(isTelegramMessageLink(url), url).toBe(true);
+      expect(isTelegramChannelUrl(url), url).toBe(false);
+      if (/^https?:/.test(url)) expect(sqlTwin(url), url).toBe(false);
+    }
+    expect(telegramChannelUrl('https://t.me/EVRITHNG_APP/1')).toBe('https://t.me/EVRITHNG_APP');
+    expect(telegramChannelUrl('https://t.me/s/pickles_chat/45')).toBe('https://t.me/pickles_chat');
   });
 
   it('builds a SQL predicate that names the column and no input', () => {

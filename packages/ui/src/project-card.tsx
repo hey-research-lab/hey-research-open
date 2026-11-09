@@ -954,6 +954,9 @@ export function marketLensLine(project: ProjectCardData): string {
     if (project.buys24h !== undefined && project.sells24h !== undefined) parts.push(`${project.buys24h.toLocaleString('en-US')} buys · ${project.sells24h.toLocaleString('en-US')} sells`);
   } else if (project.tokenMarketReason === 'readings_implausible') {
     parts.push('Reported liquidity not confirmed');
+  } else if (project.tokenMarketReason === 'liquidity_quote_side_thin') {
+    // The pool is almost all the token itself (2026-11-10): its "liquidity" is never printed as a depth figure.
+    parts.push('Reported liquidity is mostly the token itself');
   } else if (project.tokenMarketReason === 'pool_readings_disagree') {
     parts.push('Pool readings disagree');
   } else if (project.tokenMarketReason === 'removal_unconfirmed') {

@@ -222,8 +222,17 @@ export const TOKEN_MARKET = {
  *  - the liquidity high skips a daily close whose valuation fails the
  *    valuation gate (`valuationPlausibility` rules 1 and 2): atlantis-coin's
  *    $31M high stood on closes read beside a $349B valuation.
+ *
+ * token-market-2026-11-10 (production audit, founder delegation, overnight). Each only withholds:
+ *  - a current reading whose valuation trips the valuation gate's `quote_side_thin` (rule 5, 2026-11-09) and whose
+ *    liquidity is at least `lowLiquidityUsd` is `INSUFFICIENT_DATA` / `liquidity_quote_side_thin`, "Readings not
+ *    confirmed": its liquidity is the token's own supply, not a measured liquidity, and is withheld on every surface
+ *    (`marketFiguresBelievable`);
+ *  - the liquidity high skips a daily close whose valuation trips rule 5 on that day's index
+ *    (`dayCloseValuationImplausibleSql`), as it skips rules 1 and 2. blorb: "Active market", "Liquidity $9.1M" and a
+ *    $22M high beside $8 of volume and a quote side of $268.
  */
-export const TOKEN_MARKET_RULES_VERSION = 'token-market-2026-11-09' as const;
+export const TOKEN_MARKET_RULES_VERSION = 'token-market-2026-11-10' as const;
 
 /**
  * The drain's held level, capped at the token's liquidity high (2026-11-09,
@@ -276,6 +285,13 @@ export type TokenMarketEvidence = {
     fdvUsd?: number;
     /** The same reading's price: the reference a second reading's price is held to. */
     priceUsd?: number;
+    /**
+     * The reading's valuation trips the valuation gate's rule 5, `quote_side_thin` (2026-11-10, founder delegation,
+     * overnight): it is at least `VALUATION_QUOTE_SIDE.maxQuoteSideMultiple` the quote side of HEY's chain pool index
+     * on the reading's day, so the reading's "liquidity" is almost all the token's own supply valued at its own price.
+     * The sweep reads it (`quoteSideThinSql`); absent or false: not tripped, or unknown, which decides nothing.
+     */
+    quoteSideThin?: boolean;
   };
   /** The newest reading of any kind, to tell "stale" from "never read". */
   latestObservedAt?: Date;
@@ -540,6 +556,20 @@ export function classifyTokenMarket(evidence: TokenMarketEvidence): TokenMarketC
   }
 
   /*
+   * A pool that is almost all the token's own supply (2026-11-10, founder delegation, overnight;
+   * token-market-2026-11-10): the reading's valuation is at least 10,000× the quote side HEY's chain pool index holds
+   * on its day (the valuation gate's rule 5, `quote_side_thin`), so its "liquidity" is the token valued at its own price
+   * — not a measured liquidity, as a launch pool's is not. Judged only where the figure would claim more than a low
+   * market (at or above `lowLiquidityUsd`): below it the low and drained statuses already say what the pool is. Not
+   * dead — the token may trade — and not measured: never ACTIVE_MARKET, and no pool rescues it, since the quote side is
+   * the sum of every pool the index holds. blorb: "Liquidity $9.1M", "Active market", beside $8 of volume and a quote
+   * side of $268.
+   */
+  if (latest.quoteSideThin === true && latest.liquidityUsd >= TOKEN_MARKET.lowLiquidityUsd) {
+    return { status: 'INSUFFICIENT_DATA', reason: QUOTE_SIDE_THIN_REASON };
+  }
+
+  /*
    * A large pool nobody trades and HEY's chain index cannot find (2026-09-25):
    * the figure is not believed, so it is neither a live market nor a drain.
    */
@@ -723,6 +753,14 @@ export const VOLUME_UNKNOWN_REASON = 'volume_unknown' as const;
 export const LIQUIDITY_NOT_CURRENT_REASON = 'liquidity_not_current' as const;
 
 /**
+ * The reason a reading whose "liquidity" is almost all the token's own supply carries (2026-11-10, founder delegation,
+ * overnight): its valuation trips the valuation gate's `quote_side_thin` on HEY's chain pool index. Not dead and not
+ * measured, labelled "Readings not confirmed"; its liquidity is withheld wherever a figure would be printed, sorted or
+ * filtered (`marketFiguresBelievable`), and a daily close beside such a valuation sets no liquidity high.
+ */
+export const QUOTE_SIDE_THIN_REASON = 'liquidity_quote_side_thin' as const;
+
+/**
  * The reason a token that is not fungible carries (2026-10-03): decimals 0,
  * an NFT collection. A dead reason: no market, no valuation, nothing measured.
  */
@@ -866,6 +904,7 @@ export const TOKEN_MARKET_REASONS = [
   'reading_not_current',
   'volume_unknown',
   'liquidity_not_current',
+  'liquidity_quote_side_thin',
 ] as const;
 /** The reason `tokens.market_status_reason` holds, as the classifier writes it (2026-11-09, state-machine audit §8). */
 export type TokenMarketReason = (typeof TOKEN_MARKET_REASONS)[number];
@@ -882,8 +921,15 @@ export function isTokenMarketReason(value: string | null | undefined): value is 
  * contradicted.
  */
 export function marketFiguresBelievable(reason: string | null | undefined): boolean {
-  return reason !== IMPLAUSIBLE_READING_REASON;
+  return !(UNBELIEVED_LIQUIDITY_REASONS as readonly string[]).includes(reason ?? '');
 }
+
+/**
+ * The reasons whose current liquidity figure HEY does not print, sort or filter on (2026-11-10): a reading HEY does not
+ * believe (2026-09-25) and one whose liquidity is almost all the token's own supply (`liquidity_quote_side_thin`).
+ * `marketFiguresBelievableSql` in `@hey/domain` is generated from this list.
+ */
+export const UNBELIEVED_LIQUIDITY_REASONS = ['readings_implausible', 'liquidity_quote_side_thin'] as const;
 
 /** The reason a reading HEY does not believe carries (`liquidityImplausible`). */
 export const IMPLAUSIBLE_READING_REASON = 'readings_implausible' as const;

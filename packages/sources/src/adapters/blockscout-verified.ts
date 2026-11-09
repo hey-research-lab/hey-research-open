@@ -21,6 +21,12 @@ import { opt } from '../optional';
  * layer; this adapter reports exactly what the explorer says.
  */
 const CACHE_TTL_SECONDS = 60 * 60;
+/**
+ * The least time a verified-contracts page is given (2026-11-10): a deep page
+ * of `listcontracts` takes the explorer longer than the default source
+ * timeout, so the sync stepped over it and re-read it hour after hour.
+ */
+export const VERIFIED_PAGE_MIN_TIMEOUT_MS = 30_000;
 
 export type VerifiedContract = {
   address: string;
@@ -121,7 +127,7 @@ async function fetchPro(input: BlockscoutVerifiedInput, ctx: SourceContext): Pro
     ...(input.until ? { verified_at_end_timestamp: Math.floor(input.until.getTime() / 1000) } : {}),
   });
   const result = await performSourceFetch(
-    ctx,
+    { ...ctx, timeoutMs: Math.max(ctx.timeoutMs, VERIFIED_PAGE_MIN_TIMEOUT_MS) },
     { url, headers: { accept: 'application/json' } },
     {
       schema: proPageSchema,

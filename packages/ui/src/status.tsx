@@ -470,6 +470,8 @@ const TOKEN_MARKET_REASON_HELP: Readonly<Record<UnconfirmedMarketReason, string>
   volume_unknown:
     'The pool holds liquidity, but no reading from the last 36 hours reports its 24 h volume. Whether it trades is unknown, not zero, so HEY does not call it an active market.',
   liquidity_not_current: LIQUIDITY_NOT_CURRENT_PRESENTATION.help,
+  liquidity_quote_side_thin:
+    'The pool’s reported liquidity is almost all the token itself, valued at its own price: HEY’s chain index finds the other side of its pools worth less than a ten-thousandth of the token’s valuation. HEY does not show that figure as liquidity and does not call it an active market.',
   removal_unconfirmed:
     'The latest reading finds almost no liquidity, but HEY has not measured a drain: the pool that held the market has not been read empty on two days, or a later reading still found it. HEY claims neither a live market nor a removal until it has.',
 };

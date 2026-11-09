@@ -72,17 +72,40 @@ export function telegramChannelUrl(value: string | null | undefined): string | u
   return `https://t.me/${first}`;
 }
 
-/** Whether `value` is a Telegram link HEY may store (`telegramChannelUrl` reads one). */
-export const isTelegramChannelUrl = (value: string | null | undefined): boolean => telegramChannelUrl(value) !== undefined;
+/**
+ * Whether `value` is a message link (2026-11-10, founder delegation, overnight): a username, or its `s/` preview, with a
+ * path under it — `t.me/EVRITHNG_APP/1`, one post of the channel. `telegramChannelUrl` reads it as its channel when a
+ * link is written; stored as it is, it is no channel link and the gate holds it (`not_a_telegram_link`).
+ */
+export function isTelegramMessageLink(value: string | null | undefined): boolean {
+  const raw = value?.trim();
+  if (!raw || telegramChannelUrl(raw) === undefined) return false;
+  let path: string;
+  try {
+    path = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`).pathname;
+  } catch {
+    return false;
+  }
+  const segments = path.split('/').filter(Boolean);
+  const below = segments[0]?.toLowerCase() === 's' ? segments.slice(2) : segments.slice(1);
+  if (segments[0]?.startsWith('+') || segments[0]?.toLowerCase() === 'joinchat') return false;
+  return below.length > 0;
+}
 
 /**
- * {@link telegramChannelUrl}'s test as one case-insensitive Postgres pattern over a stored URL: a `t.me` or
- * `telegram.me` URL whose first path segment is a username of 5–32 characters (a post under it allowed), the `s/`
- * preview of one, or an invite. The reserved paths are checked apart (`TELEGRAM_RESERVED_PATHS`), since a POSIX pattern
+ * Whether `value` is a Telegram link HEY may hold as stored: one `telegramChannelUrl` reads, and not a message link
+ * (2026-11-10). The SQL twin is `telegramLinkValidRaw`.
+ */
+export const isTelegramChannelUrl = (value: string | null | undefined): boolean => telegramChannelUrl(value) !== undefined && !isTelegramMessageLink(value);
+
+/**
+ * {@link isTelegramChannelUrl}'s test as one case-insensitive Postgres pattern over a stored URL: a `t.me` or
+ * `telegram.me` URL whose first path segment is a username of 5–32 characters (a trailing slash allowed; never a post
+ * under it since 2026-11-10, a message link is no channel link), the `s/` preview of one, or an invite. The reserved paths are checked apart (`TELEGRAM_RESERVED_PATHS`), since a POSIX pattern
  * has no negative look-ahead. Compare with `~*`.
  */
 export const TELEGRAM_LINK_SQL_PATTERN =
-  '^https?://(www\\.)?(t\\.me|telegram\\.me)/((s/)?[a-z0-9_]{5,32}|\\+[a-z0-9_-]{8,64}|joinchat/[a-z0-9_-]{8,64})(/[^?#]*)?([?#].*)?$';
+  '^https?://(www\\.)?(t\\.me|telegram\\.me)/(((s/)?[a-z0-9_]{5,32})/?|(\\+[a-z0-9_-]{8,64}|joinchat/[a-z0-9_-]{8,64})(/[^?#]*)?)([?#].*)?$';
 
 /** The first path segment of a stored Telegram URL, lower case, as Postgres reads it (for the reserved-path test). */
 export const telegramFirstSegmentSql = (column: string): string =>

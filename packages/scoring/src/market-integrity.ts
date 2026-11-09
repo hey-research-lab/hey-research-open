@@ -70,11 +70,15 @@ export function tradedOnDay(day: { trades: number | null; volumeUsd: number | nu
 }
 
 /*
+ * mi-v6 (2026-11-10, production audit, founder delegation, overnight): the close's valuation gate also applies rule 5,
+ * `quote_side_thin`, on the close's own day of HEY's chain pool index (`dayCloseValuationImplausibleSql`): a close of a
+ * pool that is almost all the token's own supply sets no sustained peak (blorb's $22M).
+ *
  * mi-v5 (2026-11-09, data-trust audit P3, founder delegation): the sustained peak skips a daily close whose valuation
  * fails the valuation gate (`IntegrityDay.valuationImplausible`), the twin of the stored liquidity high
  * (token-market-2026-11-09). Only withholds: a lower level can only make a collapse harder to call.
  */
-export const MARKET_INTEGRITY_RULES_VERSION = 'mi-v5';
+export const MARKET_INTEGRITY_RULES_VERSION = 'mi-v6';
 
 export const MARKET_INTEGRITY = {
   /** A market is established once liquidity held at least this much … */

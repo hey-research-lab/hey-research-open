@@ -116,7 +116,7 @@ the chain's bytecode. The table below is the record as it was used.
 | Endpoint | `https://robinhoodchain.blockscout.com/api/v2/smart-contracts/{address}` (instance, no key) |
 | Purpose | The ABI watch's read: verified or not, the ABI as canonical signatures, how the source was verified (`is_verified_via_eth_bytecode_db`, `_sourcify`, `_verifier_alliance`), full or partial, `verified_at`, `proxy_type` and `implementations` |
 | Not kept | Source code, bytecode, constructor arguments, compiler settings |
-| Rate limit | Undocumented. One call per watched contract on its recheck, under `blockscout-source` (1,000/day, 60/min); a clone's implementation once a run |
+| Rate limit | Undocumented. One call per watched contract on its recheck, under `blockscout-source` (5,000/day, 120/min since 2026-11-10); a clone's implementation once a run |
 | Verified | 2026-09-27 from this machine and from the production host: 200, `application/json`, 0.4–0.7 MB |
 | Fallback | PRO API `getsourcecode` (with `RH_BLOCKSCOUT_API_KEY`) when the record does not answer; it keeps the ABI and leaves the verification method as it was |
 
@@ -176,7 +176,7 @@ in one run — are counted and skipped. Job `SYNC_VERIFIED_CONTRACTS` hourly; CL
 | Fields used | `token_holders_count`, `transfers_count`; `items[].address.hash`, `items[].value` (in memory only); `total_supply`, `decimals`, `holders_count` |
 | Not kept | Any address or balance: only the day's summary row (`token_holder_summaries`, no address) |
 | Auth | The Blockscout API's free tier (key required, `RH_BLOCKSCOUT_API_KEY`); HEY does not pay for Blockscout. The chain goes in the path — `?chain_id=4663` answers "Network not supported" on these REST routes |
-| Rate limit | Free tier about 100,000 credits a day (≈20 a call, ≈5,000 calls) and five requests a second. Two calls a scanned token, a third only when the chain gave no decimals, each under `blockscout` (4,500/day, 60/min) and the scan's `scan-onchain` (100 reads/day): at most 150 calls a day |
+| Rate limit | Builder plan since 2026-11-08: 100M credits a month, 20 a call, 15 requests a second (the free tier was about 100,000 credits a day and five a second). Two calls a scanned token, a third only when the chain gave no decimals, each under `blockscout` (20,000/day, 240/min since 2026-11-10) and the scan's `scan-onchain` (100 reads/day): at most 150 calls a day |
 | Cache policy | 15 min |
 | Reliability | **Authoritative** for the explorer's own counts; "half of the remaining supply" is not counted from one page of balances and says so. Context only (`blockscout` authority: never identity, building or a ship) |
 | Verified | 2026-10-09 from production with HEY's key: `/counters` → `{ transfers_count, token_holders_count, ui_multiplier_changes_count }` (strings), `/holders` → `{ items[50], next_page_params }` |
@@ -938,7 +938,8 @@ before the integration shipped on 2026-09-12 and were simply stale.
 cycle against the plan's 1,000,000 (cycle 12th → 12th). The function-level collection
 (`bitquery-methods.ts`, the `Calls` cube, calls per method per contract per day) was approved on
 the condition that its forward set stays under 5 % of the plan: its own budget key,
-`bitquery-methods`, is capped at 87 requests a day and it needs about 11; the one-off archive
+`bitquery-methods`, is capped at 87 requests a day and it needs about 11 (333 a day since
+2026-11-10: the meter prices a realtime method read at 5 points, not the blended 19); the one-off archive
 backfill runs under `bitquery-methods-archive` (400 a day) and prints its request count in a dry
 run first.
 

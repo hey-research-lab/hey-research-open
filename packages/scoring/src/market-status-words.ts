@@ -93,6 +93,8 @@ export const UNCONFIRMED_MARKET_REASONS = [
   'volume_unknown',
   // A traded market whose depth reading is more than a week old (2026-10-16, ruling #139).
   'liquidity_not_current',
+  // A pool that is almost all the token's own supply: its liquidity is not measured (2026-11-10, quote_side_thin).
+  'liquidity_quote_side_thin',
 ] as const;
 export type UnconfirmedMarketReason = (typeof UNCONFIRMED_MARKET_REASONS)[number];
 
@@ -201,6 +203,7 @@ export const TOKEN_MARKET_REASON_WORDS: Readonly<Record<(typeof TOKEN_MARKET_REA
   reading_not_current: 'the newest reading is more than 36 hours old and no trade record from the last day speaks for the market',
   volume_unknown: 'the pool holds liquidity, but no reading from the last 36 hours reports how much traded',
   liquidity_not_current: 'the token traded in the last day, but the newest reading of its pool’s liquidity is more than 7 days old',
+  liquidity_quote_side_thin: 'the pool’s reported liquidity is almost all the token itself: HEY’s chain index finds the other side worth less than a ten-thousandth of its valuation',
 };
 
 /** "Active market: the pool holds liquidity and the token traded in the last day." `marketWords`' sentence. */
