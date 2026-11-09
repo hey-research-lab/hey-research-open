@@ -84,7 +84,7 @@ On npm since 2026-09-27 as `@hey-research-lab/mcp` (Node 20 or newer). Name the 
 release you chose, and a newer one only when you change the number.
 
 ```bash
-claude mcp add hey-research -- npx -y @hey-research-lab/mcp@0.3.4
+claude mcp add hey-research -- npx -y @hey-research-lab/mcp@0.3.5
 ```
 
 To run a change of your own, build it from a clone instead —
