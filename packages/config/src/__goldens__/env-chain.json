@@ -1,0 +1,20 @@
+{
+  "minimal": {
+    "chainId": 4663,
+    "dexscreenerSlug": "robinhood",
+    "geckoterminalNetwork": "robinhood",
+    "rpcUrl": "[undefined]",
+    "rpcFallbackUrl": "[undefined]",
+    "blockscoutBaseUrl": "[undefined]",
+    "blockscoutApiKey": "[undefined]"
+  },
+  "productionShaped": {
+    "chainId": 4663,
+    "dexscreenerSlug": "robinhood",
+    "geckoterminalNetwork": "robinhood",
+    "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+    "rpcFallbackUrl": "[undefined]",
+    "blockscoutBaseUrl": "https://robinhoodchain.blockscout.com",
+    "blockscoutApiKey": "[undefined]"
+  }
+}

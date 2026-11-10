@@ -1,0 +1,579 @@
+{
+  "requested": [
+    "/api/agent/research_project?project=agentos"
+  ],
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "# HEY research_project — hey.agent-intelligence-response v1\nChain: Robinhood Chain (4663) · as of 2026-11-11T12:00:00.000Z · status ok\n\nAnswer (DERIVED): AgentOS is shipping consistently: 4 counted ships in 30 days; latest ship yesterday. agentos: activity status SHIPPING, last meaningful ship 2026-09-24; 9 counted ships in 30 days. HEY lists 1 thing it does not know (1 NOT_VERIFIED) under unknowns.\n\nClaims (FACT recorded with its source · DERIVED a rule HEY applied · UNKNOWN not held):\n- DERIVED summary.build: Shipping: 4 counted ships in 30 days; latest ship yesterday. · HEY read 2026-09-24 · freshness weekly · evidence ship:2ac87a66-0000-0000-0000-000000000001\n- FACT summary.usage: 4 of 4 watched contracts active · 1,842 calls in 7 days (532 calls to the contracts' own functions; 1,310 ERC-20 token transfers and approvals, which trading alone produces). · HEY read 2026-09-25 · freshness weekly · context only · evidence method:5b2d0000-0000-0000-0000-000000000001\n- DERIVED summary.market: Liquidity no longer detected: HEY holds a valuation and does not publish it while the market is not live. · HEY read 2026-09-25 · freshness weekly · context only · reason liquidity_removed · basis rule output\n- UNKNOWN summary.unknown: 3 gaps: Contract activity (not enough yet), Supply distribution (stale), Locks (no source). HEY has not read a day of the contract’s activity yet. · freshness unknown · reason no_day_read · basis not held\n- DERIVED build.activity_status [SHIPPING]: Activity status SHIPPING under HEY's activity rule (hbm-v15). · freshness unknown · basis rule output\n- FACT build.last_meaningful_ship [2026-09-24T10:00:00.000Z]: The newest meaningful ship HEY recorded is dated 2026-09-24. · happened 2026-09-24 · freshness unknown · basis canonical read\n- DERIVED build.meaningful_events_30d [9]: 9 counted ships in the last 30 days. · WINDOW · freshness unknown · basis rule output\n- DERIVED build.momentum [67.4]: Build Momentum 67.4 (0–100, from development evidence only; never price). · freshness unknown · basis rule output\n- DERIVED build.still_building [true]: Still Building: counted ships during a market drawdown HEY itself tracked; a record of what happened, not a prediction and not a buy signal. · freshness unknown · basis rule output\n- FACT contract.token_verification [VERIFIED]: The project itself names this token contract (its own site, a deploy record in its own repository, or an on-chain signature). · HEY read 2026-09-11 · freshness weekly · basis registry record\n- DERIVED market.valuation: HEY holds a market reading for this token and withholds the valuation: the market is not live. · freshness unknown · context only · reason liquidity_removed · basis rule output\n\nWhat HEY does not know:\n- NOT_VERIFIED projectOwner: No owner has proved control of this project’s site, repository or contract to HEY. Do not conclude: HEY holds nothing yet that ties this link to the project. Do not treat it as the project’s own, and do not treat it as false either. (reason owner_not_verified)\n\nPage: https://heyresearch.xyz/project/agentos\nCanonical JSON: https://hey.test/api/agent/research_project?project=agentos (the full answer: data, freshness, every evidence id)\nCite in an AgentResearchReceipt as {\"kind\":\"hey_agent_answer\",\"capability\":\"research_project\",\"schemaVersion\":\"1\",\"url\":\"https://hey.test/api/agent/research_project?project=agentos\",\"asOf\":\"2026-11-11T12:00:00.000Z\"}.\nNot provided: investment_recommendation, buy_or_sell_signal, price_prediction, price_target, position_size, leverage, stop_loss, ranking_by_expected_return, risk_score, safety_verdict, smart_money_label, wallet_pnl, wallet_profile.\nHEY reports public building activity. It is not investment advice.\nSource: HEY Research Lab, builder research for Robinhood Chain — https://heyresearch.xyz/project/agentos, as of 2026-11-11, rules hbm-v15"
+      },
+      {
+        "name": "research_answer (API)",
+        "uri": "https://heyresearch.xyz/api/agent/research_project?project=agentos",
+        "description": "The public API answer this text was rendered from.",
+        "mimeType": "application/json",
+        "type": "resource_link"
+      }
+    ],
+    "structuredContent": {
+      "schema": "hey.agent-intelligence-response",
+      "schemaVersion": "1",
+      "capability": "research_project",
+      "status": "ok",
+      "query": {
+        "chainId": 4663,
+        "project": "agentos"
+      },
+      "chain": {
+        "chainId": 4663,
+        "name": "Robinhood Chain"
+      },
+      "subject": {
+        "kind": "project",
+        "project": {
+          "slug": "agentos",
+          "name": {
+            "text": "AgentOS",
+            "contentOrigin": "external_source",
+            "source": "project_record"
+          },
+          "url": "https://heyresearch.xyz/project/agentos",
+          "token": {
+            "chainId": 4663,
+            "address": "0xcab100000000000000000000000000000000cb07"
+          }
+        }
+      },
+      "answer": {
+        "text": "AgentOS is shipping consistently: 4 counted ships in 30 days; latest ship yesterday. agentos: activity status SHIPPING, last meaningful ship 2026-09-24; 9 counted ships in 30 days. HEY lists 1 thing it does not know (1 NOT_VERIFIED) under unknowns.",
+        "contentOrigin": "derived"
+      },
+      "answerStatus": "DERIVED",
+      "claims": [
+        {
+          "id": "summary.build",
+          "dimension": "build",
+          "statement": {
+            "text": "Shipping: 4 counted ships in 30 days; latest ship yesterday.",
+            "contentOrigin": "derived"
+          },
+          "status": "DERIVED",
+          "value": null,
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": "2026-09-24T10:00:00.000Z",
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "weekly",
+          "evidence": [
+            {
+              "id": "ship:2ac87a66-0000-0000-0000-000000000001",
+              "receiptUrl": "https://hey.test/api/evidence/ship%3A2ac87a66-0000-0000-0000-000000000001",
+              "sourceUrl": "https://github.com/agentos/sdk/releases/tag/v0.4"
+            }
+          ],
+          "explainUrl": "https://heyresearch.xyz/api/projects/agentos/timeline",
+          "evidenceKind": "evidence_record"
+        },
+        {
+          "id": "summary.usage",
+          "dimension": "usage",
+          "statement": {
+            "text": "4 of 4 watched contracts active · 1,842 calls in 7 days (532 calls to the contracts' own functions; 1,310 ERC-20 token transfers and approvals, which trading alone produces).",
+            "contentOrigin": "derived"
+          },
+          "status": "FACT",
+          "value": null,
+          "source": {
+            "name": "Function called for the first time (2026-09-24)",
+            "type": "chain"
+          },
+          "observedAt": "2026-09-25T23:10:00.000Z",
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "weekly",
+          "evidence": [
+            {
+              "id": "method:5b2d0000-0000-0000-0000-000000000001",
+              "receiptUrl": "https://hey.test/api/evidence/method%3A5b2d0000-0000-0000-0000-000000000001"
+            }
+          ],
+          "explainUrl": "https://heyresearch.xyz/api/projects/agentos/usage",
+          "contextOnly": true,
+          "evidenceKind": "evidence_record"
+        },
+        {
+          "id": "summary.market",
+          "dimension": "market",
+          "statement": {
+            "text": "Liquidity no longer detected: HEY holds a valuation and does not publish it while the market is not live.",
+            "contentOrigin": "derived"
+          },
+          "status": "DERIVED",
+          "value": null,
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": "2026-09-25T18:00:00.000Z",
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "weekly",
+          "evidence": [],
+          "explainUrl": "https://heyresearch.xyz/api/projects/agentos/market",
+          "reason": "liquidity_removed",
+          "contextOnly": true,
+          "evidenceKind": "rule_output"
+        },
+        {
+          "id": "summary.unknown",
+          "dimension": "unknown",
+          "statement": {
+            "text": "3 gaps: Contract activity (not enough yet), Supply distribution (stale), Locks (no source). HEY has not read a day of the contract’s activity yet.",
+            "contentOrigin": "derived"
+          },
+          "status": "UNKNOWN",
+          "value": null,
+          "source": null,
+          "observedAt": null,
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://heyresearch.xyz/api/projects/agentos/coverage",
+          "reason": "no_day_read",
+          "evidenceKind": "not_held"
+        },
+        {
+          "id": "build.activity_status",
+          "dimension": "build",
+          "statement": {
+            "text": "Activity status SHIPPING under HEY's activity rule (hbm-v15).",
+            "contentOrigin": "derived"
+          },
+          "status": "DERIVED",
+          "value": "SHIPPING",
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": null,
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=activity.status",
+          "evidenceKind": "rule_output"
+        },
+        {
+          "id": "build.last_meaningful_ship",
+          "dimension": "build",
+          "statement": {
+            "text": "The newest meaningful ship HEY recorded is dated 2026-09-24.",
+            "contentOrigin": "derived"
+          },
+          "status": "FACT",
+          "value": "2026-09-24T10:00:00.000Z",
+          "source": {
+            "name": "builder sources",
+            "type": "builder_source"
+          },
+          "observedAt": null,
+          "occurredAt": "2026-09-24T10:00:00.000Z",
+          "precision": null,
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=activity.status",
+          "evidenceKind": "canonical_read"
+        },
+        {
+          "id": "build.meaningful_events_30d",
+          "dimension": "build",
+          "statement": {
+            "text": "9 counted ships in the last 30 days.",
+            "contentOrigin": "derived"
+          },
+          "status": "DERIVED",
+          "value": 9,
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": null,
+          "occurredAt": null,
+          "precision": "WINDOW",
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=activity.status",
+          "evidenceKind": "rule_output"
+        },
+        {
+          "id": "build.momentum",
+          "dimension": "build",
+          "statement": {
+            "text": "Build Momentum 67.4 (0–100, from development evidence only; never price).",
+            "contentOrigin": "derived"
+          },
+          "status": "DERIVED",
+          "value": 67.4,
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": null,
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=build.momentum",
+          "evidenceKind": "rule_output"
+        },
+        {
+          "id": "build.still_building",
+          "dimension": "build",
+          "statement": {
+            "text": "Still Building: counted ships during a market drawdown HEY itself tracked; a record of what happened, not a prediction and not a buy signal.",
+            "contentOrigin": "hey"
+          },
+          "status": "DERIVED",
+          "value": true,
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": null,
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=still_building",
+          "evidenceKind": "rule_output"
+        },
+        {
+          "id": "contract.token_verification",
+          "dimension": "contract",
+          "statement": {
+            "text": "The project itself names this token contract (its own site, a deploy record in its own repository, or an on-chain signature).",
+            "contentOrigin": "hey"
+          },
+          "status": "FACT",
+          "value": "VERIFIED",
+          "source": {
+            "name": "project’s own voice",
+            "type": "project_site"
+          },
+          "observedAt": "2026-09-11T00:00:00.000Z",
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "weekly",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=token.verification",
+          "evidenceKind": "registry_record"
+        },
+        {
+          "id": "market.valuation",
+          "dimension": "market",
+          "statement": {
+            "text": "HEY holds a market reading for this token and withholds the valuation: the market is not live.",
+            "contentOrigin": "hey"
+          },
+          "status": "DERIVED",
+          "value": null,
+          "source": {
+            "name": "hey",
+            "type": "hey_rule"
+          },
+          "observedAt": null,
+          "occurredAt": null,
+          "precision": null,
+          "freshness": "unknown",
+          "evidence": [],
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=market.valuation",
+          "reason": "liquidity_removed",
+          "contextOnly": true,
+          "evidenceKind": "rule_output"
+        }
+      ],
+      "unknowns": [
+        {
+          "category": "NOT_VERIFIED",
+          "dimension": "projectOwner",
+          "statement": {
+            "text": "No owner has proved control of this project’s site, repository or contract to HEY.",
+            "contentOrigin": "hey"
+          },
+          "doNotConclude": {
+            "text": "HEY holds nothing yet that ties this link to the project. Do not treat it as the project’s own, and do not treat it as false either.",
+            "contentOrigin": "hey"
+          },
+          "reason": "owner_not_verified"
+        }
+      ],
+      "freshness": [
+        {
+          "family": "builder_sources",
+          "observedAt": "2026-09-25T12:00:00.000Z",
+          "dataAsOf": "2026-09-25T12:00:00.000Z",
+          "freshnessStatus": "stale",
+          "staleAfterHours": 48,
+          "refresh": {
+            "job": "REFRESH_GITHUB",
+            "everyMinutes": 60,
+            "slowestMinutes": 4320,
+            "basis": {
+              "text": "Repositories, release feeds and changelogs are re-read by refresh tier (HOT hourly, WARM every 6 hours, COOL daily, COLD every 3 days); the tier follows the activity status and the last meaningful ship. A failing source backs off. A reading is stale after 72 hours, or one and a half cadences of its tier where that is longer (108 hours on COLD).",
+              "contentOrigin": "hey"
+            }
+          },
+          "nextExpectedRefresh": null,
+          "nextExpectedRefreshReason": "overdue"
+        },
+        {
+          "family": "locks",
+          "observedAt": null,
+          "dataAsOf": null,
+          "freshnessStatus": "unknown",
+          "staleAfterHours": 24,
+          "refresh": {
+            "job": "SYNC_HOODLOCK",
+            "everyMinutes": 360,
+            "slowestMinutes": 360,
+            "basis": {
+              "text": "HoodLock locks and unlocks are synced every 6 hours. Only HoodLock is read; other lockers are not.",
+              "contentOrigin": "hey"
+            }
+          },
+          "nextExpectedRefresh": null,
+          "nextExpectedRefreshReason": "never_read"
+        },
+        {
+          "family": "usage",
+          "observedAt": "2026-09-25T23:10:00.000Z",
+          "dataAsOf": "2026-09-25T00:00:00.000Z",
+          "freshnessStatus": "stale",
+          "staleAfterHours": 72,
+          "refresh": {
+            "job": "ROLLUP_USAGE_DAYS",
+            "everyMinutes": 360,
+            "slowestMinutes": 360,
+            "basis": {
+              "text": "Product usage is rolled up from decoded calls every 6 hours, per UTC day, for contracts in the method watch.",
+              "contentOrigin": "hey"
+            }
+          },
+          "nextExpectedRefresh": null,
+          "nextExpectedRefreshReason": "overdue"
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ship:2ac87a66-0000-0000-0000-000000000001",
+          "receiptUrl": "https://hey.test/api/evidence/ship%3A2ac87a66-0000-0000-0000-000000000001",
+          "sourceUrl": "https://github.com/agentos/sdk/releases/tag/v0.4"
+        },
+        {
+          "id": "method:5b2d0000-0000-0000-0000-000000000001",
+          "receiptUrl": "https://hey.test/api/evidence/method%3A5b2d0000-0000-0000-0000-000000000001"
+        }
+      ],
+      "data": {
+        "identity": {
+          "slug": "agentos",
+          "name": {
+            "text": "AgentOS",
+            "contentOrigin": "external_source",
+            "source": "project_record"
+          },
+          "symbol": {
+            "text": "AOS",
+            "contentOrigin": "external_source",
+            "source": "token_metadata"
+          },
+          "projectKind": "UTILITY",
+          "researchLevel": "VERIFIED_BUILDER",
+          "catalogStatus": "VERIFIED_BUILDER",
+          "narrative": {
+            "slug": "ai-agents",
+            "name": {
+              "text": "AI Agents",
+              "contentOrigin": "derived"
+            }
+          },
+          "firstRecordedByHeyAt": "2026-06-01T00:00:00.000Z",
+          "websiteUrl": null,
+          "url": "https://heyresearch.xyz/project/agentos"
+        },
+        "builderState": {
+          "activityStatus": "SHIPPING",
+          "activityMeasured": true,
+          "lastMeaningfulShipAt": "2026-09-24T10:00:00.000Z",
+          "meaningfulEvents30d": 9,
+          "buildMomentum": 67.4,
+          "stillBuilding": true,
+          "stillBuildingState": "HELD",
+          "scoringVersion": "hbm-v15",
+          "explainUrl": "https://hey.test/api/projects/agentos/explain?fact=activity.status"
+        },
+        "latestMeaningfulChange": null,
+        "latestMeaningfulChangeReason": "not_in_recent_changes",
+        "recentChanges": {
+          "available": true,
+          "items": [
+            {
+              "id": "ship:2ac87a66-0000-0000-0000-000000000001",
+              "revision": 1,
+              "type": "build.release",
+              "domain": "build",
+              "occurredAt": "2026-09-24T10:00:00.000Z",
+              "precision": "EXACT",
+              "detectedAt": "2026-09-24T11:00:00.000Z",
+              "recordedAt": "2026-09-24T11:05:00.000Z",
+              "summary": {
+                "text": "Released v0.4",
+                "contentOrigin": "external_source",
+                "source": "source_title",
+                "sourceUrl": "https://github.com/agentos/sdk/releases/tag/v0.4"
+              },
+              "status": "FACT",
+              "countsAsBuilding": false,
+              "project": {
+                "slug": "agentos",
+                "url": "https://heyresearch.xyz/project/agentos"
+              },
+              "evidence": [
+                {
+                  "id": "ship:2ac87a66-0000-0000-0000-000000000001",
+                  "receiptUrl": "https://hey.test/api/evidence/ship%3A2ac87a66-0000-0000-0000-000000000001",
+                  "sourceUrl": "https://github.com/agentos/sdk/releases/tag/v0.4"
+                }
+              ],
+              "source": "github"
+            },
+            {
+              "id": "ship:2ac87a66-0000-0000-0000-000000000002",
+              "revision": 1,
+              "type": "build.code_activity",
+              "domain": "build",
+              "occurredAt": "2026-09-14T00:00:00.000Z",
+              "precision": "WEEK",
+              "detectedAt": "2026-09-21T00:00:00.000Z",
+              "recordedAt": "2026-09-21T00:05:00.000Z",
+              "summary": {
+                "text": "42 commits by 3 contributors",
+                "contentOrigin": "derived"
+              },
+              "status": "FACT",
+              "countsAsBuilding": false,
+              "project": {
+                "slug": "agentos",
+                "url": "https://heyresearch.xyz/project/agentos"
+              },
+              "evidence": [],
+              "source": "github"
+            }
+          ],
+          "url": "https://heyresearch.xyz/api/changes?project=agentos"
+        },
+        "contractIdentity": {
+          "token": {
+            "chainId": 4663,
+            "address": "0xcab100000000000000000000000000000000cb07",
+            "verification": "VERIFIED",
+            "verificationReason": null
+          },
+          "ownerVerified": false,
+          "contractsUrl": "https://heyresearch.xyz/api/projects/agentos/contracts"
+        },
+        "marketContext": {
+          "contextOnly": true,
+          "valuation": null,
+          "valuationWithheld": "liquidity_removed",
+          "liquidityUsd": null,
+          "volume24hUsd": null,
+          "tokenMarketStatus": "LIQUIDITY_REMOVED",
+          "tokenMarketLabel": "Liquidity no longer detected",
+          "url": "https://heyresearch.xyz/api/projects/agentos/market"
+        },
+        "usageContext": {
+          "contextOnly": true,
+          "state": "MEASURED",
+          "reason": "measured",
+          "windowDays": 7,
+          "calls": 1842,
+          "activeContracts": 4,
+          "watchedContracts": 4,
+          "observedAt": "2026-09-25T23:10:00.000Z",
+          "url": "https://heyresearch.xyz/api/projects/agentos/usage"
+        }
+      },
+      "methodology": {
+        "rules": [
+          {
+            "id": "activity.status",
+            "version": "hbm-v15"
+          },
+          {
+            "id": "research_summary",
+            "version": "summary-v1"
+          },
+          {
+            "id": "agent_freshness",
+            "version": "agent-freshness-v2"
+          },
+          {
+            "id": "machine_text",
+            "version": "machine-text-v1"
+          }
+        ],
+        "url": "https://hey.test/methodology"
+      },
+      "links": {
+        "self": "https://hey.test/api/agent/research_project?project=agentos",
+        "page": "https://heyresearch.xyz/project/agentos",
+        "canonical": [
+          "https://heyresearch.xyz/api/projects/agentos/snapshot",
+          "https://heyresearch.xyz/api/projects/agentos/coverage",
+          "https://heyresearch.xyz/api/projects/agentos/explain",
+          "https://heyresearch.xyz/api/changes?project=agentos"
+        ]
+      },
+      "citation": {
+        "kind": "hey_agent_answer",
+        "capability": "research_project",
+        "schemaVersion": "1",
+        "url": "https://hey.test/api/agent/research_project?project=agentos",
+        "asOf": "2026-11-11T12:00:00.000Z",
+        "project": "agentos",
+        "scoringVersion": "hbm-v15",
+        "text": "Source: HEY Research Lab, builder research for Robinhood Chain — https://heyresearch.xyz/project/agentos, as of 2026-11-11, rules hbm-v15"
+      },
+      "boundaries": {
+        "notAdvice": true,
+        "notProvided": [
+          "investment_recommendation",
+          "buy_or_sell_signal",
+          "price_prediction",
+          "price_target",
+          "position_size",
+          "leverage",
+          "stop_loss",
+          "ranking_by_expected_return",
+          "risk_score",
+          "safety_verdict",
+          "smart_money_label",
+          "wallet_pnl",
+          "wallet_profile"
+        ],
+        "marketIsContextOnly": true,
+        "disclaimer": {
+          "text": "HEY reports public building activity. It is not investment advice.",
+          "contentOrigin": "hey"
+        }
+      },
+      "asOf": "2026-11-11T12:00:00.000Z"
+    }
+  }
+}

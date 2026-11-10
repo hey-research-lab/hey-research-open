@@ -1,0 +1,155 @@
+{
+  "nodeEnv": "development",
+  "appUrl": "https://heyresearch.xyz",
+  "publicRepoUrl": "[undefined]",
+  "legalEntity": null,
+  "buildSha": "[undefined]",
+  "databaseUrl": "postgresql://hey:hey@localhost:5432/hey_research",
+  "databaseStatementTimeoutMs": 0,
+  "databasePoolAcquireTimeoutMs": 0,
+  "chain": {
+    "chainId": 4663,
+    "dexscreenerSlug": "robinhood",
+    "geckoterminalNetwork": "robinhood",
+    "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+    "rpcFallbackUrl": "[undefined]",
+    "blockscoutBaseUrl": "https://robinhoodchain.blockscout.com",
+    "blockscoutApiKey": "[undefined]"
+  },
+  "market": {
+    "dexscreenerBaseUrl": "https://api.dexscreener.com",
+    "geckoterminalBaseUrl": "https://api.geckoterminal.com/api/v2",
+    "coingeckoApiKey": "[undefined]",
+    "bitqueryApiKey": "[undefined]",
+    "bitqueryMethodDailyRequests": "[undefined]",
+    "bitqueryStreamEnabled": false
+  },
+  "uniswap": {
+    "enabled": false,
+    "swapEnabled": false,
+    "apiKey": "[undefined]"
+  },
+  "proofOfShip": {
+    "attesterKey": "[undefined]",
+    "escrowAddresses": [],
+    "nearEscrows": []
+  },
+  "erc8004Validator": {
+    "enabled": false,
+    "key": "[undefined]",
+    "address": "[undefined]",
+    "dailyResponses": 10,
+    "maxGasGweiRobinhood": 0.2,
+    "maxGasGweiBase": 0.2
+  },
+  "twitterapiIo": {
+    "enabled": false,
+    "apiKey": "[undefined]",
+    "dailyCredits": "[undefined]"
+  },
+  "xResearch": {
+    "announcements": false,
+    "ecosystemWatch": false,
+    "opportunities": false,
+    "postRecheck": false
+  },
+  "sessionSecret": "[undefined]",
+  "github": {
+    "clientId": "[undefined]",
+    "clientSecret": "[undefined]",
+    "publicApiToken": "[undefined]"
+  },
+  "githubApp": {
+    "appId": "[undefined]",
+    "slug": "[undefined]",
+    "privateKey": "[undefined]",
+    "webhookSecret": "[undefined]",
+    "badgePrEnabled": false
+  },
+  "storage": {
+    "endpoint": "[undefined]",
+    "bucket": "[undefined]",
+    "accessKeyId": "[undefined]",
+    "secretAccessKey": "[undefined]"
+  },
+  "ai": {
+    "provider": "disabled",
+    "apiKey": "[undefined]",
+    "dailyBudgetUsd": 0,
+    "model": "claude-sonnet-5",
+    "modelPrices": "[undefined]"
+  },
+  "hey": {
+    "chainId": 4663,
+    "status": "live",
+    "tokenAddress": "0x1234567890abcdef1234567890abcdef12345678",
+    "treasuryAddress": null,
+    "ponsVersion": "v2",
+    "ponsFactory": "0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e",
+    "creatorTaxBps": 200,
+    "ponsLaunchConfigId": 0,
+    "ponsDexConfigId": null,
+    "requestResearchEnabled": false,
+    "walletConnectProjectId": "[undefined]",
+    "walletPreviewEnabled": false,
+    "bountiesEnabled": false,
+    "holderVoteEnabled": false,
+    "earlyAccessEnabled": false,
+    "terminalBetaEnabled": false,
+    "marketIntegrityExposure": "internal",
+    "marketIntegrityExitLabels": false,
+    "askEnabled": true,
+    "compareEnabled": true,
+    "watchlistEnabled": true,
+    "alertsEnabled": true,
+    "boardsEnabled": true,
+    "desksEnabled": true,
+    "bondsEnabled": false,
+    "paymentConfirmations": 30,
+    "scoutStakingEnabled": false,
+    "evidenceChallengesEnabled": false,
+    "apiCreditsEnabled": false,
+    "requestResearchHeyAmount": 1000
+  },
+  "mail": {
+    "enabled": false,
+    "apiKey": "[undefined]",
+    "from": "[undefined]"
+  },
+  "alerts": {
+    "telegramBotToken": "[undefined]",
+    "telegramChatId": "[undefined]"
+  },
+  "telegram": {
+    "enabled": false,
+    "botToken": "[undefined]",
+    "webhookSecret": "[undefined]",
+    "botUsername": "[undefined]",
+    "miniAppShortName": "[undefined]",
+    "actorSecret": "[undefined]",
+    "channelId": "[undefined]"
+  },
+  "searchConsole": {
+    "credentialsJson": "[undefined]",
+    "site": "[undefined]"
+  },
+  "indexNow": {
+    "key": "[undefined]"
+  },
+  "datasets": {
+    "dir": "[undefined]"
+  },
+  "webhooks": {
+    "masterKey": "[undefined]",
+    "denyAddresses": []
+  },
+  "worker": {
+    "heartbeatMs": 60000,
+    "pollIntervalMs": 5000,
+    "jobConcurrency": 6,
+    "jobClaimLimit": 24,
+    "discoveryIntervalMs": 600000,
+    "discoveryEnabled": true,
+    "stockTokenPricesEnabled": false
+  }
+}

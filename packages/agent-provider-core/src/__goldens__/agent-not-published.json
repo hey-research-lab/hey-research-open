@@ -1,0 +1,78 @@
+{
+  "httpStatus": 404,
+  "body": {
+    "schema": "hey.agent-intelligence-response",
+    "schemaVersion": "1",
+    "capability": "builder_status",
+    "status": "not_found",
+    "query": {
+      "chainId": 4663,
+      "address": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "chain": {
+      "chainId": 4663,
+      "name": "Robinhood Chain"
+    },
+    "subject": null,
+    "answer": {
+      "text": "HEY holds no published project for that contract. That is a statement about HEY’s index, not about the token; verify_project says what HEY recorded about the contract itself.",
+      "contentOrigin": "derived"
+    },
+    "answerStatus": "UNKNOWN",
+    "claims": [],
+    "unknowns": [],
+    "freshness": [],
+    "evidence": [],
+    "data": null,
+    "methodology": {
+      "rules": [
+        {
+          "id": "agent_freshness",
+          "version": "agent-freshness-v2"
+        },
+        {
+          "id": "machine_text",
+          "version": "machine-text-v1"
+        }
+      ],
+      "url": "https://heyresearch.xyz/methodology"
+    },
+    "links": {
+      "self": "https://heyresearch.xyz/api/agent/research_project?q=%24CHIT",
+      "canonical": []
+    },
+    "citation": null,
+    "boundaries": {
+      "notAdvice": true,
+      "notProvided": [
+        "investment_recommendation",
+        "buy_or_sell_signal",
+        "price_prediction",
+        "price_target",
+        "position_size",
+        "leverage",
+        "stop_loss",
+        "ranking_by_expected_return",
+        "risk_score",
+        "safety_verdict",
+        "smart_money_label",
+        "wallet_pnl",
+        "wallet_profile"
+      ],
+      "marketIsContextOnly": true,
+      "disclaimer": {
+        "text": "Research only.",
+        "contentOrigin": "hey"
+      }
+    },
+    "error": {
+      "code": "not_published",
+      "message": {
+        "text": "HEY holds no published project for that contract. That is a statement about HEY’s index, not about the token; verify_project says what HEY recorded about the contract itself.",
+        "contentOrigin": "derived"
+      }
+    },
+    "asOf": "2026-11-11T09:00:00.000Z"
+  },
+  "text": "# HEY builder_status — hey.agent-intelligence-response v1\nChain: Robinhood Chain (4663) · as of 2026-11-11T09:00:00.000Z · status not_found\n\nAnswer (UNKNOWN): HEY holds no published project for that contract. That is a statement about HEY’s index, not about the token; verify_project says what HEY recorded about the contract itself.\nError not_published: HEY holds no published project for that contract. That is a statement about HEY’s index, not about the token; verify_project says what HEY recorded about the contract itself.\n\nCanonical JSON: https://heyresearch.xyz/api/agent/research_project?q=%24CHIT (the full answer: data, freshness, every evidence id)\nNot provided: investment_recommendation, buy_or_sell_signal, price_prediction, price_target, position_size, leverage, stop_loss, ranking_by_expected_return, risk_score, safety_verdict, smart_money_label, wallet_pnl, wallet_profile.\nResearch only."
+}
