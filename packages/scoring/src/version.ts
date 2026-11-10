@@ -479,7 +479,17 @@
  * tenth of the reading's liquidity leaves it silent. It only withholds and never reaches activity status or Build
  * Momentum.
  */
-export const SCORING_VERSION = 'hbm-v35' as const;
+/*
+ * hbm-v36 (2026-11-10, founder delegation "repair semua", state-machine audit §8): no weight or formula changes. A
+ * tracked token whose verification is MISMATCH — the project's own site does not name this contract and names another
+ * (`site_names_another_contract`) — is not the project's token for scoring, exactly as one the site disowns
+ * (`site_disclaims_contract`, INV-1): `marketNotTheProjectsSql` catches it (`DISCOVERY_GAP.withholdMismatchToken`), so the
+ * market leaves the population the others are ranked against, the Discovery Gap and Under the Radar are withheld as
+ * `token_not_the_projects`, and Still Building is not measured (`token_not_the_projects`). Under hbm-v35 the cards, Proof
+ * of Ship and the deployer watch read a MISMATCH token as not the project's while the scorer still measured its market
+ * as the project's. It only withholds and never reaches activity status or Build Momentum.
+ */
+export const SCORING_VERSION = 'hbm-v36' as const;
 /** Every version a stored snapshot may carry; each has a note above. */
-export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33', 'hbm-v34', 'hbm-v35'] as const;
+export const SCORING_VERSIONS = ['hbm-v1', 'hbm-v2', 'hbm-v3', 'hbm-v4', 'hbm-v5', 'hbm-v6', 'hbm-v7', 'hbm-v8', 'hbm-v9', 'hbm-v10', 'hbm-v11', 'hbm-v12', 'hbm-v13', 'hbm-v14', 'hbm-v15', 'hbm-v16', 'hbm-v17', 'hbm-v18', 'hbm-v19', 'hbm-v20', 'hbm-v21', 'hbm-v22', 'hbm-v23', 'hbm-v24', 'hbm-v25', 'hbm-v26', 'hbm-v27', 'hbm-v28', 'hbm-v29', 'hbm-v30', 'hbm-v31', 'hbm-v32', 'hbm-v33', 'hbm-v34', 'hbm-v35', 'hbm-v36'] as const;
 export type ScoringVersion = (typeof SCORING_VERSIONS)[number];

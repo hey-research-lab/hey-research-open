@@ -723,7 +723,7 @@ transfers and trades, the distribution in the market page's words, pools and dep
 the contract — dated, two short lines in a shared card, never an address. It is a community
 channel and says so on `/start`, `/help` and the Mini App (2026-10-10, Robinhood Chain Terms of
 Service §5.6(d)(i)): "Community-run by HEY Research Lab · not an official Robinhood channel." A
-HEY badge is "Verified by Hey Research Lab from public evidence — not a Robinhood certification."
+HEY badge is "Verified by HEY Research Lab from public evidence — not a Robinhood certification."
 `/telegram` (2026-10-06) is a small page with one way in — Try HEY in
 Telegram — the commands, inline mode, Guest Mode, the group watch and what HEY keeps; it exists
 only while the bot is switched on. The HEY Mini App (2026-10-06) is the same research inside

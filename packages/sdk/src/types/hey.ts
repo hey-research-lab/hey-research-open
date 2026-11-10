@@ -128,7 +128,7 @@ export type HeyTokenProfile = {
       /** The brand ("HEY Research Lab"). */
       name: string;
       shortName: string;
-      /** How HEY's own project record spells the name ("Hey Research Lab"); `nameNote` says which is which (added 2026-09-28). */
+      /** How HEY's own project record spells the name: the brand name, "HEY Research Lab", since 2026-11-10 (added 2026-09-28); `nameNote` says so. */
       projectRecordName: string;
       nameNote: string;
       description: string;

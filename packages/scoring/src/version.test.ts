@@ -70,6 +70,7 @@ const RULES_DIGEST = createHash('sha256')
       // DISCOVERY_GAP and UNDER_THE_RADAR above: a contested unverified ticker and a stale reading withhold the gap; UTR needs TYPICAL attention or lower (hbm-v30).
       // DISCOVERY_GAP and STILL_BUILDING above: a volume under $1,000 is a thin market; a contested ticker and unavailable builder sources withhold Still Building (hbm-v31).
       // DISCOVERY_GAP above carries frozenVolumeIsUnknown: a frozen 24h volume is no volume for the scorer either (hbm-v32).
+      // DISCOVERY_GAP above carries withholdMismatchToken: a MISMATCH token is not the project's for the gap (hbm-v36).
     }),
   )
   .digest('hex')
@@ -94,8 +95,8 @@ describe('scoring version', () => {
      * digest is the bug this test exists to catch.
      */
     expect({ version: SCORING_VERSION, rules: RULES_DIGEST }).toEqual({
-      version: 'hbm-v35',
-      rules: '211d7ae404414132',
+      version: 'hbm-v36',
+      rules: '9227cec05f606c6a',
     });
   });
 });

@@ -337,6 +337,21 @@ export const DISCOVERY_GAP = {
    */
   withholdContestedUnverifiedTicker: true,
   /**
+   * A MISMATCH token is not the project's (hbm-v36, 2026-11-10, founder
+   * delegation "repair semua", state-machine audit §8): when the tracked
+   * token's verification is MISMATCH — the project's own site does not name
+   * this contract and names another (`site_names_another_contract`) — the
+   * market is not the project's, exactly as a token the site disowns
+   * (`site_disclaims_contract`, INV-1): no Discovery Gap and no Under the Radar
+   * (`token_not_the_projects`), Still Building not measured
+   * (`token_not_the_projects`), and the market leaves the population the
+   * others are ranked against (`marketNotTheProjectsSql` in `@hey/domain`).
+   * The cards, Proof of Ship and the deployer watch already read MISMATCH so.
+   * Only withholds, never awards, and never reaches activity status or Build
+   * Momentum.
+   */
+  withholdMismatchToken: true,
+  /**
    * A gap needs a current reading (hbm-v30, 2026-10-16, founder delegation
    * "kau buat semua sekali", audit #147): the market reading the gap would use
    * must be no older than one day, the freshness Under the Radar and Still
