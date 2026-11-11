@@ -224,6 +224,8 @@ export function renderSnapshot(s: HeyProjectSnapshot, now?: Date): string {
   if (i.researchLevel === 'INDEXED') lines.push('- UNKNOWN activity: not researched yet — HEY indexed this record but has not read its sources.');
   else if (b.activityMeasured === false) lines.push(`- UNKNOWN activity (${pretty(b.activityStatus)}): HEY holds no builder source it can read, so no count here is a measured zero.`);
   else lines.push(`- ${activityTag(b.activityStatus)} activity status: ${pretty(b.activityStatus)}${b.lastShippedAt ? `; last meaningful ship ${b.lastShippedAt.slice(0, 10)}` : ''}`);
+  // Every builder source stopped answering (2026-11-11, Rule B): the API's own dated line, said once, never strengthened.
+  if (b.builderSourcesUnavailable) lines.push(`- FACT ${b.builderSourcesUnavailable.line} (since ${b.builderSourcesUnavailable.since.slice(0, 10)})`);
   lines.push(b.buildMomentum === undefined ? '- UNKNOWN Build Momentum: not measured' : `- DERIVED Build Momentum ${b.buildMomentum}${s.scoringVersion ? ` (${s.scoringVersion})` : ''}`);
   lines.push(
     b.discoveryGap !== undefined

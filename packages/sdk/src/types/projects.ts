@@ -378,6 +378,9 @@ export type HeyParameterAdjustment = {
  */
 export type HeyUnderTheRadar = { state: 'HELD' | 'NOT_HELD' | 'NOT_MEASURED'; reason?: string; explainUrl: string };
 
+/** Every builder source stopped answering, and since when (2026-11-11). */
+export type HeyBuilderSourcesUnavailable = { since: string; sourceCount: number; line: string };
+
 export type HeyProjectDetail = HeyProject & {
   longDescription?: string;
   /**
@@ -387,6 +390,12 @@ export type HeyProjectDetail = HeyProject & {
   ships: HeyShip[] | null;
   /** With `ships: null` (2026-11-08, additive): why. */
   shipsNotMeasured?: { reason: 'activity_not_measured'; text: string };
+  /**
+   * Additive (2026-11-11): every repository, changelog and feed HEY reads the project's building from stopped answering.
+   * `since` is the day the last one went dark, `sourceCount` how many, `line` the one dated sentence HEY prints. `null`
+   * when it does not hold. It says what HEY read, never why.
+   */
+  builderSourcesUnavailable: HeyBuilderSourcesUnavailable | null;
   /** Deprecated alias: on registry and launchpad pages it held the outside listing date. Read `firstRecordedByHeyAt` (2026-09-26). */
   firstSeenAt: string;
   /** When HEY first recorded the project: knowledge time, never an outside date (2026-09-26). */

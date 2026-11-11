@@ -67,7 +67,20 @@ export type ActivityInput = {
    * Without coverage the honest answer is UNKNOWN, not DORMANT.
    */
   hasSourceCoverage: boolean;
+  /**
+   * When every own builder source the refresh reads is unavailable, the newest of their `unavailable_since` dates —
+   * the day the last one went dark (`builderSourcesUnavailableFor` in the domain); null or absent otherwise
+   * (hbm-v37, `ACTIVITY.buildersGoneNotMeasuredDays`).
+   */
+  builderSourcesUnavailableSince?: Date | null;
 };
+
+/**
+ * Why the activity rule itself answered UNKNOWN, when it is a reason HEY persists (hbm-v37):
+ * `builder_sources_unavailable` — every own builder source stopped answering at least
+ * `ACTIVITY.buildersGoneNotMeasuredDays` ago and no counted ship is dated since.
+ */
+export type ActivityUnknownReason = 'builder_sources_unavailable';
 
 /**
  * Why a comeback the dates alone would call RESUMED is not (hbm-v25):
@@ -86,6 +99,8 @@ export type ActivityResult = {
   reason: string;
   /** Set only when a comeback was not read as RESUMED because HEY was not covering the gap (hbm-v25). */
   resumedWithheld?: ResumedWithheldReason;
+  /** Set only when the status is UNKNOWN because every builder source stopped answering (hbm-v37). */
+  unknownReason?: ActivityUnknownReason;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -253,6 +268,24 @@ export function deriveActivityStatus(input: ActivityInput): ActivityResult {
   const meaningful = meaningfulEvents(input.events, input.now);
   const latest = meaningful[0];
 
+  /*
+   * Building HEY can no longer read (hbm-v37, 2026-11-11, founder delegation): every own builder source stopped
+   * answering at least `buildersGoneNotMeasuredDays` ago and no counted ship is dated on or after the day the last
+   * one went dark. The ships counted before keep their place on the timeline and the last ship still renders; they
+   * no longer hold SHIPPING or ACTIVE beside a repository answering 404. Never DORMANT: HEY did not look and see
+   * nothing, it could not look.
+   */
+  if (buildersGoneNotMeasured(input.builderSourcesUnavailableSince, meaningful, input.now)) {
+    const goneDays = Math.floor(daysBetween(input.builderSourcesUnavailableSince!, input.now));
+    return {
+      status: 'UNKNOWN',
+      ...(latest ? { lastMeaningfulShipAt: latest.publishedAt } : {}),
+      meaningfulEventCount: meaningful.length,
+      unknownReason: 'builder_sources_unavailable',
+      reason: `Every builder source HEY reads for this project stopped answering ${goneDays} days ago, and no counted ship is dated since; whether it is building now is not measured.`,
+    };
+  }
+
   if (!latest) {
     // No meaningful activity observed. Whether that means "quiet" or "we cannot
     // tell" depends entirely on whether HEY has sources to observe.
@@ -362,6 +395,18 @@ export function deriveActivityStatus(input: ActivityInput): ActivityResult {
     // Never "dead" or "abandoned": HEY reports what it observed, nothing more.
     reason: `No meaningful updates observed for ${Math.floor(ageDays)} days.`,
   };
+}
+
+/**
+ * Rule A of 2026-11-11 (hbm-v37): `since` is the newest `unavailable_since` of the project's builder sources when
+ * every one is unavailable, else null; the status is not measured once `since` is at least
+ * `ACTIVITY.buildersGoneNotMeasuredDays` behind `now` and no counted (meaningful, collapsed) event is dated on or
+ * after it. Deterministic: dates in, a boolean out.
+ */
+export function buildersGoneNotMeasured(since: Date | null | undefined, meaningful: readonly ScoredEvent[], now: Date): boolean {
+  if (since === null || since === undefined || Number.isNaN(since.getTime())) return false;
+  if (daysBetween(since, now) < ACTIVITY.buildersGoneNotMeasuredDays) return false;
+  return !meaningful.some((event) => event.publishedAt.getTime() >= since.getTime());
 }
 
 /**

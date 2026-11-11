@@ -191,6 +191,12 @@ export function ProjectListRow({ project, weeks, now, disclosure, preview, hideS
       {hideStatus ? null : (
         <td role="cell" className="v2-cell-status">
           <ActivityChip status={project.activityStatus} variant="surface" unknownReason={facts.unknownReason ?? null} />
+          {/* Every builder source stopped answering (2026-11-11, Rule B): the short dated line under the status. */}
+          {facts.buildersGone ? (
+            <span className="mt-1 block text-[12px] leading-4 text-hey-muted" data-testid="row-builder-sources-gone">
+              {facts.buildersGone}
+            </span>
+          ) : null}
         </td>
       )}
 

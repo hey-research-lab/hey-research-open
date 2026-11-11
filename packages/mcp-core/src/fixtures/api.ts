@@ -211,6 +211,7 @@ export const snapshot: HeyProjectSnapshot = {
     velocity: { state: 'ACCELERATING', current: 9, previous: 4, windowDays: 30 },
     cadence: { state: 'INSUFFICIENT_RELEASES' },
     hasBuilderSource: true,
+    builderSourcesUnavailable: null,
   },
   market: {
     valuationWithheld: 'liquidity_removed',

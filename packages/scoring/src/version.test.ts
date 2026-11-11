@@ -71,6 +71,7 @@ const RULES_DIGEST = createHash('sha256')
       // DISCOVERY_GAP and STILL_BUILDING above: a volume under $1,000 is a thin market; a contested ticker and unavailable builder sources withhold Still Building (hbm-v31).
       // DISCOVERY_GAP above carries frozenVolumeIsUnknown: a frozen 24h volume is no volume for the scorer either (hbm-v32).
       // DISCOVERY_GAP above carries withholdMismatchToken: a MISMATCH token is not the project's for the gap (hbm-v36).
+      // ACTIVITY above carries buildersGoneNotMeasuredDays: 21 days of every builder source unavailable is UNKNOWN (hbm-v37).
     }),
   )
   .digest('hex')
@@ -95,8 +96,8 @@ describe('scoring version', () => {
      * digest is the bug this test exists to catch.
      */
     expect({ version: SCORING_VERSION, rules: RULES_DIGEST }).toEqual({
-      version: 'hbm-v36',
-      rules: '9227cec05f606c6a',
+      version: 'hbm-v37',
+      rules: '737c4eb1a536d4cf',
     });
   });
 });

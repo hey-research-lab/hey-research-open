@@ -105,6 +105,18 @@ export const ACTIVITY = {
   quietWithinDays: 60,
   dormancyGapDays: 60,
   resumedWithinDays: 14,
+  /**
+   * Building HEY can no longer read is not measured (hbm-v37, 2026-11-11, founder delegation; plan
+   * a private HEY record §4): when every own builder source the refresh reads — each
+   * repository, changelog and feed — has been unavailable (`unavailable_since`) for at least this many days, counted
+   * from the newest of those dates (the day the last one went dark), and no counted ship is dated on or after that
+   * day, the status is UNKNOWN with the reason `builder_sources_unavailable`. Before it, the ships counted before the
+   * repository went dark held SHIPPING or ACTIVE for up to 45 days beside a repository answering 404. Twenty-one days
+   * is two refresh cycles of a COLD source with a margin, so a repository renamed, moved or briefly private is read
+   * again before the status moves. Any counted ship dated on or after that day keeps the status as the ships give it;
+   * a source answering again clears the dates. It only withholds: never DORMANT, never 0.
+   */
+  buildersGoneNotMeasuredDays: 21,
 } as const;
 
 /**

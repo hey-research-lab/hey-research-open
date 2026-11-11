@@ -3,7 +3,7 @@
  * (2026-09-26). Each is read from HEY's own tables; none calls a provider.
  * Absent means HEY does not know; a withheld figure says it is withheld.
  */
-import type { HeyCodeWeek, HeyDiscoveryGapWithheld, HeyOfficialX, HeyProject, HeyStillBuildingState, HeyStillBuildingWithheld, HeyUnderTheRadar } from './projects';
+import type { HeyBuilderSourcesUnavailable, HeyCodeWeek, HeyDiscoveryGapWithheld, HeyOfficialX, HeyProject, HeyStillBuildingState, HeyStillBuildingWithheld, HeyUnderTheRadar } from './projects';
 import type { HeyPeerContext } from './graph';
 import type { HeyUsageSummary } from './usage';
 import type { HeyChangePrecision, HeyChangeType } from './changes';
@@ -578,6 +578,8 @@ export type HeyProjectSnapshot = {
     velocity?: { state: string; current: number | null; previous: number | null; windowDays: number };
     cadence?: { state: string; medianIntervalDays?: number };
     hasBuilderSource?: boolean;
+    /** Additive (2026-11-11): every builder source stopped answering, and since when, with the one dated line; null when it does not hold. */
+    builderSourcesUnavailable: HeyBuilderSourcesUnavailable | null;
   };
   /** The card's market fields with the card's gates; absent for a project without a token. */
   market?: {

@@ -14,6 +14,7 @@ import {
   staleReadingAge,
   tickerLabel,
 } from './format';
+import { builderSourcesGoneLine, type BuilderSourcesUnavailable } from '@hey/scoring/activity-words';
 import { discoveryGapMarketMeasurable, marketVolumeTooThin } from '@hey/scoring/token-market';
 import { valuationDisplay, valuationDisplayLabel, valuationHiddenCardWords, valuationHiddenSentence } from '@hey/scoring/valuation-display';
 import { projectCategory } from './project-category';
@@ -125,6 +126,11 @@ export function cardMarketMeasured(project: Pick<ProjectCardData, 'tokenMarketSt
 /** What "Valuation" means on a card when the figure is a fully diluted valuation: the card's title and the glossary read it. */
 export const FDV_HELP = 'Fully diluted valuation: the provider reports no circulating supply, so this is price × total supply.';
 
+/** The card's and the list row's short dated line (2026-11-11, Rule B): "Repository not answering since 3 Dec". Null when it does not hold. */
+export function cardBuildersGoneLine(project: Pick<ProjectCardData, 'builderSourcesUnavailable'>, now?: Date): string | null {
+  return project.builderSourcesUnavailable ? builderSourcesGoneLine({ gone: project.builderSourcesUnavailable, form: 'short', ...(now ? { now } : {}) }) : null;
+}
+
 export type ProjectCardData = {
   slug: string;
   name: string;
@@ -166,6 +172,11 @@ export type ProjectCardData = {
   priceChange24hPct?: number;
   /** False when HEY holds no repository, changelog or feed: the status chip then says "No builder signal yet". */
   hasBuilderSource?: boolean;
+  /**
+   * Every builder source HEY read stopped answering, and since when (2026-11-11, Rule B): the chip names why an
+   * UNKNOWN is unknown, and the card prints the short dated line ("Repository not answering since 3 Dec"). Display only.
+   */
+  builderSourcesUnavailable?: BuilderSourcesUnavailable;
   /** The token contract's events in its latest watched day: on-chain context, never a status input. */
   onchainEvents24h?: number;
   /** Canonical token identity. Absent for a project without a token. */
@@ -229,6 +240,8 @@ export type CardPreviewFacts = {
   description?: string;
   activityStatus: ActivityStatusValue;
   unknownReason?: ReturnType<typeof unknownActivityReason>;
+  /** The short dated line when every builder source stopped answering (`builderSourcesGoneLine`, 2026-11-11). */
+  buildersGone?: string;
   /** The latest meaningful ship as the card phrased it; `what` is absent when only its date is known. */
   /**
    * `live` (2026-11-03 full audit, F12): when `when` is `live` followed by the age, the browser keeps the age true in a
@@ -358,6 +371,10 @@ export function cardPreviewFacts(
     ...(description ? { description } : {}),
     activityStatus: project.activityStatus,
     ...(unknownActivityReason(project) ? { unknownReason: unknownActivityReason(project) } : {}),
+    ...((): { buildersGone?: string } => {
+      const line = cardBuildersGoneLine(project, now);
+      return line ? { buildersGone: line } : {};
+    })(),
     ...(latest && latestPhrase
       ? { latest: { id: latest.id, what: latestPhrase.what, when: latestPhrase.when, at: latest.publishedAt.toISOString(), ...(latest.eventType === 'CODE_ACTIVITY' ? {} : { live: '' }) } }
       : lastShipAt
@@ -672,6 +689,15 @@ export function ProjectCard({
         {(() => {
           const chip = <ActivityChip status={project.activityStatus} variant="surface" unknownReason={unknownActivityReason(project)} className="shrink-0" />;
           return terms?.status ? terms.status(chip, project.activityStatus) : chip;
+        })()}
+        {/* Every builder source stopped answering (2026-11-11, Rule B): the short dated line, muted, its own line. */}
+        {(() => {
+          const gone = cardBuildersGoneLine(project, now);
+          return gone ? (
+            <p className="basis-full text-[12.5px] leading-5 text-hey-muted" data-testid="card-builder-sources-gone">
+              {gone}
+            </p>
+          ) : null;
         })()}
         {!ship && latest && latestPhrase ? (
           <p

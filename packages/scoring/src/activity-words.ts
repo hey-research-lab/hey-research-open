@@ -85,11 +85,97 @@ export const BUILDER_SOURCE_HELD = {
 } as const;
 
 /**
+ * UNKNOWN because every builder source stopped answering (2026-11-11, a private HEY record):
+ * each repository, changelog and feed HEY read the project's building from answers 404 or is gone. The scorer files
+ * it UNKNOWN 21 days after the last one went dark with no counted ship since (hbm-v37), and earlier when no counted
+ * ship is in its window at all. A 404 is also what a renamed or moved repository returns, so the words say what HEY
+ * read, never why.
+ */
+export const BUILDER_SOURCES_STOPPED = {
+  label: notMeasured('builder sources stopped answering'),
+  help: 'Every repository, changelog or feed HEY read this project’s building from stopped answering, so whether it is building now is not measured. A repository that was renamed or moved answers the same way. The ships HEY recorded before stay on the timeline.',
+} as const;
+
+/** Every own builder source unavailable, as the read layer carries it (`builderSourcesUnavailableSql`): the newest `unavailable_since` and how many. */
+export type BuilderSourcesUnavailable = {
+  /** The day the last builder source went dark (the newest `unavailable_since`). */
+  since: Date | string;
+  /** How many own builder sources (repositories, changelogs, feeds) are unavailable. */
+  sourceCount: number;
+  /** Every one of them is a GitHub repository; absent or false names them "builder sources". */
+  repositoriesOnly?: boolean;
+};
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
+
+/** A UTC day as "3 Dec 2026", or "3 Dec" when `withYear` is false. Null for a date that does not parse. */
+function utcDayWords(value: Date | string, withYear = true): string | null {
+  const at = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(at.getTime())) return null;
+  const day = `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]}`;
+  return withYear ? `${day} ${at.getUTCFullYear()}` : day;
+}
+
+/** The market statuses that add the liquidity clause to the line: what HEY reads as liquidity gone. */
+const LIQUIDITY_GONE_CLAUSE: Readonly<Record<string, string>> = {
+  LIQUIDITY_REMOVED: 'Liquidity no longer detected',
+  NO_LIQUIDITY: 'No liquidity detected',
+};
+
+/**
+ * Rule B of 2026-11-11 (display only, a private HEY record §3): the one dated line a page shows
+ * when every own builder source stopped answering, the one function every surface prints it through (UI rule 15) —
+ * the page header (`form: 'full'`), the card and the list row (`form: 'short'`), the Telegram card, the API, the MCP
+ * and the explain engine.
+ *
+ *   full:  "HEY cannot read this project's building: its repository stopped answering on 3 Dec 2026."
+ *          with the tracked token's market LIQUIDITY_REMOVED or NO_LIQUIDITY, the second fact in the market's own
+ *          words: "… Liquidity no longer detected since 5 Dec 2026."
+ *   short: "Repository not answering since 3 Dec" (the year when it is not `now`'s year).
+ *
+ * It states what HEY read and when, never why: it never says rug, scam, exit, abandoned, private or dead
+ * (`activity-words.test.ts`). The liquidity clause rides only inside this line, a fact beside the building fact: it
+ * decides nothing. Null when the date does not parse.
+ */
+export function builderSourcesGoneLine(input: {
+  gone: BuilderSourcesUnavailable;
+  form?: 'full' | 'short';
+  /** The tracked token's market status, and when HEY first read it in that status (the market's own transition date). */
+  market?: { status: string | null | undefined; since?: Date | string | null | undefined } | null | undefined;
+  now?: Date;
+}): string | null {
+  const { gone } = input;
+  const count = Math.max(1, Math.floor(gone.sourceCount));
+  const repositories = gone.repositoriesOnly === true;
+  if (input.form === 'short') {
+    const now = input.now ?? new Date();
+    const at = gone.since instanceof Date ? gone.since : new Date(gone.since);
+    const day = utcDayWords(gone.since, !Number.isNaN(at.getTime()) && at.getUTCFullYear() !== now.getUTCFullYear());
+    if (day === null) return null;
+    const subject = count === 1 ? (repositories ? 'Repository' : 'Builder source') : `${count} ${repositories ? 'repositories' : 'builder sources'}`;
+    return `${subject} not answering since ${day}`;
+  }
+  const day = utcDayWords(gone.since);
+  if (day === null) return null;
+  const building =
+    count === 1
+      ? `its ${repositories ? 'repository' : 'builder source'} stopped answering on ${day}.`
+      : `its ${count} ${repositories ? 'repositories' : 'builder sources'} stopped answering, the last on ${day}.`;
+  const status = input.market?.status;
+  const clause = status && Object.hasOwn(LIQUIDITY_GONE_CLAUSE, status) ? LIQUIDITY_GONE_CLAUSE[status] : undefined;
+  const marketDay = clause && input.market?.since ? utcDayWords(input.market.since) : null;
+  const liquidity = clause ? ` ${clause}${marketDay ? ` since ${marketDay}` : ''}.` : '';
+  return `HEY cannot read this project’s building: ${building}${liquidity}`;
+}
+
+/**
  * Why an UNKNOWN status is unknown, from facts every surface already
  * holds: the status, whether HEY reads a builder source (the scorer's
  * `observableBuilderSource`, selected as `hasBuilderSource`), whether it holds
  * one only as context (`heldBuilderSource`) and the last meaningful ship.
  *
+ *   - `builder_sources_unavailable` — every builder source HEY read stopped answering (`builderSourcesUnavailable`,
+ *     2026-11-11); it outranks the others, since it says which sources and that HEY read them;
  *   - `no_builder_signal` — nothing to read and nothing ever shipped;
  *   - `held_as_context` — nothing to read as the project's own, a builder source held as context, nothing shipped;
  *   - `no_readable_source` — a ship on record, and nothing HEY can keep reading;
@@ -99,15 +185,18 @@ export const BUILDER_SOURCE_HELD = {
  * stay the plain status word rather than guess; `heldBuilderSource` undefined
  * reads as no source held, the words before 2026-10-18.
  */
-export type UnknownActivityReason = 'no_builder_signal' | 'held_as_context' | 'no_readable_source';
+export type UnknownActivityReason = 'no_builder_signal' | 'held_as_context' | 'no_readable_source' | 'builder_sources_unavailable';
 
 export function unknownActivityReason(project: {
   activityStatus: string;
   hasBuilderSource?: boolean | null | undefined;
   heldBuilderSource?: boolean | null | undefined;
   lastMeaningfulShipAt?: Date | string | null | undefined;
+  builderSourcesUnavailable?: BuilderSourcesUnavailable | null | undefined;
 }): UnknownActivityReason | null {
-  if (project.activityStatus !== 'UNKNOWN' || project.hasBuilderSource === undefined || project.hasBuilderSource === null) return null;
+  if (project.activityStatus !== 'UNKNOWN') return null;
+  if (project.builderSourcesUnavailable) return 'builder_sources_unavailable';
+  if (project.hasBuilderSource === undefined || project.hasBuilderSource === null) return null;
   /*
    * A ship on record beside UNKNOWN is the scorer's "not enough source coverage" whatever the source flag reads now
    * (2026-10-28 simplicity study, DATA-10): the scorer files a project with a ship as UNKNOWN only when it found no
@@ -124,6 +213,7 @@ export function activityPresentation(status: string, unknownReason?: UnknownActi
   if (status === 'UNKNOWN' && unknownReason === 'no_builder_signal') return { label: NO_BUILDER_SIGNAL.label, help: NO_BUILDER_SIGNAL.help };
   if (status === 'UNKNOWN' && unknownReason === 'held_as_context') return { label: BUILDER_SOURCE_HELD.label, help: BUILDER_SOURCE_HELD.help };
   if (status === 'UNKNOWN' && unknownReason === 'no_readable_source') return { label: ACTIVITY_NOT_MEASURABLE.label, help: ACTIVITY_NOT_MEASURABLE.help };
+  if (status === 'UNKNOWN' && unknownReason === 'builder_sources_unavailable') return { label: BUILDER_SOURCES_STOPPED.label, help: BUILDER_SOURCES_STOPPED.help };
   const words = ACTIVITY_STATUS_WORDS[status as ActivityStatusWordsKey] ?? ACTIVITY_STATUS_WORDS.UNKNOWN;
   return { label: words.label, help: words.help };
 }
@@ -137,6 +227,7 @@ export function projectActivityWords(project: {
   hasBuilderSource?: boolean | null | undefined;
   heldBuilderSource?: boolean | null | undefined;
   lastMeaningfulShipAt?: Date | string | null | undefined;
+  builderSourcesUnavailable?: BuilderSourcesUnavailable | null | undefined;
 }): { label: string; help: string } {
   return activityPresentation(project.activityStatus, unknownActivityReason(project));
 }
