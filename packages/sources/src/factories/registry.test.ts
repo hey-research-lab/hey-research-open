@@ -111,6 +111,13 @@ describe('launch factory registry', () => {
       expect(expected.firstLaunch - factory!.startBlock, id).toBeLessThan(20_000);
       expect(factory!.verification, id).toMatch(/census 2026-09-30/);
     }
+    // Torch (2026-11-11): its own team named the factory; Sourcify exact match.
+    const torch = factoryById('TORCH');
+    expect(torch?.enabled).toBe(true);
+    expect(torch?.launchpad).toBe('torch');
+    expect(torch?.tokenTopicIndex).toBe(1);
+    expect(torch!.startBlock).toBeLessThanOrEqual(85_204_501);
+    expect(torch!.verification).toMatch(/census 2026-11-11/);
     // Doppler's Airlock is a protocol, not a launchpad: it is an unlabelled intake (dex-pools.ts), never a label.
     expect(LAUNCH_FACTORIES.some((factory) => factory.factoryAddress.toLowerCase() === '0xeb7c034704ef8dcd2d32324c1545f62fb4ad0862')).toBe(false);
   });

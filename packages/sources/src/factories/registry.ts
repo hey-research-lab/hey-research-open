@@ -795,6 +795,29 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
       'Uniswap/docs content/liquidity/liquidity-launchpad/deployments.mdx lists LiquidityLauncher v3.0.0 at this address (commit 3a310354…), and @uniswap/liquidity-launcher-sdk src/addresses.ts names it LIQUIDITY_LAUNCHER; 3,747 bytes of code; the same launch event as POOLS_TRADE; first launch at block 4,727,385 (tx 0x45cd374b…) carries CCAH (0x8dbe1088…) in topics[1], which answers symbol(); nothing in the 100,000 blocks before; 8,684 launches, 8,471 not in HEY (census 2026-09-30)',
     sourceUrl: 'https://developers.uniswap.org/docs/liquidity/liquidity-launchpad/deployments',
   },
+  /**
+   * Torch (torchpad.fun), added 2026-11-11: its team sent the factory address. `TorchFactory` is a Sourcify exact match
+   * (src/TorchFactory.sol), deployed at block 85,204,474 (tx 0x94ed6872…) and not a proxy. Its launch event is
+   * `TokenLaunched(address indexed token, address indexed creator, PoolId poolId, uint256 buyTaxBps, uint24 lpFee,
+   * uint256 antiSnipeSeconds, (uint16,uint16,uint16,uint16) split, string contractURI, address quote)`: the token in
+   * `topics[1]`, the ERC-7572 contractURI's offset in data word 8; the name and ticker are not in the event and are read
+   * from the token. Every Torch token is mined to end in `1111`.
+   */
+  {
+    id: 'TORCH',
+    name: 'Torch',
+    launchpad: 'torch',
+    chainId: 4663,
+    factoryAddress: '0x7891ea889899928afe637e4cca8106188427776a',
+    startBlock: 85_204_474,
+    eventTopic0: '0xea6baf14ec1f4c08d18114c1eea0e6a2a018eef994f9db19ea8a41526e49d28c',
+    tokenTopicIndex: 1,
+    eventStrings: { metadataUri: 8 },
+    enabled: true,
+    verification:
+      'the Torch team named this address (2026-11-11); Sourcify exact match for src/TorchFactory.sol:TorchFactory, 22,460 bytes of code, deployed at block 85,204,474 (tx 0x94ed6872…); first launch at block 85,204,501 (tx 0x7eec1e8d…) carries TORCH (0x000050e1…1111) in topics[1], which answers symbol(), and data word 8 points at an ipfs.io contractURI; BLOWTORCH (0x8a06f3eb…1111) on another sample; 2,169 launches to block 111,795,731 (census 2026-11-11); TORCH itself was held by HEY with no launchpad (first seen in a Uniswap v4 pool)',
+    sourceUrl: 'https://torchpad.fun/',
+  },
 ];
 
 
