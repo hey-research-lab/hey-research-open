@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { CHAIN_REGISTRY, chainById, type ChainSettings } from './chains';
 import { ROBINHOOD_CHAIN_ID } from './constants';
 import { isNearMainnetAccountId } from './near-account';
 import { isUrl, URL_MESSAGE, zod3Issues, ZOD_MESSAGES } from './zod-messages';
@@ -46,6 +47,15 @@ const numberWithDefault = (fallback: number) =>
   optionalString
     .transform((value) => (value === undefined ? fallback : Number(value)))
     .pipe(z.number().finite());
+
+/** A comma-separated list of chain ids (`4663` or `4663,8453`); undefined when unset, so the home chain is the default. */
+const chainIdList = optionalString.pipe(
+  z
+    .string()
+    .regex(/^\s*\d+\s*(,\s*\d+\s*)*$/, 'must be comma-separated chain ids, e.g. 4663 or 4663,8453')
+    .transform((value) => [...new Set(value.split(',').map((id) => Number(id.trim())))])
+    .optional(),
+);
 
 /** The model providers HEY can call (2026-09-27): `disabled`, or the one wired adapter. */
 export const AI_PROVIDERS = ['disabled', 'anthropic', 'raeto'] as const;
@@ -107,6 +117,9 @@ export function normaliseGithubAppPrivateKey(raw: string): string | undefined {
   }
   return undefined;
 }
+
+/** `RH_CHAIN_ID`: the home chain's id, Robinhood Chain unless a host names another (a testnet). */
+const homeChainIdSchema = numberWithDefault(ROBINHOOD_CHAIN_ID).pipe(z.number().int().positive());
 
 /** Signing secrets shorter than this are refused in production; `openssl rand -hex 32` gives 64. */
 export const MIN_SESSION_SECRET_LENGTH = 32;
@@ -172,7 +185,7 @@ export const serverEnvSchema = z
     databasePoolAcquireTimeoutMs: numberWithDefault(0).pipe(z.number().int().min(0)),
 
     chain: z.object({
-      chainId: numberWithDefault(ROBINHOOD_CHAIN_ID).pipe(z.number().int().positive()),
+      chainId: homeChainIdSchema,
       /**
        * Provider-specific slugs for the same chain; configuration, not hardcoded.
        * Both DEX Screener and GeckoTerminal identify Robinhood Chain as `robinhood`,
@@ -192,6 +205,23 @@ export const serverEnvSchema = z
        * challenge for non-browser clients, so without a key those reads degrade.
        */
       blockscoutApiKey: optionalString,
+    }),
+
+    /**
+     * The chains this host knows (multichain WP1.1, 2026-11-11; `chains.ts`). Parsed here from the raw variables; the
+     * schema's last step fills in the defaults and each chain's settings (`withChainSettings`), with Robinhood's being
+     * `chain` above — the same object, so `env.chain` stays the home alias.
+     *
+     *  - HEY_CHAINS_ENABLED: comma-separated chain ids this host reads. Default: the home chain alone.
+     *  - HEY_CHAINS_PUBLIC: comma-separated chain ids public surfaces show; each must be enabled. Default: the home chain.
+     *  - BASE_RPC_URL, BASE_RPC_FALLBACK_URL, ETH_RPC_URL, ETH_RPC_FALLBACK_URL: those chains' nodes. Unset, each reader
+     *    keeps its own default (the ERC-8004 reads keep their public nodes). Blockscout is one shared key.
+     */
+    chains: z.object({
+      enabled: chainIdList,
+      public: chainIdList,
+      base: z.object({ rpcUrl: optionalUrl, rpcFallbackUrl: optionalUrl }),
+      ethereum: z.object({ rpcUrl: optionalUrl, rpcFallbackUrl: optionalUrl }),
     }),
 
     market: z.object({
@@ -924,7 +954,67 @@ export const serverEnvSchema = z
         message: `WEBHOOK_MASTER_KEY must be at least ${MIN_SESSION_SECRET_LENGTH} characters; generate one with: openssl rand -hex 32`,
       });
     }
-  });
+    // The chain lists (multichain WP1.1): every id known, the home chain always in both, public only where enabled.
+    // Zod runs this check even when a field failed its own parse, so a list it could not read is left to that issue.
+    const home = env.chain.chainId;
+    const enabled = env.chains.enabled ?? [home];
+    const shown = env.chains.public ?? [home];
+    if (!Array.isArray(enabled) || !Array.isArray(shown) || typeof home !== 'number') return;
+    const known = (id: number) => id === home || chainById(id) !== undefined;
+    for (const [list, key, name] of [[enabled, 'enabled', 'HEY_CHAINS_ENABLED'], [shown, 'public', 'HEY_CHAINS_PUBLIC']] as const) {
+      const unknown = list.filter((id) => !known(id));
+      if (unknown.length > 0) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['chains', key], message: `${name} names a chain HEY has no registry entry for: ${unknown.join(', ')}` });
+      }
+      if (!list.includes(home)) {
+        context.addIssue({ code: z.ZodIssueCode.custom, path: ['chains', key], message: `${name} must include the home chain (${home}); another chain is added beside it, never in its place` });
+      }
+    }
+    const hidden = shown.filter((id) => !enabled.includes(id));
+    if (hidden.length > 0) {
+      context.addIssue({ code: z.ZodIssueCode.custom, path: ['chains', 'public'], message: `HEY_CHAINS_PUBLIC names a chain that is not enabled in HEY_CHAINS_ENABLED: ${hidden.join(', ')}` });
+    }
+  })
+  .transform(withChainSettings);
+
+/**
+ * The schema's last step (multichain WP1.1): the chain lists with their defaults, the home chain first, and each
+ * chain's settings. Robinhood's settings are `env.chain` itself, so the alias and the registry's home entry are one
+ * object; the other chains take their fixed id and provider identifiers from the registry, their nodes from their own
+ * variables and the one shared Blockscout key.
+ */
+function withChainSettings<
+  E extends {
+    chain: ChainSettings & { blockscoutApiKey?: string | undefined };
+    chains: {
+      enabled?: number[] | undefined;
+      public?: number[] | undefined;
+      base: { rpcUrl?: string | undefined; rpcFallbackUrl?: string | undefined };
+      ethereum: { rpcUrl?: string | undefined; rpcFallbackUrl?: string | undefined };
+    };
+  },
+>(env: E) {
+  const home = env.chain.chainId;
+  const homeFirst = (ids: readonly number[] | undefined): number[] => [home, ...(ids ?? []).filter((id) => id !== home)];
+  const other = (slug: 'base' | 'ethereum'): ChainSettings => {
+    const meta = CHAIN_REGISTRY[slug];
+    return {
+      chainId: meta.id,
+      dexscreenerSlug: meta.dexscreenerSlug,
+      geckoterminalNetwork: meta.geckoterminalNetwork,
+      rpcUrl: env.chains[slug].rpcUrl,
+      rpcFallbackUrl: env.chains[slug].rpcFallbackUrl,
+      blockscoutBaseUrl: meta.explorer.kind === 'blockscout' ? meta.explorer.url : undefined,
+      blockscoutApiKey: env.chain.blockscoutApiKey,
+    };
+  };
+  const chains = {
+    enabled: homeFirst(env.chains.enabled),
+    public: homeFirst(env.chains.public),
+    settings: { robinhood: env.chain, base: other('base'), ethereum: other('ethereum') },
+  };
+  return { ...env, chains };
+}
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
@@ -950,6 +1040,12 @@ function shapeEnv(raw: RawEnv) {
       rpcFallbackUrl: raw.RH_RPC_FALLBACK_URL,
       blockscoutBaseUrl: raw.RH_BLOCKSCOUT_BASE_URL,
       blockscoutApiKey: raw.RH_BLOCKSCOUT_API_KEY,
+    },
+    chains: {
+      enabled: raw.HEY_CHAINS_ENABLED,
+      public: raw.HEY_CHAINS_PUBLIC,
+      base: { rpcUrl: raw.BASE_RPC_URL, rpcFallbackUrl: raw.BASE_RPC_FALLBACK_URL },
+      ethereum: { rpcUrl: raw.ETH_RPC_URL, rpcFallbackUrl: raw.ETH_RPC_FALLBACK_URL },
     },
     market: {
       dexscreenerBaseUrl: raw.DEXSCREENER_BASE_URL,
@@ -1107,6 +1203,12 @@ export const ENV_KEY_BY_PATH: Record<string, string> = {
   'chain.rpcFallbackUrl': 'RH_RPC_FALLBACK_URL',
   'chain.blockscoutBaseUrl': 'RH_BLOCKSCOUT_BASE_URL',
   'chain.blockscoutApiKey': 'RH_BLOCKSCOUT_API_KEY',
+  'chains.enabled': 'HEY_CHAINS_ENABLED',
+  'chains.public': 'HEY_CHAINS_PUBLIC',
+  'chains.base.rpcUrl': 'BASE_RPC_URL',
+  'chains.base.rpcFallbackUrl': 'BASE_RPC_FALLBACK_URL',
+  'chains.ethereum.rpcUrl': 'ETH_RPC_URL',
+  'chains.ethereum.rpcFallbackUrl': 'ETH_RPC_FALLBACK_URL',
   'market.dexscreenerBaseUrl': 'DEXSCREENER_BASE_URL',
   'market.coingeckoApiKey': 'COINGECKO_API_KEY',
   'market.bitqueryApiKey': 'BITQUERY_API_KEY',
@@ -1245,6 +1347,17 @@ export function parseServerEnv(raw: RawEnv = process.env): ServerEnv {
   const result = safeParseServerEnv(raw);
   if (!result.ok) throw new EnvValidationError(result.issues);
   return result.env;
+}
+
+/**
+ * The home chain's id read by the same rule as `env.chain.chainId`, without validating the rest of the environment
+ * (multichain WP1.2): for a module evaluated at build time, which never calls `getServerEnv` (the sitemap,
+ * `apps/web/src/lib/no-provider-calls.test.ts`), and still never reads `RH_CHAIN_ID` past this file. A value that does
+ * not parse reads as Robinhood Chain here; the full parse refuses it at runtime.
+ */
+export function homeChainIdFromRawEnv(raw: RawEnv = process.env): number {
+  const result = homeChainIdSchema.safeParse(raw.RH_CHAIN_ID);
+  return result.success ? result.data : ROBINHOOD_CHAIN_ID;
 }
 
 let cached: ServerEnv | undefined;

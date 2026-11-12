@@ -16,6 +16,43 @@
     "blockscoutBaseUrl": "https://robinhoodchain.blockscout.com",
     "blockscoutApiKey": "[undefined]"
   },
+  "chains": {
+    "enabled": [
+      4663
+    ],
+    "public": [
+      4663
+    ],
+    "settings": {
+      "robinhood": {
+        "chainId": 4663,
+        "dexscreenerSlug": "robinhood",
+        "geckoterminalNetwork": "robinhood",
+        "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+        "rpcFallbackUrl": "[undefined]",
+        "blockscoutBaseUrl": "https://robinhoodchain.blockscout.com",
+        "blockscoutApiKey": "[undefined]"
+      },
+      "base": {
+        "chainId": 8453,
+        "dexscreenerSlug": "base",
+        "geckoterminalNetwork": "base",
+        "rpcUrl": "[undefined]",
+        "rpcFallbackUrl": "[undefined]",
+        "blockscoutBaseUrl": "https://base.blockscout.com",
+        "blockscoutApiKey": "[undefined]"
+      },
+      "ethereum": {
+        "chainId": 1,
+        "dexscreenerSlug": "ethereum",
+        "geckoterminalNetwork": "eth",
+        "rpcUrl": "[undefined]",
+        "rpcFallbackUrl": "[undefined]",
+        "blockscoutBaseUrl": "https://eth.blockscout.com",
+        "blockscoutApiKey": "[undefined]"
+      }
+    }
+  },
   "market": {
     "dexscreenerBaseUrl": "https://api.dexscreener.com",
     "geckoterminalBaseUrl": "https://api.geckoterminal.com/api/v2",

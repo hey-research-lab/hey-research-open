@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ROBINHOOD_CHAIN_ID } from '@hey/config/constants';
 
 /**
  * Deploy records in a repository (founder decision D1, 2026-09-30).
@@ -32,7 +33,7 @@ import { z } from 'zod';
  *   whose key refers to a contract rather than deploying it (WETH, USDG, a
  *   router, `currency0`, `quote`, `settlement`), is dropped.
  */
-export const ROBINHOOD_CHAIN_ID = 4663;
+export { ROBINHOOD_CHAIN_ID };
 
 export const DEPLOY_RECORD_KINDS = ['FOUNDRY_BROADCAST', 'HARDHAT_DEPLOY', 'IGNITION', 'DEPLOYMENTS_JSON'] as const;
 export type DeployRecordKind = (typeof DEPLOY_RECORD_KINDS)[number];
