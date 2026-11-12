@@ -125,6 +125,15 @@ describe('launch factory registry', () => {
     expect(fobo?.eventStrings).toEqual({ name: 3, symbol: 4, metadataUri: 5 });
     expect(fobo!.startBlock).toBeLessThanOrEqual(98_573_047);
     expect(fobo!.verification).toMatch(/census 2026-11-11/);
+    // Lunch, o1, Livo and Realm (2026-11-13): read from HEY's own v4 hook index, each factory confirmed on chain.
+    for (const [id, launchpad] of [['LUNCH_PAIR', 'lunch'], ['LUNCH_V4', 'lunch'], ['O1_V4', 'o1'], ['O1_V4_RWA', 'o1'], ['O1_V3', 'o1'], ['O1_V2', 'o1'], ['O1_TAX', 'o1'], ['LIVO', 'livo'], ['REALM', 'realm']] as const) {
+      const factory = factoryById(id);
+      expect(factory?.enabled, id).toBe(true);
+      expect(factory?.launchpad, id).toBe(launchpad);
+      expect(factory?.verification, id).toMatch(/census 2026-11-13/);
+    }
+    // o1's sixth factory is held out until a person rules on clanker.world's clanker_tax label.
+    expect(LAUNCH_FACTORIES.some((factory) => factory.factoryAddress.toLowerCase().startsWith('0xca111dcd'))).toBe(false);
     // Doppler's Airlock is a protocol, not a launchpad: it is an unlabelled intake (dex-pools.ts), never a label.
     expect(LAUNCH_FACTORIES.some((factory) => factory.factoryAddress.toLowerCase() === '0xeb7c034704ef8dcd2d32324c1545f62fb4ad0862')).toBe(false);
   });

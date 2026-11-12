@@ -184,6 +184,37 @@ const HOODFUN_LAUNCH_TOPIC0 =
  */
 const FLAP_START_BLOCK = 4_220_000;
 
+/** o1 Launchpad's factory generations (census 2026-11-13): one launch event, the token in topics[1]. */
+function o1Factories(): LaunchFactoryConfig[] {
+  const LAUNCHED = '0x207384e895174175cc774fe7f7457b37c382f27ebf53d37d5257b862f80eaf9c' as const;
+  const entry = (id: string, version: string, factoryAddress: `0x${string}`, startBlock: number, verification: string): LaunchFactoryConfig => ({
+    id,
+    name: 'o1 Launchpad',
+    launchpad: 'o1',
+    version,
+    chainId: 4663,
+    factoryAddress,
+    startBlock,
+    eventTopic0: LAUNCHED,
+    tokenTopicIndex: 1,
+    enabled: true,
+    verification,
+    sourceUrl: 'https://github.com/o1exchange/o1-launch',
+  });
+  return [
+    entry('O1_V4', 'v4', '0xce9c48cfa068947f77738c81be406b53338e5b0d', 51_950_000,
+      'Sourcify exact match for src/RWAERC20LaunchpadFactory.sol, 24,466 bytes; Launched hashes to this topic; 4,263 launches 51,960,302–108,174,164; Habibi (0xab5ff4bc…) in topics[1] answers symbol() (census 2026-11-13)'),
+    entry('O1_V4_RWA', 'v4 rwa', '0xe64ac4113848bbc1a6dde1a6d1da96720a36f297', 19_570_000,
+      'Sourcify exact match for RWAERC20LaunchpadFactory, 21,680 bytes; 3,221 launches 19,576,924–52,782,006; a token at 0xefab1bdd… answers symbol() (census 2026-11-13)'),
+    entry('O1_V3', 'v3', '0x411f21283d3e492bc395027329e08f9f4f560ba5', 6_440_000,
+      'ERC20LaunchpadFactory (o1 suite robinhood-timestamp-v3), 20,103 bytes; 1,681 launches 6,447,260–52,779,684; TTT (0x17ade8c1…) answers symbol() (census 2026-11-13)'),
+    entry('O1_V2', 'v2', '0x76f0923ac4df0a079a10f628a7bce6426ccd344a', 4_450_000,
+      'ERC20LaunchpadFactory (o1 suite robinhood-block-v2), 18,612 bytes; 105 launches 4,456,282–6,266,298; JV2 (0x25f581ee…) answers symbol() (census 2026-11-13)'),
+    entry('O1_TAX', 'tax', '0x29cad997f3cf1aa9ca51e12be29c09e3e00f119a', 75_340_000,
+      'Sourcify match for src/tax/TaxRWAERC20LaunchpadFactory.sol; 123 launches 75,345,541–109,237,680 (census 2026-11-13)'),
+  ];
+}
+
 export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
   {
     id: 'PONS_V2',
@@ -840,6 +871,85 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
     verification:
       'Sourcify exact match for FoboFactory, 14,116 bytes of code, deployed at block 98,531,915 (tx 0x3eaa52d8…), the same source as github.com/fobodotfun/contracts @ 2745e56; first launch at block 98,573,047 (tx 0xe6d7a59e…) carries FOBO (0x000DE658…3676) in topics[1], and data words 3/4/5 decode to "FOBO" / "FOBO" / "ipfs://fobo"; PHOBO (0x788c6be5…ae77) and FLORA (0x7bae7a90…fea8) answer symbol() on other samples; 1,111 launches to block 111,819,934 (census 2026-11-11)',
     sourceUrl: 'https://fobo.fun/',
+  },
+  /**
+   * Lunch (lunch.fun), added 2026-11-13 from HEY's v4 hook index (its two hooks hold about 10,000 pools). Free launchpad on
+   * Uniswap v3/v4 with stock and HOOD pairs and creator taxes. Two upgradeable launchers; every Lunch token ends in `0123`.
+   */
+  {
+    id: 'LUNCH_PAIR',
+    name: 'Lunch',
+    launchpad: 'lunch',
+    version: 'pair',
+    chainId: 4663,
+    factoryAddress: '0x6fda94aceedc5a97171469a8873d00fb9983bb8c',
+    startBlock: 19_500_000,
+    // PairLaunch(address indexed token, address indexed creator, address indexed quote, uint256 supply, int24 launchTick, uint256 devBuyEth)
+    eventTopic0: '0x9f32a3db46638d93e1ef00e92774cd1856de77a732c52bc37c00114165371557',
+    tokenTopicIndex: 1,
+    enabled: true,
+    verification:
+      'a 130-byte ERC-1967 proxy onto 0x12848047…9df4, a Sourcify match for src/LunchV4PairLauncher.sol:LunchV4PairLauncher, whose PairLaunch hashes to this topic; first launch at block 19,505,527; the log at 112,780,466 carries Dacity (0x23ba9386…) in topics[1], which answers symbol(); 7,608 launches to block 112.87M (census 2026-11-13); robin.gives names Lunch as the launchpad of $ROBIN',
+    sourceUrl: 'https://www.lunch.fun/',
+  },
+  {
+    id: 'LUNCH_V4',
+    name: 'Lunch',
+    launchpad: 'lunch',
+    version: 'v4',
+    chainId: 4663,
+    factoryAddress: '0xc783221ab1db0244203458417981b4631e80b988',
+    startBlock: 13_750_000,
+    // V4TokenMeta(address indexed token, address indexed creator, string image, string banner, string description, string website, string twitter, string telegram)
+    eventTopic0: '0xbafbd5402f1dff9755e8c3a63fd90314672c209273f75a9d8670f8b1bca1dd33',
+    tokenTopicIndex: 1,
+    eventStrings: { imageUri: 0 },
+    enabled: true,
+    verification:
+      'a 130-byte ERC-1967 proxy onto 0x375183BA…32b2, a Sourcify match for LunchV4Launcher; V4TokenMeta is the one per-launch event its launches all emit (TaxLaunch only for taxed ones: 411); first at block 13,754,341; the log at 110,330,942 carries UNITED (0x0bec5338…0123) in topics[1], which answers symbol(); 2,225 launches to block 112.87M (census 2026-11-13)',
+    sourceUrl: 'https://www.lunch.fun/',
+  },
+  /**
+   * o1 Launchpad (source github.com/o1exchange/o1-launch), added 2026-11-13: Uniswap v4 launches with RWA and stock-token
+   * quotes. Four factory generations and a tax factory share one `Launched(address indexed token, bytes32 indexed poolId,
+   * address indexed originalCreator, address quoteToken, uint256 launchSupply, int24 tickSpacing)` event. A sixth factory
+   * (0xca111dcd…, 78 launches) is held out: clanker.world lists it as its own `clanker_tax`, a question for a person.
+   */
+  ...o1Factories(),
+  /**
+   * Livo (livo.trade) and its fork Realm (realm.trade), added 2026-11-13: a bonding curve to a Uniswap v4 graduation.
+   * Both emit `TokenCreated(address indexed token, string name, string symbol, address tokenOwner, address launchpad,
+   * address graduator, address feeHandler)`; the name and ticker are data words 0 and 1.
+   */
+  {
+    id: 'LIVO',
+    name: 'Livo',
+    launchpad: 'livo',
+    chainId: 4663,
+    factoryAddress: '0xb637800dcd5c83913d828e961dbb964a9896f19d',
+    startBlock: 6_120_000,
+    eventTopic0: '0x21ed19b2f144544b70507a7599a59da1c4bbf58f346d4e49debfc0e94d14e870',
+    tokenTopicIndex: 1,
+    eventStrings: { name: 0, symbol: 1 },
+    enabled: true,
+    verification:
+      'ERC-1967 proxy onto 0xF74aD241…5258, a Sourcify exact match for LivoFactoryUniV4Unified (github.com/LivoLaunchpad/livo-contracts); 933 launches 6,120,893–76,051,374; VLADBOT (0x353a93db…) in topics[1] answers symbol() (census 2026-11-13)',
+    sourceUrl: 'https://github.com/LivoLaunchpad/livo-contracts',
+  },
+  {
+    id: 'REALM',
+    name: 'Realm',
+    launchpad: 'realm',
+    chainId: 4663,
+    factoryAddress: '0xc763b1795dabe2d2336eba214d16969ebc5db27f',
+    startBlock: 82_790_000,
+    eventTopic0: '0x21ed19b2f144544b70507a7599a59da1c4bbf58f346d4e49debfc0e94d14e870',
+    tokenTopicIndex: 1,
+    eventStrings: { name: 0, symbol: 1 },
+    enabled: true,
+    verification:
+      'ERC-1967 proxy onto 0xEf8D9941…413A, a Sourcify exact match for RealmFactoryUniV4Direct (github.com/RealmLaunchpad/realm-contracts); 663 launches 82,795,885–110,970,373; FuckRed (0xaca3aaa9…) answers symbol() (census 2026-11-13)',
+    sourceUrl: 'https://github.com/RealmLaunchpad/realm-contracts',
   },
 ];
 
