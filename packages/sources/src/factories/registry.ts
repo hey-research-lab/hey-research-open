@@ -818,6 +818,29 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
       'the Torch team named this address (2026-11-11); Sourcify exact match for src/TorchFactory.sol:TorchFactory, 22,460 bytes of code, deployed at block 85,204,474 (tx 0x94ed6872…); first launch at block 85,204,501 (tx 0x7eec1e8d…) carries TORCH (0x000050e1…1111) in topics[1], which answers symbol(), and data word 8 points at an ipfs.io contractURI; BLOWTORCH (0x8a06f3eb…1111) on another sample; 2,169 launches to block 111,795,731 (census 2026-11-11); TORCH itself was held by HEY with no launchpad (first seen in a Uniswap v4 pool)',
     sourceUrl: 'https://torchpad.fun/',
   },
+  /**
+   * FOBO (fobo.fun), added 2026-11-11 beside Torch, on the same terms: read from the chain and its public repository
+   * (github.com/fobodotfun/contracts @ 2745e56, which the deployed source matches). `FoboFactory` is a Sourcify exact
+   * match, deployed at block 98,531,915 (tx 0x3eaa52d8…) and not a proxy; every pool is owned by FoboHook
+   * (0x0Af57F62…28Ec). Its launch event is `TokenLaunched(address indexed token, bytes32 indexed poolId, address indexed
+   * creator, address quote, int24 tickStart, uint256 devBuyTokens, string name, string ticker, string metadataURI)`:
+   * the token in `topics[1]`, the name, ticker and metadataURI offsets in data words 3, 4 and 5.
+   */
+  {
+    id: 'FOBO',
+    name: 'FOBO',
+    launchpad: 'fobo',
+    chainId: 4663,
+    factoryAddress: '0xd7e538e98A208fD19e46bc549FF4710C33664e18',
+    startBlock: 98_531_915,
+    eventTopic0: '0x026e4b7423df355927284925c5926f282ed0c33e8de0f31ba7381738fb2f1ba2',
+    tokenTopicIndex: 1,
+    eventStrings: { name: 3, symbol: 4, metadataUri: 5 },
+    enabled: true,
+    verification:
+      'Sourcify exact match for FoboFactory, 14,116 bytes of code, deployed at block 98,531,915 (tx 0x3eaa52d8…), the same source as github.com/fobodotfun/contracts @ 2745e56; first launch at block 98,573,047 (tx 0xe6d7a59e…) carries FOBO (0x000DE658…3676) in topics[1], and data words 3/4/5 decode to "FOBO" / "FOBO" / "ipfs://fobo"; PHOBO (0x788c6be5…ae77) and FLORA (0x7bae7a90…fea8) answer symbol() on other samples; 1,111 launches to block 111,819,934 (census 2026-11-11)',
+    sourceUrl: 'https://fobo.fun/',
+  },
 ];
 
 
