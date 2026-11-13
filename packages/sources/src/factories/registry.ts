@@ -1056,6 +1056,29 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
       'named launchFactory in fun.noxa.fi\'s bundle ("Noxa — launch on Robinhood Chain"); allTokensLength() = 1,141 = the event count; 1,141 launches 16,402,349–112,686,507, tokens ending 4663; 0x424e8ae4…4663 answers symbol() (census 2026-11-13)',
     sourceUrl: 'https://fun.noxa.fi/',
   },
+  /**
+   * Standard Reserve's launchpad (standardreserve.xyz), added 2026-11-13: a verified `LaunchFactory`
+   * (src/launchpad/LaunchFactory.sol) whose fee multisig 0x0478…415f has the same four owners and the same 2-of-4
+   * threshold as the Safe 0x5c19…a68c that owns Standard Reserve's own contracts; projects launched through it say "live
+   * on @standard_rsv" (PACT 0x7775c5ae…, TRANCH 0x2b8308f1…, STANDY 0x8dfdeabe…, each from its TokenDeployer
+   * 0xf47e03be…). `Launched(address indexed token, address indexed curve, address indexed creator, LaunchInfo info)`, the
+   * token in topics[1]; the name and ticker sit inside the dynamic `info` tuple, so no string offsets are read. Not the
+   * StandardLaunchFactory family (0xf05a26e9…, 0xbbdaa46a…), which another owner runs and which stays unlabelled.
+   */
+  {
+    id: 'STANDARD_RESERVE',
+    name: 'Standard Reserve',
+    launchpad: 'standard-reserve',
+    chainId: 4663,
+    factoryAddress: '0x3d6ea4e97b8ab9e1a1b4943febffe22d8c920091',
+    startBlock: 88_360_000,
+    eventTopic0: '0xa0354dae199953f2dbde6be8415166a744e7f92b7328671692196d8fdbb6bd9d',
+    tokenTopicIndex: 1,
+    enabled: true,
+    verification:
+      'verified LaunchFactory deployed at block 88,360,332; its feeMultisig() 0x047829087f9ac81fdb05f7b750458afe3d72415f has the owners and threshold (2 of 4) of Standard Reserve\'s Safe 0x5c19f925e1e0d54e34681a6cb70d55c90b12a68c, which owns its reserve contracts; 2,210 launches 88,527,856–112,006,462; PACT (0x7775c5ae…) answers symbol() (census 2026-11-13)',
+    sourceUrl: 'https://www.standardreserve.xyz/',
+  },
 ];
 
 

@@ -126,7 +126,7 @@ describe('launch factory registry', () => {
     expect(fobo!.startBlock).toBeLessThanOrEqual(98_573_047);
     expect(fobo!.verification).toMatch(/census 2026-11-11/);
     // Lunch, o1, Livo and Realm (2026-11-13): read from HEY's own v4 hook index, each factory confirmed on chain.
-    for (const [id, launchpad] of [['LUNCH_PAIR', 'lunch'], ['LUNCH_V4', 'lunch'], ['O1_V4', 'o1'], ['O1_V4_RWA', 'o1'], ['O1_V3', 'o1'], ['O1_V2', 'o1'], ['O1_TAX', 'o1'], ['O1_TAX_2', 'o1'], ['LIFT', 'lift'], ['PANGEA_V1', 'pangea'], ['PANGEA_V1B', 'pangea'], ['PANGEA_V2', 'pangea'], ['PANGEA_V2B', 'pangea'], ['PANGEA_V3', 'pangea'], ['PANGEA_V4', 'pangea'], ['COOK', 'cook'], ['NOXA_V2', 'hoodit'], ['LIVO', 'livo'], ['REALM', 'realm']] as const) {
+    for (const [id, launchpad] of [['LUNCH_PAIR', 'lunch'], ['LUNCH_V4', 'lunch'], ['O1_V4', 'o1'], ['O1_V4_RWA', 'o1'], ['O1_V3', 'o1'], ['O1_V2', 'o1'], ['O1_TAX', 'o1'], ['O1_TAX_2', 'o1'], ['LIFT', 'lift'], ['PANGEA_V1', 'pangea'], ['PANGEA_V1B', 'pangea'], ['PANGEA_V2', 'pangea'], ['PANGEA_V2B', 'pangea'], ['PANGEA_V3', 'pangea'], ['PANGEA_V4', 'pangea'], ['COOK', 'cook'], ['NOXA_V2', 'hoodit'], ['STANDARD_RESERVE', 'standard-reserve'], ['LIVO', 'livo'], ['REALM', 'realm']] as const) {
       const factory = factoryById(id);
       expect(factory?.enabled, id).toBe(true);
       expect(factory?.launchpad, id).toBe(launchpad);
@@ -136,6 +136,9 @@ describe('launch factory registry', () => {
     expect(factoryById('O1_TAX_2')?.factoryAddress).toBe('0xca111dcdd2ce924c3378d6514fdcbc46217bca16');
     // NOXA Fun: its first factory keeps the HOODIT id and key, shown under NOXA's name (founder, 2026-11-13).
     expect(factoryById('HOODIT')?.name).toBe('NOXA Fun');
+    // Standard Reserve's LaunchFactory is tied by its fee multisig's owners; StandardLaunchFactory (another owner) stays out.
+    expect(factoryById('STANDARD_RESERVE')?.factoryAddress).toBe('0x3d6ea4e97b8ab9e1a1b4943febffe22d8c920091');
+    expect(LAUNCH_FACTORIES.some((factory) => ['0xf05a26e92e27b8f0385f6895f5507db26a2f4b8d', '0xbbdaa46ae5c5a1dca9a58e55f4d0210cc84e58de'].includes(factory.factoryAddress.toLowerCase()))).toBe(false);
     // Doppler's Airlock is a protocol, not a launchpad: it is an unlabelled intake (dex-pools.ts), never a label.
     expect(LAUNCH_FACTORIES.some((factory) => factory.factoryAddress.toLowerCase() === '0xeb7c034704ef8dcd2d32324c1545f62fb4ad0862')).toBe(false);
   });
