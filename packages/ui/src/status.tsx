@@ -127,6 +127,7 @@ export function ActivityChip({
   noBuilderSource = false,
   unknownReason,
   answer,
+  help: helpOverride,
   className,
 }: {
   status: ActivityStatusValue;
@@ -142,6 +143,11 @@ export function ActivityChip({
    * The status word stays in `data-activity-status` and the title.
    */
   answer?: string | undefined;
+  /**
+   * The chip's title in place of the status's own help (2026-11-13, additive): for a chip that stands where HEY measures
+   * no status at all (`NotTrackedChip`), whose reason is not one of the status's own. Absent, the status's help.
+   */
+  help?: string | undefined;
   className?: string;
 }) {
   const presentation = STATUS_STYLE[status] ?? STATUS_STYLE.UNKNOWN;
@@ -159,7 +165,7 @@ export function ActivityChip({
           : presentation.text,
         className,
       )}
-      title={help}
+      title={helpOverride ?? help}
       // The canonical value behind the words, so every surface can be checked against the API (2026-09-25).
       data-activity-status={status}
       // The single-line words a text surface prints for the same facts ("Not measured — no builder source linked"), for parity checks.

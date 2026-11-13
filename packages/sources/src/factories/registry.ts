@@ -212,6 +212,45 @@ function o1Factories(): LaunchFactoryConfig[] {
       'ERC20LaunchpadFactory (o1 suite robinhood-block-v2), 18,612 bytes; 105 launches 4,456,282–6,266,298; JV2 (0x25f581ee…) answers symbol() (census 2026-11-13)'),
     entry('O1_TAX', 'tax', '0x29cad997f3cf1aa9ca51e12be29c09e3e00f119a', 75_340_000,
       'Sourcify match for src/tax/TaxRWAERC20LaunchpadFactory.sol; 123 launches 75,345,541–109,237,680 (census 2026-11-13)'),
+    // The second tax factory: o1's launchpad launches taxed tokens through it (founder, 2026-11-13). clanker.world's API
+    // also lists its tokens (`type: clanker_tax`), which named it as a question, not an operator.
+    entry('O1_TAX_2', 'tax', '0xca111dcdd2ce924c3378d6514fdcbc46217bca16', 107_070_000,
+      'Sourcify match for TaxRWAERC20LaunchpadFactory, the same Launched topic as the other o1 factories; 78 launches 107,075,812–112,868,845 (census 2026-11-13); o1 Launchpad\'s taxed launches (founder, 2026-11-13)'),
+  ];
+}
+
+/**
+ * Pangea (pangea.trade), added 2026-11-13. Its hook 0x15e5…a8cc lists these factories in its own on-chain `factories()`,
+ * the newest (UniswapLaunchFactoryV3, verified "Pangea launch factory v3") was deployed by the key Pangea's hook
+ * repository calls its admin key, and Uniswap's hooklist files the hook as Pangea's (issue #10582). Every generation
+ * but v4 emits `Launched(bytes32 indexed launchId, address indexed token, …)`, the token in topics[2]; v4 (an ERC-1967
+ * proxy) emits `Opened(bytes32 indexed coinId, address indexed token, address indexed by, …)`, the token in topics[2].
+ * No name or ticker in either event.
+ */
+function pangeaFactories(): LaunchFactoryConfig[] {
+  const LAUNCHED = '0xa78f3d87c4613e7251332c9838de9161121bcf0e9af64410ddc341caacdc9090' as const;
+  const OPENED = '0xbdca3fcdb296a15c842ff17efa2156eea58d30d1f6ca44c2b3ab375503e540ca' as const;
+  const entry = (id: string, version: string, factoryAddress: `0x${string}`, startBlock: number, eventTopic0: `0x${string}`, verification: string): LaunchFactoryConfig => ({
+    id,
+    name: 'Pangea',
+    launchpad: 'pangea',
+    version,
+    chainId: 4663,
+    factoryAddress,
+    startBlock,
+    eventTopic0,
+    tokenTopicIndex: 2,
+    enabled: true,
+    verification,
+    sourceUrl: 'https://www.pangea.trade/',
+  });
+  return [
+    entry('PANGEA_V1', 'v1', '0x7808344fc0a43e6a5d0e9cb565a13ef9618d61b5', 90_030_000, LAUNCHED, 'in the Pangea hook\'s factories(); creator named in its README; 2 launches 90,039,766–90,082,908 (census 2026-11-13)'),
+    entry('PANGEA_V1B', 'v1', '0x8a1f3e1db07048c007f6d9ab924494c77c0dba65', 92_490_000, LAUNCHED, 'in the Pangea hook\'s factories(); 335 launches 92,497,513–96,868,500 (census 2026-11-13)'),
+    entry('PANGEA_V2', 'v2', '0xadf9c12eaf14da2f7780c0587cc06034f1edf8d3', 96_910_000, LAUNCHED, 'UniswapLaunchFactoryV2 in the Pangea hook\'s factories(); 362 launches 96,917,992–98,854,271 (census 2026-11-13)'),
+    entry('PANGEA_V2B', 'v2', '0x9cf5832474cbb09d2e06ff20460aff4303faf72a', 98_860_000, LAUNCHED, 'UniswapLaunchFactoryV2 in the Pangea hook\'s factories(); 321 launches 98,869,582–104,462,691 (census 2026-11-13)'),
+    entry('PANGEA_V3', 'v3', '0xaa7a943666b72a305a53962dd5b28c5f9d8a37a7', 104_470_000, LAUNCHED, 'verified UniswapLaunchFactoryV3 ("Pangea launch factory v3"), deployed by Pangea\'s admin key 0x93620a4A…; 384 launches 104,480,009–112,864,791 (census 2026-11-13)'),
+    entry('PANGEA_V4', 'v4', '0x9a8b8d44ba267b2be3c5dc8a8cae173870458e9b', 112_740_000, OPENED, 'ERC-1967 proxy in the Pangea hook\'s factories(); Opened events, tokens ending 6ea as Pangea\'s v4 docs say; 5 launches 112,747,839–112,764,099 (census 2026-11-13)'),
   ];
 }
 
@@ -629,14 +668,15 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
   },
 
   /**
-   * Hoodit — the chain's earliest launcher, a Pons-V1-style factory under
-   * another name (GeckoTerminal dex `hoodit`). Same `TokenLaunched` signature
-   * as Pons V1; 21,443 launches between blocks 61,869 and 6,718,684 and none
-   * since, so once backfilled it costs one request an hour.
+   * NOXA Fun's first factory, `LaunchFactoryV1` — the chain's earliest launcher, a Pons-V1-style factory. GeckoTerminal
+   * names its pools `hoodit`, NOXA's old name (founder, 2026-11-13; the robinhood-chain-resources archive names the
+   * address NOXA Fun's LaunchFactoryV1). The id and the stored launchpad key stay `HOODIT` / `hoodit`, so every row
+   * written under them reads as before; only the name shown changes. Same `TokenLaunched` signature as Pons V1; 21,443
+   * launches between blocks 61,869 and 6,718,684 and none since, so once backfilled it costs one request an hour.
    */
   {
     id: 'HOODIT',
-    name: 'Hoodit',
+    name: 'NOXA Fun',
     launchpad: 'hoodit',
     chainId: 4663,
     factoryAddress: '0xd9ec2db5f3d1b236843925949fe5bd8a3836fccb',
@@ -646,7 +686,7 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
     enabled: true,
     verification:
       'the contract CASHCAT (0x020bfc65…, GeckoTerminal dex hoodit) was launched through (tx 0x0e6d23f0…, block 88,836): it emits the Pons V1 TokenLaunched topic with the token in topics[1] and the Uniswap V3 factory in topics[3]; 21,443 such logs from block 61,869 to 6,718,684 on 2026-09-03 (some windows rate-limited)',
-    sourceUrl: 'https://www.geckoterminal.com/robinhood/hoodit/pools',
+    sourceUrl: 'https://fun.noxa.fi/',
   },
 
   /**
@@ -913,7 +953,8 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
    * o1 Launchpad (source github.com/o1exchange/o1-launch), added 2026-11-13: Uniswap v4 launches with RWA and stock-token
    * quotes. Four factory generations and a tax factory share one `Launched(address indexed token, bytes32 indexed poolId,
    * address indexed originalCreator, address quoteToken, uint256 launchSupply, int24 tickSpacing)` event. A sixth factory
-   * (0xca111dcd…, 78 launches) is held out: clanker.world lists it as its own `clanker_tax`, a question for a person.
+   * (0xca111dcd…, 78 launches), held out at first because clanker.world lists its tokens as `clanker_tax`, is o1's second
+   * tax factory: the founder ruled on 2026-11-13 that it carries the tokens launched with a tax on o1's launchpad.
    */
   ...o1Factories(),
   /**
@@ -950,6 +991,70 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
     verification:
       'ERC-1967 proxy onto 0xEf8D9941…413A, a Sourcify exact match for RealmFactoryUniV4Direct (github.com/RealmLaunchpad/realm-contracts); 663 launches 82,795,885–110,970,373; FuckRed (0xaca3aaa9…) answers symbol() (census 2026-11-13)',
     sourceUrl: 'https://github.com/RealmLaunchpad/realm-contracts',
+  },
+  /**
+   * LIFT (lift.fun), added 2026-11-13: an unverified factory LIFT's own runtime config names as its Robinhood Chain
+   * `factoryV4` (lift.fun/config.js, `"id":4663 … "factoryV4":"0xC739229D…"`); every launch's metadata link points to
+   * api.lift.fun. One unnamed event per launch, the token in topics[1]; name, ticker and metadata URI are head offsets
+   * 7, 8 and 9. `InitialBuyExecuted` (0x34b6bd41…) fires only with an initial buy and is not read.
+   */
+  {
+    id: 'LIFT',
+    name: 'LIFT',
+    launchpad: 'lift',
+    chainId: 4663,
+    factoryAddress: '0xc739229dc490ee67f3472604f4addd57178489c6',
+    startBlock: 76_560_000,
+    eventTopic0: '0x6f0c466814ca3040318951d80aafb489060ae72ecdfc7cd1d5678ca5d8038c0e',
+    tokenTopicIndex: 1,
+    eventStrings: { name: 7, symbol: 8, metadataUri: 9 },
+    enabled: true,
+    verification:
+      'named factoryV4 for chain 4663 in lift.fun/config.js (VITE_LAUNCH_CHAINS); unverified bytecode; 5,238 launches 76,563,848–112,612,528, tokens ending 0087; FRUMP (0x715d7814…0087) answers symbol() (census 2026-11-13)',
+    sourceUrl: 'https://lift.fun/',
+  },
+  ...pangeaFactories(),
+  /**
+   * Cook Market (cook.market), added 2026-11-13: DefiLlama's cook-market adapter names this CookLauncherFactory and its
+   * CookHook (0xfe3e…3044, in Uniswap's hooklist); the same deployer set up Cook's buyback and called `setCookToken`.
+   * `TokenLaunched` carries the token in topics[1] and the name and ticker as head offsets 6 and 7. Dormant since 65.9M.
+   */
+  {
+    id: 'COOK',
+    name: 'Cook Market',
+    launchpad: 'cook',
+    chainId: 4663,
+    factoryAddress: '0x059bce487c6be54ceb4e79c60a6d95f9119732dc',
+    startBlock: 57_700_000,
+    eventTopic0: '0x4bc3e1c7563116fd43fe920faebc0e711cddc122034360e8c8e1b4c81c5267a5',
+    tokenTopicIndex: 1,
+    eventStrings: { name: 6, symbol: 7 },
+    enabled: true,
+    verification:
+      'named by DefiLlama dimension-adapters fees/cook-market (FACTORY, "Cook Market launchpad on Robinhood Chain … https://cook.market"); verified CookLauncherFactory; 415 launches 57,711,220–65,932,680 (census 2026-11-13)',
+    sourceUrl: 'https://cook.market/',
+  },
+  /**
+   * NOXA Fun's second factory (fun.noxa.fi), added 2026-11-13: NOXA's live app names it as `launchFactory` in its own
+   * bundle, and the factory's `allTokensLength()` (1,141) matches the event count. It shares the launchpad key of the
+   * first factory (`hoodit`, NOXA's old name; see HOODIT below). An unnamed event per launch, the token in topics[1] and
+   * the creator in topics[2]; no strings. Not the Pons V1 event its first factory emits. noxa.io's factory is another
+   * operator and is not here.
+   */
+  {
+    id: 'NOXA_V2',
+    name: 'NOXA Fun',
+    launchpad: 'hoodit',
+    version: 'V2',
+    chainId: 4663,
+    factoryAddress: '0xdd84fddea1206115b37dbbc0ba5721530e1ba9c5',
+    startBlock: 16_400_000,
+    eventTopic0: '0xe0f2fe1352e2f75144ba7108a1ff91b507e2cd0c64767e325f6d42d5fdf29434',
+    tokenTopicIndex: 1,
+    enabled: true,
+    verification:
+      'named launchFactory in fun.noxa.fi\'s bundle ("Noxa — launch on Robinhood Chain"); allTokensLength() = 1,141 = the event count; 1,141 launches 16,402,349–112,686,507, tokens ending 4663; 0x424e8ae4…4663 answers symbol() (census 2026-11-13)',
+    sourceUrl: 'https://fun.noxa.fi/',
   },
 ];
 

@@ -20,6 +20,22 @@ import { cn } from './cn';
 export type ShipWeekData = { week: string; ships: number | null };
 export type ShipWeekSeriesData = { weeks: readonly ShipWeekData[]; total: number; observed: number };
 
+/**
+ * A series HEY observed none of (2026-11-13): `weeks` UTC ISO weeks (each keyed by its Monday, `YYYY-MM-DD`, as the
+ * domain's `shipWeekSeries` keys them) ending with the week holding `now`, every week `null`. For a row whose building
+ * HEY does not read at all — a chain it does not track yet — so the chart draws its own "not observed" state, never a
+ * zero and never "Not read" (the read did not fail: there is no read).
+ */
+export function notObservedShipWeeks(now: Date, weeks = 8): ShipWeekSeriesData {
+  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+  const series: ShipWeekData[] = [];
+  for (let index = weeks - 1; index >= 0; index -= 1) {
+    series.push({ week: new Date(monday.getTime() - index * 7 * 86_400_000).toISOString().slice(0, 10), ships: null });
+  }
+  return { weeks: series, total: 0, observed: 0 };
+}
+
 const plural = (count: number, word: string) => `${count.toLocaleString('en-US')} ${word}${count === 1 ? '' : 's'}`;
 
 /** The chart's text equivalent: "3 counted ships in 8 weeks, oldest first: not observed, 0, 1, 0, 0, 2, 0, 0." */
