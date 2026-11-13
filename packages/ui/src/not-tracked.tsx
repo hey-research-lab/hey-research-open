@@ -164,7 +164,9 @@ export function NotTrackedCard({ project, className }: { project: NotTrackedProj
       </div>
 
       <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5" data-testid="card-builder">
-        <NotTrackedChip reason={project.notMeasured.reason} help={project.notMeasured.help} className="shrink-0" />
+        {/* The chip may wrap its reason to a second line: "Not measured · Base tracking starts in early December" is wider
+            than a card at 375 px (UI rule 8), and a shrink-0 pill pushed the page 31 px sideways. */}
+        <NotTrackedChip reason={project.notMeasured.reason} help={project.notMeasured.help} className="max-w-full flex-wrap gap-y-0.5" />
         {ship ? (
           // Named, not linked (DISC-7): the card's one link is its name; the source is one press away on the project's page.
           <p className="min-w-0 grow basis-[9rem] text-[13px] leading-5" data-testid="card-latest-signal" title={ship.title}>
