@@ -128,11 +128,17 @@ export function ActivityChip({
   unknownReason,
   answer,
   help: helpOverride,
+  size = 'default',
   className,
 }: {
   status: ActivityStatusValue;
   /** `surface` gives the chip its own tinted pill, for hero and card headers. */
   variant?: 'text' | 'surface';
+  /**
+   * `lg` (2026-11-15 Terminal critique #4): the surface pill at 17 px, for a header where building must outweigh the
+   * price beside it (UI rule 4). A parameter, not a caller's class: `cn` is a plain joiner (`cn-collision.test.ts`).
+   */
+  size?: 'default' | 'lg';
   /** UNKNOWN with nothing to read and nothing shipped: "No builder signal yet". Superseded by `unknownReason`. */
   noBuilderSource?: boolean;
   /** Why an UNKNOWN is unknown (`unknownActivityReason`); takes precedence over `noBuilderSource`. */
@@ -161,7 +167,7 @@ export function ActivityChip({
       className={cn(
         'inline-flex items-center gap-1.5 text-sm font-medium',
         variant === 'surface'
-          ? cn('rounded-full px-2.5 py-1 text-[13px]', presentation.surface)
+          ? cn(size === 'lg' ? 'rounded-full px-3 py-1 text-[17px] leading-6' : 'rounded-full px-2.5 py-1 text-[13px]', presentation.surface)
           : presentation.text,
         className,
       )}
@@ -172,7 +178,7 @@ export function ActivityChip({
       data-activity-label={answer ?? statusLabel}
       {...(status === 'UNKNOWN' && reason ? { 'data-unknown-reason': reason } : {})}
     >
-      <Icon aria-hidden="true" size={15} strokeWidth={1.9} />
+      <Icon aria-hidden="true" size={size === 'lg' ? 18 : 15} strokeWidth={1.9} />
       {head}
       {reasonLine ? (
         // Weight sets the reason apart, never opacity (2026-10-30 phase 6): the status colours hold 4.5:1 only at full strength.

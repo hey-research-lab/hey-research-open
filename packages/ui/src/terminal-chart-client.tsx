@@ -516,12 +516,15 @@ function Readout({
               <span className="text-hey-secondary">{k}</span> {money(v)}
             </span>
           ))}
+          {/* Labelled (2026-11-15 critique #13): the hovered candle's own move, never read as the range's or the 24h. */}
           {dir === 'p' ? (
-            <span className="text-hey-unavailable" data-direction="partial">
-              {describeMarketChange(change, barWindow(model)).text} so far
+            <span className="text-hey-unavailable" data-direction="partial" data-testid="chart-readout-change">
+              {describeMarketChange(change, barWindow(model)).text} this candle so far
             </span>
           ) : (
-            <MarketChange pct={change} window={barWindow(model)} showWindow={false} />
+            <span data-testid="chart-readout-change">
+              <MarketChange pct={change} window={barWindow(model)} windowLabel="this candle" />
+            </span>
           )}
           {vol}
           {row[8] === 'a' ? (

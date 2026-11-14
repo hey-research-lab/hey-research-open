@@ -4,6 +4,10 @@ What changed, and when, for anyone reading the code or building on the API. Date
 change reached production. Older entries are condensed; the private repository keeps the full
 record.
 
+## 2026-11-15
+
+- **A simpler Research Terminal, with keyboard shortcuts (2026-11-15).** Preview rows on What changed open the public receipt; the workspace header leads with the activity status and says when the project names its token's contract; the access panel on a locked page is one sentence, the sample project and one button; each place has one name and one selection colour; the timeline folds a code week, a repository's release day and a deploy run into one row; `?`, `g` chords, `j`/`k` and `1`–`5` work outside text fields (off on a phone, or by a switch), and the palette offers recent projects and `>` for commands. Display only: no status, score or API field changes.
+
 ## 2026-11-09
 
 - **A site's own script can name its token (2026-11-09).** When a project's homepage does not name its contract, HEY reads up to eight of the site's own script files on the same host, by the homepage's rules ("listed among others", "disclaimed"), through the same SSRF guard and budget. A naming found there is `website_mention_context = 'bundle'` and verifies the token as the homepage would (`site_names_contract`); a file HEY cannot read decides nothing.
