@@ -431,6 +431,10 @@ export const serverEnvSchema = z
       badgePrEnabled: optionalString.transform((value) => value === 'true').pipe(z.boolean()),
     }),
 
+    /**
+     * Object storage (S3_*). Declared and read by no code (multichain WP1.11, 2026-11-11, marked unused rather than
+     * removed so the parsed environment keeps its shape): setting these changes nothing until a reader exists.
+     */
     storage: z.object({
       endpoint: optionalUrl,
       bucket: optionalString,

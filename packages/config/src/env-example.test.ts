@@ -39,3 +39,49 @@ describe('reader feature kill switches', () => {
     expect(parseServerEnv({ ...base, HEY_ASK_ENABLED: '' }).hey.askEnabled).toBe(true);
   });
 });
+
+/**
+ * Every variable a running process reads from its environment outside the schema is named in `.env.example` too
+ * (multichain WP1.11, 2026-11-11): seven were not (the Bitquery concurrency, the MCP addresses and profile, the
+ * migrator's lock wait, the access log path, the market page memo). Operator scripts (`apps/*\/src/scripts`) and test
+ * files read their own flags and are not held here; the rest is listed below with what sets it.
+ */
+const SET_BY_THE_PLATFORM: Record<string, string> = {
+  PORT: 'the Next.js server and the container set it; the hosted MCP derives its loopback address from it',
+  PGTZ: 'the test database helper pins the session time zone',
+  RATE_LIMIT_TEST_DIVISOR: 'the e2e server only (DATA_MODE=demo); production never reads it',
+  HEY_WEBHOOK_SECRET: 'a usage example in the SDK documentation comment, not a read',
+  PATH: 'the operating system; the deploy-script test harness passes it to the scripts it runs',
+};
+
+describe.skipIf(!PRIVATE_TREE)('.env.example and the variables read outside the schema', () => {
+  it('names every process.env read of the runtime sources', async () => {
+    const { readdirSync, statSync } = await import('node:fs');
+    const path = await import('node:path');
+    const root = fileURLToPath(new URL('../../../', import.meta.url));
+    const sources: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        if (name === 'node_modules' || name === '__goldens__' || name === 'scripts') continue;
+        const full = path.join(dir, name);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(ts|tsx|mts)$/.test(name) && !/\.(test|spec)\.(ts|tsx)$/.test(name) && !/\.d\.ts$/.test(name)) sources.push(full);
+      }
+    };
+    for (const group of ['apps', 'packages']) {
+      for (const pkg of readdirSync(path.join(root, group))) {
+        const src = path.join(root, group, pkg, 'src');
+        if (existsSync(src)) walk(src);
+      }
+    }
+    expect(sources.length).toBeGreaterThan(500);
+    const read = new Set<string>();
+    for (const file of sources) {
+      for (const match of readFileSync(file, 'utf8').matchAll(/process\.env\.([A-Z][A-Z0-9_]*)/g)) read.add(match[1]!);
+    }
+    const example = readFileSync(path.join(root, '.env.example'), 'utf8');
+    const named = new Set([...example.matchAll(/^#?\s*([A-Z][A-Z0-9_]*)=/gm)].map((match) => match[1]!));
+    expect([...read].filter((key) => !named.has(key) && !(key in SET_BY_THE_PLATFORM)).sort()).toEqual([]);
+    expect(Object.keys(SET_BY_THE_PLATFORM).filter((key) => !read.has(key))).toEqual([]);
+  });
+});
