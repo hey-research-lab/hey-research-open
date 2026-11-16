@@ -80,6 +80,12 @@
     "maxGasGweiBase": 0.2,
     "baseBuilderCode": "[undefined]"
   },
+  "securityReview": {
+    "attesterKey": "[undefined]",
+    "attesterAddress": "[undefined]",
+    "partnerX402fiUrl": "[undefined]",
+    "partnerX402fiToken": "[undefined]"
+  },
   "twitterapiIo": {
     "enabled": false,
     "apiKey": "[undefined]",

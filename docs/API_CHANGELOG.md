@@ -13,6 +13,17 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
+## 2026-11-16 — The security review signer
+
+### Added
+
+- `GET /api/v1/security-review/signer`: the address that signs x402fi listing endpoints' security review states
+  (`findings_sent`, `reviewed`, `withdrawn`), with the EIP-712 domain (`{ name: "HEY Security Review", version: "1" }`,
+  no chain id, no verifying contract), the `Review` type, the states and the wording. See the
+  [reference](PUBLIC_API.md).
+- The machine identity's facts (the Agent Card extension and OpenAPI `info.x-hey`) carry `securityReview`: the same
+  signer (or null with `signerReason`) and the route's URL. Additive.
+
 ## 2026-11-09 — Two new reasons HEY holds an official X link; Proof of Ship says whether HEY signs now
 
 ### Added

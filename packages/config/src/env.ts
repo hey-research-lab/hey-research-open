@@ -372,6 +372,42 @@ export const serverEnvSchema = z
     }),
 
     /*
+     * Security review attestations (2026-11-16, founder "ok setuju buat"; CLAUDE.md "Security review attestations").
+     * HEY signs, as EIP-712, the state of one x402fi listing endpoint's security review — findings_sent, reviewed or
+     * withdrawn —
+     * from an admin's command line (`pnpm data:review-attest`). Off unless the key and the address are set:
+     *
+     *  - HEY_REVIEW_ATTESTER_ADDRESS: the signer's public address (web + worker). `/api/v1/security-review/signer` and the
+     *    machine identity print it; the command refuses to sign unless the key derives exactly this address.
+     *  - HEY_REVIEW_ATTESTER_KEY: the signer's private key, 0x and 64 hex characters, its own key — never the Proof of
+     *    Ship or the validator key. Worker only. Secret: never logged, never returned, never in a fixture; a malformed
+     *    value is refused at boot without quoting it.
+     *  - HEY_REVIEW_PARTNER_X402FI_URL: overrides where a signed state for x402fi is POSTed (`--deliver x402fi`); empty
+     *    means x402fi's own https://x402fi.dev/api/reviews/hey. Every attempt passes the webhook destination guard; a
+     *    redirect is a failure.
+     *  - HEY_REVIEW_PARTNER_X402FI_TOKEN: x402fi's bearer token for its request feed (`pnpm data:review-requests`).
+     *    Worker only; never logged or printed. Empty means the read is off.
+     */
+    securityReview: z.object({
+      attesterKey: optionalString.pipe(
+        z
+          .string()
+          .regex(/^0x[0-9a-fA-F]{64}$/, 'HEY_REVIEW_ATTESTER_KEY must be 0x followed by 64 hex characters')
+          .optional(),
+      ),
+      attesterAddress: optionalString
+        .transform((value) => value?.toLowerCase())
+        .pipe(
+          z
+            .string()
+            .regex(/^0x(?!0{40}$)[0-9a-f]{40}$/, 'HEY_REVIEW_ATTESTER_ADDRESS must be 0x followed by 40 hex characters (not the zero address)')
+            .optional(),
+        ),
+      partnerX402fiUrl: optionalString.pipe(z.string().url('HEY_REVIEW_PARTNER_X402FI_URL must be an absolute URL').optional()),
+      partnerX402fiToken: optionalString,
+    }),
+
+    /*
      * twitterapi.io (2026-10-18, founder: "ok buat"; CLAUDE.md cost rule 7, amended): a metered,
      * pay-per-use read of projects' OFFICIAL X accounts — their state and their newest own posts, as
      * identity context and discovery leads. Off unless both are set:
@@ -1096,6 +1132,12 @@ function shapeEnv(raw: RawEnv) {
       maxGasGweiBase: raw.HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_BASE,
       baseBuilderCode: raw.HEY_BASE_BUILDER_CODE,
     },
+    securityReview: {
+      attesterKey: raw.HEY_REVIEW_ATTESTER_KEY,
+      attesterAddress: raw.HEY_REVIEW_ATTESTER_ADDRESS,
+      partnerX402fiUrl: raw.HEY_REVIEW_PARTNER_X402FI_URL,
+      partnerX402fiToken: raw.HEY_REVIEW_PARTNER_X402FI_TOKEN,
+    },
     twitterapiIo: {
       enabled: raw.TWITTERAPI_IO_ENABLED,
       apiKey: raw.TWITTERAPI_IO_KEY,
@@ -1251,6 +1293,10 @@ export const ENV_KEY_BY_PATH: Record<string, string> = {
   'erc8004Validator.maxGasGweiRobinhood': 'HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_ROBINHOOD',
   'erc8004Validator.maxGasGweiBase': 'HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_BASE',
   'erc8004Validator.baseBuilderCode': 'HEY_BASE_BUILDER_CODE',
+  'securityReview.attesterKey': 'HEY_REVIEW_ATTESTER_KEY',
+  'securityReview.attesterAddress': 'HEY_REVIEW_ATTESTER_ADDRESS',
+  'securityReview.partnerX402fiUrl': 'HEY_REVIEW_PARTNER_X402FI_URL',
+  'securityReview.partnerX402fiToken': 'HEY_REVIEW_PARTNER_X402FI_TOKEN',
   'twitterapiIo.enabled': 'TWITTERAPI_IO_ENABLED',
   'twitterapiIo.apiKey': 'TWITTERAPI_IO_KEY',
   'twitterapiIo.dailyCredits': 'TWITTERAPI_IO_DAILY_CREDITS',

@@ -10,6 +10,7 @@ record.
 
 ## 2026-11-16
 
+- **Signed security review states (2026-11-16).** `GET /api/v1/security-review/signer` publishes the address that signs, as EIP-712 (domain `{ name: "HEY Security Review", version: "1" }`; `Review(string listing,string endpoint,string commit,string reportUrl,string state,uint64 issuedAt)`), the states HEY signs for an x402fi listing endpoint — `findings_sent`, `reviewed` (reviewed at one commit, findings fixed and re-tested) and `withdrawn` — with the domain, the types and the words. A signed state is evidence that a review step took place, never a verdict, and decides nothing on HEY.
 - **The Telegram bot's words (2026-11-16).** After an audit of 153 bot messages drawn from real data: a card's sentences end at a sentence's end, a token the project's site disowns or contradicts prints no ticker beside the project's name, an integration record says so, alerts and digests use the reader's words ("Project names this contract", "Owner proved control") and short dates, and two same-name choices are told apart by their slug. Display only.
 
 ## 2026-11-15

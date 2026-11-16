@@ -1042,6 +1042,37 @@ The JSON card is unchanged and stays the default — a browser's `Accept` and a 
 JSON — and the answer carries `vary: accept`. A contract HEY has not published answers the same 404
 as a line of text.
 
+## `GET /api/v1/security-review/signer` (2026-11-16)
+
+Who signs the security review states HEY Research Lab gives x402fi listing endpoints, so a buyer or x402fi checks a
+signed state against heyresearch.xyz. HEY signs three states — `findings_sent` (HEY sent the lister its findings),
+`reviewed` (HEY reviewed the code at one commit, its findings were fixed and re-tested, and the report is at one URL)
+and `withdrawn` (HEY no longer stands behind its review); `requested` and `fixes_submitted` are the lister's and never
+signed — as EIP-712 typed data:
+
+- domain `{ name: "HEY Security Review", version: "1" }` — no chain id, no `verifyingContract`
+  (`EIP712Domain(string name,string version)`);
+- primary type `Review`, `Review(string listing,string endpoint,string commit,string reportUrl,string state,uint64
+  issuedAt)`: `listing` x402fi's listing slug, `endpoint` its endpoint id; for `reviewed`, `commit` a full lower-case
+  git commit hash and `reportUrl` https, for the other two both may be empty strings; `issuedAt` unix seconds, HEY's
+  clock less 60 seconds, strictly increasing per endpoint. For one endpoint the state with the newest `issuedAt` stands.
+
+```json
+{
+  "signer": "0x…",
+  "domain": { "name": "HEY Security Review", "version": "1" },
+  "types": { "EIP712Domain": [ … ], "Review": [ … ] },
+  "primaryType": "Review",
+  "states": { "signed": ["findings_sent", "reviewed", "withdrawn"], "lister": ["requested", "fixes_submitted"], "partner": ["none", "requested", "findings_sent", "fixes_submitted", "reviewed", "withdrawn"], "inProgress": ["requested", "findings_sent", "fixes_submitted"] },
+  "wording": { "reviewed": "Independent review by HEY Research Lab, findings fixed and re-tested", "inProgress": "Review in progress", "withdrawn": "…", "definition": "…" }
+}
+```
+
+`signer` is checksummed; with none configured it is `null` with `signerReason: "not_configured"`. No database read, no
+provider call, `Cache-Control: public, max-age=300`. A signed state is evidence that a review step took place, never a
+verdict, and decides nothing on HEY. HEY signs from an admin's command only, never from this route, and delivers a
+signed state to x402fi as `{ "message": {…}, "signature": "0x…" }`.
+
 ## `GET /api/v1/proof-of-ship/attestation?slug=&builder=&since=&until=&escrow=` (2026-10-24)
 
 A signed restatement of the ships HEY counts as building for one published project in one window, for the
