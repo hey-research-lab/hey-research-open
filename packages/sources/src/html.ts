@@ -1,4 +1,5 @@
 import { isNotAReleaseFeedUrl } from './feed-kind';
+import { ROBINHOOD_EXPLORER_URL } from './http/explorer-api';
 import { registrableHost } from './registrable';
 import { classifySecurityLink } from './security-links';
 
@@ -308,16 +309,28 @@ export type HtmlMetadata = {
 };
 
 /**
- * Robinhood Chain's block explorers (2026-10-02): the hosts a link to one of
- * a project's contracts lives on. One today, the explorer every HEY page
- * links (`RH_BLOCKSCOUT_BASE_URL`).
+ * The explorer every HEY page links (`ROBINHOOD_EXPLORER_URL`): the host a
+ * harvested contract link is stored on, whichever explorer the site linked.
  */
-export const ROBINHOOD_EXPLORER_HOSTS: ReadonlySet<string> = new Set(['robinhoodchain.blockscout.com']);
+export const ROBINHOOD_EXPLORER_CANONICAL_HOST = new URL(ROBINHOOD_EXPLORER_URL).hostname;
+
+/**
+ * Robinhood Chain's block explorers (2026-10-02): the hosts a link to one of
+ * a project's contracts lives on. Blockscout's, and since 2026-11-15
+ * Etherscan's Robinhood Chain explorer, `robin.etherscan.io` (chain 4663 in
+ * Etherscan's own chain list, `api.etherscan.io/v2/chainlist`), which sites
+ * such as quotum.org/docs link their contracts on. Exact hosts only: any other
+ * Etherscan host (`etherscan.io`, `basescan.org`) is another chain's.
+ */
+export const ROBINHOOD_EXPLORER_HOSTS: ReadonlySet<string> = new Set([ROBINHOOD_EXPLORER_CANONICAL_HOST, 'robin.etherscan.io']);
 
 /**
  * The contract an explorer link names, as the canonical address-page URL and
  * its lower-cased address; undefined for any other link. `/address/0x…` and
- * `/token/0x…` both name one address.
+ * `/token/0x…` both name one address, on either explorer: the URL is always
+ * the Blockscout address page, so one address is one source whichever
+ * explorer the site linked, and its chain reads as Robinhood Chain
+ * (`sourceContractChainRaw`).
  */
 export function explorerContractLink(url: string): { url: string; address: string } | undefined {
   let parsed: URL;
@@ -332,7 +345,7 @@ export function explorerContractLink(url: string): { url: string; address: strin
   const match = /^\/(?:address|token)\/(0x[0-9a-fA-F]{40})(?:\/|$)/.exec(parsed.pathname);
   if (!match) return undefined;
   const address = match[1]!.toLowerCase();
-  return { url: `https://${host}/address/${address}`, address };
+  return { url: `https://${ROBINHOOD_EXPLORER_CANONICAL_HOST}/address/${address}`, address };
 }
 
 /** Cap on links harvested from one page, so a link farm cannot flood ingestion. */

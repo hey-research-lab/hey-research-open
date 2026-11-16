@@ -757,7 +757,7 @@ each revision in ledger order, so a mirror receives the corrected content.
 `/builders/guide` is the one-screen checklist: get researched, get linked, read as shipping,
 become a Verified Builder, claim (GitHub, or a wallet: the token's launcher, owner or creator, or the fee recipient its
 Pons launch names), keep the page accurate, show the badge.
-A contract your site links on the explorer becomes a declared contract HEY watches once the
+A contract your site or its own docs page links on the explorer becomes a declared contract HEY watches once the
 chain confirms it holds code; a verified owner can add product contracts the same way. Every
 surface prints one status label, and a share leads with the strongest true fact.
 

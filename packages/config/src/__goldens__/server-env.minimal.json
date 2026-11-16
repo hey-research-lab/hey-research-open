@@ -77,7 +77,8 @@
     "address": "[undefined]",
     "dailyResponses": 10,
     "maxGasGweiRobinhood": 0.2,
-    "maxGasGweiBase": 0.2
+    "maxGasGweiBase": 0.2,
+    "baseBuilderCode": "[undefined]"
   },
   "twitterapiIo": {
     "enabled": false,

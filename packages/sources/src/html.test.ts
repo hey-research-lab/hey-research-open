@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   decodeEntities,
+  explorerContractLink,
   extractHtmlMetadata,
   MAX_ANCHORS,
   MAX_EXTRACT_CHARS,
@@ -240,5 +241,45 @@ describe('a feed linked from an anchor (PA-11, 2026-10-18)', () => {
       '<a href="/data/prices.xml">Prices</a>',
     ].join('');
     expect(extractHtmlMetadata(page, 'https://pfwa.fun/').feedUrls).toEqual([]);
+  });
+});
+
+describe('a contract linked on either Robinhood Chain explorer (2026-11-15)', () => {
+  const ADDRESS = '0xfe936755185353b63a81dd72b47533eb6021018e';
+  const MIXED = '0xFE936755185353b63a81dD72b47533Eb6021018E';
+  const canonical = `https://robinhoodchain.blockscout.com/address/${ADDRESS}`;
+
+  it('reads robin.etherscan.io address and token pages as the Blockscout address page', () => {
+    expect(explorerContractLink(`https://robin.etherscan.io/address/${MIXED}`)).toEqual({ url: canonical, address: ADDRESS });
+    expect(explorerContractLink(`https://robin.etherscan.io/token/${MIXED}`)).toEqual({ url: canonical, address: ADDRESS });
+    expect(explorerContractLink(`https://ROBIN.Etherscan.IO/token/${MIXED}#balances`)).toEqual({ url: canonical, address: ADDRESS });
+    expect(explorerContractLink(`https://www.robin.etherscan.io/address/${MIXED}/`)).toEqual({ url: canonical, address: ADDRESS });
+    expect(explorerContractLink(`http://robin.etherscan.io/address/${MIXED}?a=1`)).toEqual({ url: canonical, address: ADDRESS });
+    // Blockscout's own links read as before.
+    expect(explorerContractLink(`https://robinhoodchain.blockscout.com/token/${MIXED}`)).toEqual({ url: canonical, address: ADDRESS });
+  });
+
+  it('never another chain’s Etherscan host, a transaction or a malformed address', () => {
+    for (const host of ['etherscan.io', 'www.etherscan.io', 'basescan.org', 'sepolia.etherscan.io', 'robin-testnet.etherscan.io', 'robin.etherscan.io.evil.example', 'evilrobin.etherscan.io']) {
+      expect(explorerContractLink(`https://${host}/address/${MIXED}`), host).toBeUndefined();
+    }
+    expect(explorerContractLink('https://robin.etherscan.io/tx/0x18a520bc18f63744b217e45855584549451c6240011d97c3884f19fb33e83222')).toBeUndefined();
+    expect(explorerContractLink(`https://robin.etherscan.io/address/${MIXED.slice(0, 41)}`)).toBeUndefined();
+    expect(explorerContractLink(`ftp://robin.etherscan.io/address/${MIXED}`)).toBeUndefined();
+  });
+
+  it('harvests both explorers’ links from a page as one address each', () => {
+    const page = [
+      `<a href="https://robin.etherscan.io/address/${MIXED}">Token</a>`,
+      `<a href="https://robin.etherscan.io/token/${MIXED}">Token again</a>`,
+      `<a href="https://robinhoodchain.blockscout.com/address/${MIXED}">Same on Blockscout</a>`,
+      '<a href="https://robin.etherscan.io/address/0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e">Factory</a>',
+      `<a href="https://etherscan.io/address/${MIXED}">Ethereum</a>`,
+      '<a href="https://robin.etherscan.io/tx/0xd68f7927e65108fd1d2bfd694c094364e0e63252a71599f024b7420f82f28662">Launch</a>',
+    ].join('');
+    expect(extractHtmlMetadata(page, 'https://quotum.org/docs').contractUrls).toEqual([
+      canonical,
+      'https://robinhoodchain.blockscout.com/address/0x7ed598bcef8bd9edd8c97a195c6d13f40801ec7e',
+    ]);
   });
 });

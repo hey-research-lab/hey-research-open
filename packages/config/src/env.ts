@@ -124,6 +124,13 @@ const homeChainIdSchema = numberWithDefault(ROBINHOOD_CHAIN_ID).pipe(z.number().
 /** Signing secrets shorter than this are refused in production; `openssl rand -hex 32` gives 64. */
 export const MIN_SESSION_SECRET_LENGTH = 32;
 
+/**
+ * A Base builder code as Base documents it (docs.base.org/specifications/builder-codes/for-app-developers, read
+ * 2026-11-16): Base Dashboard gives `bc_` and a random string, its one example `bc_b7k3p9da`. ASCII with no comma, so
+ * it is one ERC-8021 schema-0 code. Never tidied: the suffix carries its exact bytes.
+ */
+export const BASE_BUILDER_CODE_PATTERN = /^bc_[a-z0-9]{8}$/;
+
 export const serverEnvSchema = z
   .object({
     nodeEnv: optionalString.pipe(
@@ -325,6 +332,11 @@ export const serverEnvSchema = z
      *  - HEY_ERC8004_VALIDATOR_DAILY_RESPONSES: responses a chain may send in one UTC day (default 10, 0 sends none).
      *  - HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_ROBINHOOD / _BASE: the highest maxFeePerGas HEY pays, in gwei (default 0.2
      *    each; about ten times what both chains charged on 2026-11-02). Above it the run declines and carries the rest.
+     *  - HEY_BASE_BUILDER_CODE (2026-11-16, founder "buat 1"): HEY's Base builder code from Base Dashboard (`bc_` and
+     *    eight lower-case letters or digits, as Base documents it: `bc_b7k3p9da`). When set, every response the
+     *    validator sends on Base (chain 8453) carries its ERC-8021 data suffix; never on Robinhood Chain or any other
+     *    chain, never on a read. Unset (the default) is today's behaviour. Attribution only: it decides nothing. Taken as
+     *    given, never tidied: the suffix carries the exact bytes, so a code in another shape is refused at boot.
      */
     erc8004Validator: z.object({
       enabled: optionalString.transform((value) => value === 'true').pipe(z.boolean()),
@@ -351,6 +363,12 @@ export const serverEnvSchema = z
       maxGasGweiBase: optionalString
         .transform((value) => (value === undefined ? 0.2 : Number(value)))
         .pipe(z.number().finite().positive('HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_BASE is a positive number of gwei').max(1000)),
+      baseBuilderCode: optionalString.pipe(
+        z
+          .string()
+          .regex(BASE_BUILDER_CODE_PATTERN, 'HEY_BASE_BUILDER_CODE must be bc_ followed by 8 lower-case letters or digits, exactly as Base Dashboard gives it (e.g. bc_b7k3p9da)')
+          .optional(),
+      ),
     }),
 
     /*
@@ -1076,6 +1094,7 @@ function shapeEnv(raw: RawEnv) {
       dailyResponses: raw.HEY_ERC8004_VALIDATOR_DAILY_RESPONSES,
       maxGasGweiRobinhood: raw.HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_ROBINHOOD,
       maxGasGweiBase: raw.HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_BASE,
+      baseBuilderCode: raw.HEY_BASE_BUILDER_CODE,
     },
     twitterapiIo: {
       enabled: raw.TWITTERAPI_IO_ENABLED,
@@ -1231,6 +1250,7 @@ export const ENV_KEY_BY_PATH: Record<string, string> = {
   'erc8004Validator.dailyResponses': 'HEY_ERC8004_VALIDATOR_DAILY_RESPONSES',
   'erc8004Validator.maxGasGweiRobinhood': 'HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_ROBINHOOD',
   'erc8004Validator.maxGasGweiBase': 'HEY_ERC8004_VALIDATOR_MAX_GAS_GWEI_BASE',
+  'erc8004Validator.baseBuilderCode': 'HEY_BASE_BUILDER_CODE',
   'twitterapiIo.enabled': 'TWITTERAPI_IO_ENABLED',
   'twitterapiIo.apiKey': 'TWITTERAPI_IO_KEY',
   'twitterapiIo.dailyCredits': 'TWITTERAPI_IO_DAILY_CREDITS',
