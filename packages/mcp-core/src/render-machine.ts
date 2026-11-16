@@ -29,7 +29,7 @@ import type {
 import { evidenceBackingWords, looksLikeEvidenceId, quoteExternal, stillBuildingStateOf, summaryIsSourceText, tokenNotTheProjectsWords, valuationWithheldClause } from '@hey/agent-provider-core';
 import { DISCOVERY_GAP_WITHHELD_WORDS, STILL_BUILDING_WITHHELD_WORDS as SCORING_STILL_BUILDING_WITHHELD_WORDS } from '@hey/scoring/withheld-words';
 import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
-import { INTEGRATION_RECORD_SENTENCE } from '@hey/scoring/research-level-words';
+import { INTEGRATION_RECORD_SENTENCE, showsVerifiedBuilder } from '@hey/scoring/research-level-words';
 
 import { activityTag, atPrecision, composedWords, derivedWords, liquidityWords, money, officialXWords, quotedName, recordTag, shownOf, STILL_BUILDING_MEANING, stillBuildingEvidence, summaryWords, TAG_LEGEND, tokenMarketWords, valuationWord } from './render';
 
@@ -200,7 +200,8 @@ export function renderSnapshot(s: HeyProjectSnapshot, now?: Date): string {
   lines.push(...summaryLines(s.summary, s.latestChanges.available ? s.latestChanges.items.flatMap((item) => (item.op === 'upsert' && summaryIsSourceText(item.id, item.type) ? [item.summary] : [])) : []));
 
   lines.push('## Identity');
-  lines.push(`- DERIVED research level: ${pretty(i.researchLevel)}; catalogue: ${pretty(i.catalogStatus)}; kind: ${pretty(i.projectKind)}${i.primaryNarrative ? `; narrative: ${quoteExternal(i.primaryNarrative.name, 'narrative')}` : ''}`);
+  // The badge in the page's one rule (`showsVerifiedBuilder`, R6): never the retired "Indexed" or "Researched" words.
+  lines.push(`- DERIVED Verified Builder: ${showsVerifiedBuilder(i) ? 'yes' : 'no'}; kind: ${pretty(i.projectKind)}${i.primaryNarrative ? `; narrative: ${quoteExternal(i.primaryNarrative.name, 'narrative')}` : ''}`);
   // An integration record in the page's own sentence (2026-11-09 data-trust audit, lane E issue 1); a project with no chain evidence says so.
   if (i.integrationRecord === true) lines.push(`- DERIVED ${INTEGRATION_RECORD_SENTENCE}`);
   else if (i.chainEvidence === false) lines.push('- DERIVED HEY holds no Robinhood Chain evidence for this project (no token, contract or registry listing on the chain): it is not counted among Robinhood Chain builders.');
@@ -222,6 +223,8 @@ export function renderSnapshot(s: HeyProjectSnapshot, now?: Date): string {
 
   lines.push('', '## Build');
   if (i.researchLevel === 'INDEXED') lines.push('- UNKNOWN activity: not researched yet — HEY indexed this record but has not read its sources.');
+  // The API's own reason and words when the snapshot carries them (2026-11-13): never a cause HEY did not read.
+  else if (b.activityMeasured === false && b.activity?.unknownReason) lines.push(`- UNKNOWN activity (${b.activity.unknownReason}): ${b.activity.label}. No count here is a measured zero.`);
   else if (b.activityMeasured === false) lines.push(`- UNKNOWN activity (${pretty(b.activityStatus)}): HEY holds no builder source it can read, so no count here is a measured zero.`);
   else lines.push(`- ${activityTag(b.activityStatus)} activity status: ${pretty(b.activityStatus)}${b.lastShippedAt ? `; last meaningful ship ${b.lastShippedAt.slice(0, 10)}` : ''}`);
   // Every builder source stopped answering (2026-11-11, Rule B): the API's own dated line, said once, never strengthened.

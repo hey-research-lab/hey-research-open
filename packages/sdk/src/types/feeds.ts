@@ -245,7 +245,8 @@ export type HeyMarketIntegrity = {
    * it, with when HEY evaluated it; null when the project tracks no token. `marketIntegrity.state` is the status at
    * the integrity evaluation (`marketIntegrity.evaluatedAt`), which may be older.
    */
-  tokenMarket?: { status: string; reason?: string; label: string; evaluatedAt?: string } | null;
+  /** `classified` (2026-11-13, additive): false when no evaluation ever stamped the token — `status` is the stored default, "not classified yet". */
+  tokenMarket?: { status: string; reason?: string; label: string; classified?: boolean; evaluatedAt?: string } | null;
   note: string;
   marketIntegrity: {
     rulesVersion: string;

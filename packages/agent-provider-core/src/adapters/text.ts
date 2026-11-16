@@ -1,3 +1,4 @@
+import { showsVerifiedBuilderFlag } from '@hey/scoring/research-level-words';
 import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
 
 import type { AgentChange, AgentClaim, AgentIntelligenceResponse, AgentResearchData, AgentUnknown } from '../schema';
@@ -87,7 +88,7 @@ function dataLines(response: AgentIntelligenceResponse, detail: AgentTextDetail)
       if (summary) return d.latestMeaningfulChange ? ['Latest meaningful change:', changeLine(d.latestMeaningfulChange)] : [];
       const lines = [
         `Identity: ${d.identity.slug} — ${q(d.identity.name)}${d.identity.symbol ? ` (${q(d.identity.symbol)})` : ''}; kind ${d.identity.projectKind}; research level ${d.identity.researchLevel}${d.identity.chainEvidence === false ? '; no Robinhood Chain evidence held' : ''}${d.identity.integrationRecord === true ? '; integration record, not a Verified Builder' : ''}; first recorded by HEY ${day(d.identity.firstRecordedByHeyAt)}.`,
-        `Builder state: ${d.builderState.activityStatus}; last meaningful ship ${d.builderState.lastMeaningfulShipAt ? day(d.builderState.lastMeaningfulShipAt) : 'none recorded or not measured'}; counted ships in 30 days ${d.builderState.meaningfulEvents30d ?? 'not measured'}; Build Momentum ${d.builderState.buildMomentum ?? 'not measured'}; Still Building ${d.builderState.stillBuildingState ?? (d.builderState.stillBuilding ? 'HELD' : 'no')}${underTheRadarWords(d.builderState)}${d.builderState.scoringVersion ? ` (${d.builderState.scoringVersion})` : ''}.`,
+        `Builder state: ${d.builderState.activityStatus}${d.builderState.activityLabel ? ` (${d.builderState.activityLabel}${d.builderState.activityUnknownReason ? `, ${d.builderState.activityUnknownReason}` : ''})` : ''}; last meaningful ship ${d.builderState.lastMeaningfulShipAt ? day(d.builderState.lastMeaningfulShipAt) : 'none recorded or not measured'}; counted ships in 30 days ${d.builderState.meaningfulEvents30d ?? 'not measured'}; Build Momentum ${d.builderState.buildMomentum ?? 'not measured'}; Still Building ${d.builderState.stillBuildingState ?? (d.builderState.stillBuilding ? 'HELD' : 'no')}${underTheRadarWords(d.builderState)}${d.builderState.scoringVersion ? ` (${d.builderState.scoringVersion})` : ''}.`,
         // The page's words for the token check and the owner (R2, 2026-10-31); the stored value stays, bracketed (machine rule 10).
         `Contract identity: ${d.contractIdentity.token ? `token ${d.contractIdentity.token.address} on chain ${d.contractIdentity.token.chainId}, ${tokenCheckWords(d.contractIdentity.token.verification, d.contractIdentity.token.verificationReason)}` : 'no token'}; owner proved control ${d.contractIdentity.ownerVerified ? 'yes' : 'no'}.`,
       ];
@@ -140,7 +141,7 @@ function dataLines(response: AgentIntelligenceResponse, detail: AgentTextDetail)
       const d = response.data;
       return [
         `Window: ${d.windowDays} days; order as requested; comparison ${d.completeness ?? 'complete'}; same peer cohort: ${d.sameCohort === null ? 'unknown' : d.sameCohort ? 'yes' : 'no'}.`,
-        ...d.projects.map((p) => `- ${p.slug}: ${p.activityStatus}; last meaningful ship ${p.lastMeaningfulShipAt ? day(p.lastMeaningfulShipAt) : 'none recorded'}; counted ships 30d ${p.meaningfulEvents30d ?? 'not measured'}${p.meaningfulEventsPrevious30d === null ? '' : ` (${p.meaningfulEventsPrevious30d} the 30 before)`}; release cadence ${p.releaseCadence?.medianIntervalDays ?? 'not measured'}${p.releaseCadence?.medianIntervalDays ? ' days' : ''}; active weeks ${p.activeWeeks?.weeks == null ? 'not measured' : `${p.activeWeeks.weeks} of ${p.activeWeeks.windowWeeks}`}; Build Momentum ${p.buildMomentum ?? 'not measured'}; Verified Builder ${p.verifiedBuilder ? 'yes' : 'no'}; peer cohort ${p.peer?.cohort ?? 'none'}.`),
+        ...d.projects.map((p) => `- ${p.slug}: ${p.activityStatus}; last meaningful ship ${p.lastMeaningfulShipAt ? day(p.lastMeaningfulShipAt) : 'none recorded'}; counted ships 30d ${p.meaningfulEvents30d ?? 'not measured'}${p.meaningfulEventsPrevious30d === null ? '' : ` (${p.meaningfulEventsPrevious30d} the 30 before)`}; release cadence ${p.releaseCadence?.medianIntervalDays ?? 'not measured'}${p.releaseCadence?.medianIntervalDays ? ' days' : ''}; active weeks ${p.activeWeeks?.weeks == null ? 'not measured' : `${p.activeWeeks.weeks} of ${p.activeWeeks.windowWeeks}`}; Build Momentum ${p.buildMomentum ?? 'not measured'}; Verified Builder ${showsVerifiedBuilderFlag(p) ? 'yes' : 'no'}; peer cohort ${p.peer?.cohort ?? 'none'}.`),
         ...(d.missing.length > 0 ? [`Not found: ${d.missing.join(', ')}.`] : []),
         q(d.method),
         `Not compared: ${d.excludedContext.map((entry) => entry.item).join(', ')}.`,
@@ -191,7 +192,7 @@ function candidateLines(response: AgentIntelligenceResponse): string[] {
     heading,
     ...candidates.map(
       (candidate) =>
-        `- ${candidate.slug}: ${q(candidate.name)}${candidate.symbol ? ` (${q(candidate.symbol)})` : ''}${candidate.activityStatus ? ` · status ${candidate.activityStatus}` : ''}${candidate.catalogStatus ? ` · ${candidate.catalogStatus}` : ''}${candidate.token ? ` · token ${candidate.token.address}` : ''} · ${candidate.url}`,
+        `- ${candidate.slug}: ${q(candidate.name)}${candidate.symbol ? ` (${q(candidate.symbol)})` : ''}${candidate.activityStatus ? ` · status ${candidate.activityLabel ?? candidate.activityStatus}` : ''}${candidate.catalogStatus ? ` · ${candidate.catalogStatus}` : ''}${candidate.token ? ` · token ${candidate.token.address}` : ''} · ${candidate.url}`,
     ),
   ];
 }

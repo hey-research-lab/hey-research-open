@@ -132,12 +132,14 @@ describe('AG-01: one call from any identifier', () => {
     expect(agentIntelligenceResponseSchema.safeParse(ambiguous).success).toBe(true);
     expect(ambiguous.error?.candidatesTotal).toEqual({ count: 11, atLeast: false });
     expect(ambiguous.candidatesTotal).toEqual({ count: 11, atLeast: false });
-    expect(ambiguous.error?.candidates?.[0]).toMatchObject({ slug: 'usdx-labs', activityStatus: 'SHIPPING', catalogStatus: 'VERIFIED_BUILDER', symbol: { contentOrigin: 'external_source' } });
+    expect(ambiguous.error?.candidates?.[0]).toMatchObject({ slug: 'usdx-labs', activityStatus: 'SHIPPING', activityLabel: 'Shipping', catalogStatus: 'VERIFIED_BUILDER', symbol: { contentOrigin: 'external_source' } });
     expect(ambiguous.answer.text).toBe('More than one published project matches that name or ticker: usdx-labs, usdx-meme (the first 2 of 11, Verified Builders and active builders first). HEY does not guess: send one of them as project, or the contract as address.');
     const text = renderAgentResponseText(ambiguous, { detail: 'summary' });
     expect(text).toContain('Candidates (2 of 11; send one as project):');
-    expect(text).toMatch(/- usdx-labs: «USDX Labs» .*\(«USDX».*\) · status SHIPPING · VERIFIED_BUILDER · https:\/\/hey\.test\/project\/usdx-labs/);
-    expect(toA2aParts(ambiguous).parts[0].text).toContain(`usdx-labs (SHIPPING) ${BASE}/project/usdx-labs`);
+    expect(text).toMatch(/- usdx-labs: «USDX Labs» .*\(«USDX».*\) · status Shipping · VERIFIED_BUILDER · https:\/\/hey\.test\/project\/usdx-labs/);
+    // The chip's words, never a bare "(UNKNOWN)" (2026-11-13): the plain status word, no guessed reason.
+    expect(text).toContain('· status Not measured — activity unknown · QUALIFIED');
+    expect(toA2aParts(ambiguous).parts[0].text).toContain(`usdx-labs (Shipping) ${BASE}/project/usdx-labs`);
     // A full matcher read may hold more: said as "at least".
     const capped = ambiguousRefusal(ctx(), 'unknowns', [{ slug: 'a-one', name: 'A', url: `${BASE}/project/a-one` }], { count: 20, atLeast: true });
     expect(capped.answer.text).toContain('(the first 1 of at least 20,');

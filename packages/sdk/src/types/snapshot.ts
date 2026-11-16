@@ -3,7 +3,7 @@
  * (2026-09-26). Each is read from HEY's own tables; none calls a provider.
  * Absent means HEY does not know; a withheld figure says it is withheld.
  */
-import type { HeyBuilderSourcesUnavailable, HeyCodeWeek, HeyDiscoveryGapWithheld, HeyOfficialX, HeyProject, HeyStillBuildingState, HeyStillBuildingWithheld, HeyUnderTheRadar } from './projects';
+import type { HeyBuilderSourcesUnavailable, HeyCodeWeek, HeyDiscoveryGapWithheld, HeyOfficialX, HeyProject, HeyProjectActivity, HeyStillBuildingState, HeyStillBuildingWithheld, HeyUnderTheRadar } from './projects';
 import type { HeyPeerContext } from './graph';
 import type { HeyUsageSummary } from './usage';
 import type { HeyChangePrecision, HeyChangeType } from './changes';
@@ -559,6 +559,8 @@ export type HeyProjectSnapshot = {
   };
   build: {
     activityStatus: string;
+    /** Additive (2026-11-13): the status in HEY's own words and why an `UNKNOWN` is unknown — the card's `activity`. */
+    activity?: HeyProjectActivity;
     /** False without a readable builder source or on an UNKNOWN status: zeros are then not findings. */
     activityMeasured?: boolean;
     lastShippedAt?: string;
@@ -578,6 +580,8 @@ export type HeyProjectSnapshot = {
     velocity?: { state: string; current: number | null; previous: number | null; windowDays: number };
     cadence?: { state: string; medianIntervalDays?: number };
     hasBuilderSource?: boolean;
+    /** Additive (2026-11-13): with `hasBuilderSource` false, a builder source HEY holds only as context; sent beside it. */
+    heldBuilderSource?: boolean;
     /** Additive (2026-11-11): every builder source stopped answering, and since when, with the one dated line; null when it does not hold. */
     builderSourcesUnavailable: HeyBuilderSourcesUnavailable | null;
   };

@@ -30,6 +30,19 @@ import type { HeyBuilderRadarDay } from './misc';
 /** What HEY claims about a project's activity. */
 export type HeyActivityStatus = 'SHIPPING' | 'ACTIVE' | 'QUIET' | 'DORMANT' | 'RESUMED' | 'UNKNOWN';
 
+/**
+ * Why HEY cannot measure a project's building, when its status is `UNKNOWN` (2026-11-13, additive). The known values
+ * are `HEY_UNKNOWN_ACTIVITY_REASONS`; the list may grow, so read a value you do not know as unknown.
+ */
+export type HeyUnknownActivityReason = 'no_builder_signal' | 'held_as_context' | 'no_readable_source' | 'builder_sources_unavailable';
+
+/**
+ * The activity status in HEY's own words (2026-11-13, additive): `label` and `help` are what every HEY page prints for
+ * the status; `unknownReason` is why an `UNKNOWN` is unknown. Null when the status is not `UNKNOWN`, or when HEY cannot
+ * say why from what the answer read — then `label` is the plain status word.
+ */
+export type HeyProjectActivity = { label: string; help: string; unknownReason: HeyUnknownActivityReason | null };
+
 /* ---------------------------------------------------------------- projects */
 
 /** Canonical token identity: `(chainId, contractAddress)`, never a ticker alone. */
@@ -46,6 +59,15 @@ export type HeyLiquidityKind = 'market' | 'launch_inventory';
 export type HeyOfficialXStatus = 'ACTIVE' | 'SUSPENDED' | 'UNAVAILABLE' | 'NOT_FOUND';
 
 /** A project's official X account, with HEY's last read of it beside the unchanged `handle` and `url`. */
+/**
+ * Every reason HEY holds an official X account's link (`HeyOfficialX.linkHeld`), additive and never renamed. The same
+ * list as `@hey/scoring`'s `OFFICIAL_X_LINK_HOLDS`, held to it by `apps/web/src/lib/official-x-holds-parity.test.ts`.
+ */
+/** Why HEY withholds the Verified Builder badge (`HeyProject.verifiedBuilderWithheld`); additive, never renamed. */
+export type HeyVerifiedBuilderWithheld = 'integration_record' | 'activity_not_measured';
+
+export type HeyOfficialXLinkHeld = 'handle_reassigned' | 'links_other_project' | 'not_the_project' | 'copied_pair' | 'account_of_another_page';
+
 export type HeyOfficialX = {
   handle: string;
   url: string;
@@ -63,7 +85,7 @@ export type HeyOfficialX = {
    * 2026-11-09) when another published page shows the same account and stands behind it while this page does not. Do
    * not link any of them. Null otherwise.
    */
-  linkHeld: 'handle_reassigned' | 'links_other_project' | 'not_the_project' | 'copied_pair' | 'account_of_another_page' | null;
+  linkHeld: HeyOfficialXLinkHeld | null;
   /**
    * Additive (2026-10-18): `mutual_site_link` when the account's profile links the project's own site, as of
    * `corroborationCheckedAt` — trust in the X account itself, never a score or an order. Null otherwise.
@@ -76,6 +98,12 @@ export type HeyOfficialX = {
    * never a mutual link, no posts shown, never tagged. False otherwise.
    */
   foundByHey: boolean;
+  /**
+   * Additive (2026-11-13, state-machine audit): whether HEY's pages link this account — false when `linkHeld` is set or
+   * the account was last read SUSPENDED, UNAVAILABLE or NOT_FOUND (the one rule the page, the card and the bot read).
+   * `url` keeps its v1 meaning and is sent either way; link it only when this is true.
+   */
+  linkShown: boolean;
 };
 
 /** Which measure a valuation is, by HEY's one rule (2026-09-26): `fdv` for a fully diluted valuation, never called a market cap. */
@@ -137,6 +165,10 @@ export type HeyProject = {
   priceChange24hPct?: number;
   /** Whether HEY holds a repository, org, changelog or feed to read building from; false explains an UNKNOWN status. */
   hasBuilderSource?: boolean;
+  /** Additive (2026-11-13): with `hasBuilderSource` false, a builder source HEY holds only as context, not read as this project's building. Sent beside `hasBuilderSource`. */
+  heldBuilderSource?: boolean;
+  /** Additive (2026-11-13): the activity status in HEY's own words, and why an `UNKNOWN` is unknown. `activityStatus` keeps its meaning. Sent on every project since then; absent only on an older answer. */
+  activity?: HeyProjectActivity;
   /**
    * Whether HEY holds Robinhood Chain evidence for the project — a token, a verified contract, a registry listing or
    * the chain evidence the builder tabs filter on (2026-11-09, additive). False is a measured "none": such a project
@@ -147,6 +179,11 @@ export type HeyProject = {
   integrationRecord?: boolean;
   /** The page's own sentence for an integration record; present only when `integrationRecord` is true. */
   integrationRecordSentence?: string;
+  /**
+   * Why HEY withholds the Verified Builder badge from a page that ships (2026-11-12, additive): `integration_record` (no
+   * Robinhood Chain evidence) or `activity_not_measured` (HEY does not measure its building), or null when neither holds.
+   */
+  verifiedBuilderWithheld?: HeyVerifiedBuilderWithheld | null;
   websiteUrl?: string;
   /**
    * The project's official X account: `handle` and `url` as before. Additive (2026-10-18): `status` is what
@@ -192,7 +229,13 @@ export type HeyProject = {
    * "No current reading" where the reason says so, never "Active market" over
    * a launch pool's own inventory. Quote it rather than re-deriving words.
    */
-  tokenMarket?: { status: string; reason?: string; label: string };
+  tokenMarket?: {
+    status: string;
+    reason?: string;
+    label: string;
+    /** Additive (2026-11-13): false when HEY's market evaluation never stamped this token — `status` is then the stored `INSUFFICIENT_DATA` default, not a classification, and `label` reads "Not measured — not classified yet". Absent where the read did not carry it. */
+    classified?: boolean;
+  };
   /**
    * Whether the project itself names the tracked contract (on every project
    * since 2026-09-25): `MISMATCH` means its own site names a different one.
@@ -498,6 +541,8 @@ export type HeyProjectDetail = HeyProject & {
     reason?: string;
     /** The status in HEY's own words (2026-10-16, additive): the same `label` as the listing's `tokenMarket`. */
     label: string;
+    /** Additive (2026-11-13): false when HEY's market evaluation never stamped this token — `status` is then the stored `INSUFFICIENT_DATA` default, not a classification, and `label` reads "Not measured — not classified yet". Absent where the read did not carry it. */
+    classified?: boolean;
     evaluatedAt?: string;
     liquidityUsd?: number;
     /** What `liquidityUsd` is, by the same rule as `liquidity.kind` (2026-09-25). */
@@ -545,6 +590,8 @@ export type HeyTokenMarket = {
   marketStatusReason?: string;
   /** `marketStatus` in HEY's own words (2026-10-16, additive): "Launch pool only", "Not a fungible token", "No current reading" where the reason says so. */
   marketStatusLabel: string;
+  /** Additive (2026-11-13): false when HEY's market evaluation never stamped this token — `marketStatus` is then the stored `INSUFFICIENT_DATA` default, not a classification, and `marketStatusLabel` reads "Not measured — not classified yet". Absent where the read did not carry it. */
+  marketStatusClassified?: boolean;
   verification: string;
   /** Why `verification` reads as it does (`site_disclaims_contract`, `site_names_contract` …), when HEY recorded one (2026-11-01, additive). */
   verificationReason?: string;

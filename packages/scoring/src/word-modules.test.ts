@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
  * import nothing at run time — a type import is erased — or the bundle would carry the scorer with it. Until this
  * test, those two packages kept literal copies held equal by parity tests.
  */
-const WORD_MODULES = ['activity-words.ts', 'research-level-words.ts', 'market-status-words.ts', 'verification-words.ts', 'withheld-words.ts'];
+const WORD_MODULES = ['activity-words.ts', 'research-level-words.ts', 'market-status-words.ts', 'verification-words.ts', 'withheld-words.ts', 'x-account-words.ts', 'launch-origin-words.ts'];
 
 describe('the word modules import nothing at run time', () => {
   it.each(WORD_MODULES)('%s', (file) => {

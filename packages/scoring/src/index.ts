@@ -20,6 +20,8 @@ export * from './activity-words';
 export * from './research-level-words';
 export * from './withheld-words';
 export * from './verification-words';
+export * from './x-account-words';
+export * from './launch-origin-words';
 export * from './commit-automation';
 export * from './feed-data-stream';
 export * from './dependency-bump';

@@ -124,7 +124,7 @@ export type A2aAgentParts = {
 export function toA2aParts(response: AgentIntelligenceResponse): A2aAgentParts {
   // Each with its status and page (2026-10-17, AG-3): enough to choose without a second call.
   const candidates = response.error?.candidates?.length
-    ? ` Candidates: ${response.error.candidates.map((candidate) => `${candidate.slug}${candidate.activityStatus ? ` (${candidate.activityStatus})` : ''} ${candidate.url}`).join(', ')}.`
+    ? ` Candidates: ${response.error.candidates.map((candidate) => `${candidate.slug}${candidate.activityStatus ? ` (${candidate.activityLabel ?? candidate.activityStatus})` : ''} ${candidate.url}`).join(', ')}.`
     : '';
   return {
     parts: [

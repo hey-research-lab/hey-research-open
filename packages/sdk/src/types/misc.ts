@@ -406,6 +406,8 @@ export type HeyCompare = {
     lastMeaningfulShipAt?: string;
     buildMomentum?: number;
     verifiedBuilder: boolean;
+    /** The scorer's research level (additive, 2026-11-13). HEY draws the badge only where it and `verifiedBuilder` agree. */
+    researchLevel: string;
     sources: { verified: number; total: number };
     tokenMarketStatus?: string;
     /** The valuation the project page prints — a market cap or an FDV; `valuationKind` (and `valuation.kind`) say which. Named so since 2026-09-24. */
@@ -487,6 +489,8 @@ export type HeyBuilderCard = {
   research_level: string;
   /** False means `unknown` is not a finding: HEY holds no source it can read building from (2026-09-26). */
   activity_measured: boolean;
+  /** Additive (2026-11-13): false when HEY could not read the activity facts for this answer — `research_level` and `activity_measured` are then v1 defaults, not readings. */
+  activity_facts_read: boolean;
   /** When the project was last scored; null when never. */
   as_of: string | null;
   /* The Partner Card (2026-09-30, additive; heyresearch.xyz/developers/partners). */
@@ -510,6 +514,8 @@ export type HeyBuilderCard = {
     reason: string | null;
     /** The status in HEY's canonical words, reason included ("Launch pool only", "Readings not confirmed"; 2026-10-19, additive). Print this one. */
     label: string;
+    /** Additive (2026-11-13): false when HEY's market evaluation never stamped this token — `status` is the stored `INSUFFICIENT_DATA` default, "not classified yet". */
+    classified: boolean;
   };
   badge_url: string;
   /** `hey_project_url` with HEY's attribution labels (`utm_medium=partner_api`); link this one. */
@@ -617,7 +623,10 @@ export type HeySearchSuggestion =
       name: string;
       symbol?: string;
       contract: string;
+      /** The launchpad's name, or the placeholder "Unknown" (no launch record) or "Independent" (no token). */
       launchedVia: string;
+      /** Additive (2026-11-12): true when `launchedVia` names a launchpad HEY observed; false for a placeholder. */
+      launchedViaObserved: boolean;
       target: string;
       brandNotice?: { kind: string; title: string; detail: string; ticker?: string };
     }

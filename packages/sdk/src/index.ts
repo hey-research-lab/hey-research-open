@@ -11,6 +11,19 @@ export { cursorPages, itemsOf, nextOffsetPages, totalPages } from './paging';
 export { SDK_VERSION } from './version';
 /* How an agent answer ended (2026-11-09, additive): `status` narrowed. */
 export { HEY_AGENT_STATUSES, isAmbiguous, isNotFound, isOk, type HeyAgentStatus } from './agent-status';
+/* The public state vocabularies' known values (2026-11-13, additive): open lists, never closed unions. */
+export {
+  HEY_ACTIVITY_STATUSES,
+  HEY_DISCOVERY_GAP_WITHHELD_REASONS,
+  HEY_OFFICIAL_X_LINK_HOLDS,
+  HEY_SHIP_VERIFICATIONS,
+  HEY_STILL_BUILDING_WITHHELD_REASONS,
+  HEY_TOKEN_MARKET_REASONS,
+  HEY_TOKEN_MARKET_STATUSES,
+  HEY_TOKEN_VERIFICATION_REASONS,
+  HEY_TOKEN_VERIFICATION_STATUSES,
+  HEY_UNKNOWN_ACTIVITY_REASONS,
+} from './vocabulary';
 /* Receiving webhooks (2026-09-26): verify, parse, deduplicate. */
 export {
   HeyWebhookError,

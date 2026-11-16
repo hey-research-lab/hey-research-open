@@ -1,4 +1,5 @@
 import type { HeyCoverageEntry } from '@hey-research-lab/sdk';
+import { TOKEN_REASON_SENTENCES, tokenReasonSentence } from '@hey/scoring/verification-words';
 
 import { agentUnknown, categoryOfCoverage, TOKEN_NOT_THE_PROJECTS_DO_NOT_CONCLUDE, type CoverageStateCode } from '../unknowns';
 import type { AgentUnknown } from '../schema';
@@ -19,6 +20,8 @@ export type CanonicalGap = { dimension: string; state: CoverageStateCode; senten
  */
 export type GapFacts = {
   activityStatus: string;
+  /** The API's activity words and reason (`build.activity`, 2026-11-13), when the snapshot carries them. */
+  activity?: { label: string; help: string; unknownReason: string | null };
   tokenVerification: { status: 'VERIFIED' | 'UNVERIFIED' | 'MISMATCH'; reason?: string } | null;
   ownerVerified: boolean;
   /** Build Momentum as the serialiser's gate publishes it; undefined when not measured. */
@@ -34,22 +37,12 @@ export type GapFacts = {
   brand?: { sentence: string; reason: string };
 };
 
-/** An UNVERIFIED token's reason in one sentence; the gap list and the `contract.token_verification` claim read it (INV-2/INV-3). */
-export const TOKEN_REASON_WORDS: Readonly<Record<string, string>> = {
-  owner_has_not_published_contract: 'The owner who proved control has not published the token contract on the project’s own site or signed for it.',
-  self_reported: 'The token was named in the project’s submission; the project’s own site or an on-chain signature has not confirmed it.',
-  launchpad_record: 'HEY knows the token from a launchpad record; the project has not been seen naming it.',
-  launchpad_record_site_silent: 'HEY knows the token from a launchpad record, and the site that record named does not name it.',
-  market_listing: 'HEY knows the token from a market listing; the project has not been seen naming it.',
-  site_silent: 'The project’s site does not name the token contract.',
-  not_checked: 'HEY has not yet checked whether the project names the token contract.',
-  // 2026-10-12 (audits INV-1, DI-2, DI-8).
-  site_disclaims_contract: 'The project’s own site names the token contract and says it is not the project’s token.',
-  site_names_contract_contested: 'The project’s own site names the token contract, and another published page of the same name and ticker has a site naming a different one; neither naming ties it to the project.',
-  site_off_page_names_contract: 'A site other than the project’s own declared website names the token contract.',
-  // 2026-10-12 (audit DQ-1).
-  site_unreachable: 'The project’s own site named the token contract when HEY read it, and has not answered HEY’s reads since; that naming no longer ties the token to the project.',
-};
+/**
+ * A token reason in one sentence; the gap list and the `contract.token_verification` claim read it (INV-2/INV-3). The
+ * scoring word module's one table since 2026-11-13: this copy had no words for `issuer_token` or
+ * `site_lists_contract_among_others`, so an agent read "has not been seen naming this token" beside a site that names it.
+ */
+export const TOKEN_REASON_WORDS = TOKEN_REASON_SENTENCES;
 
 /**
  * Every gap for one project, identity checks first, then the coverage
@@ -66,7 +59,14 @@ export function projectUnknowns(input: { gaps: readonly CanonicalGap[]; dimensio
   };
 
   if (facts.activityStatus === 'UNKNOWN') {
-    push(agentUnknown({ category: 'UNKNOWN', dimension: 'activityStatus', statement: 'HEY does not measure this project’s building: it holds no source it can read building from, or the activity it reads is recorded under another page. This is a gap in HEY’s sources, not a finding about the team.', reason: 'activity_status_unknown', detailUrl: input.explainUrl('activity.status') }));
+    /*
+     * The chip's own words when the API says why (2026-11-13, state-machine audit): "Not measured — builder sources
+     * stopped answering" and the other reasons, never this package's own sentence for all of them. The reason code
+     * stays `activity_status_unknown` (an agent field never changes meaning); the API's reason is in
+     * `builderState.activityUnknownReason`.
+     */
+    const words = facts.activity?.unknownReason ? `${facts.activity.label}. ${facts.activity.help}` : undefined;
+    push(agentUnknown({ category: 'UNKNOWN', dimension: 'activityStatus', statement: words ?? 'HEY does not measure this project’s building: it holds no source it can read building from, or the activity it reads is recorded under another page. This is a gap in HEY’s sources, not a finding about the team.', reason: 'activity_status_unknown', detailUrl: input.explainUrl('activity.status') }));
   }
   if (facts.brand) {
     push(agentUnknown({ category: 'NOT_VERIFIED', dimension: 'brandAffiliation', statement: facts.brand.sentence, reason: facts.brand.reason }));
@@ -77,7 +77,7 @@ export function projectUnknowns(input: { gaps: readonly CanonicalGap[]; dimensio
   }
   if (facts.tokenVerification?.status === 'UNVERIFIED') {
     const reason = facts.tokenVerification.reason ?? 'not_checked';
-    push(agentUnknown({ category: 'NOT_VERIFIED', dimension: 'tokenOwnership', statement: TOKEN_REASON_WORDS[reason] ?? 'The project has not been seen naming this token contract.', reason: `token_${reason}`, ...(reason === 'site_disclaims_contract' ? { doNotConclude: TOKEN_NOT_THE_PROJECTS_DO_NOT_CONCLUDE.site_disclaims_contract } : {}), detailUrl: input.explainUrl('token.verification') }));
+    push(agentUnknown({ category: 'NOT_VERIFIED', dimension: 'tokenOwnership', statement: tokenReasonSentence(reason), reason: `token_${reason}`, ...(reason === 'site_disclaims_contract' ? { doNotConclude: TOKEN_NOT_THE_PROJECTS_DO_NOT_CONCLUDE.site_disclaims_contract } : {}), detailUrl: input.explainUrl('token.verification') }));
   }
   if (!facts.ownerVerified) {
     push(agentUnknown({ category: 'NOT_VERIFIED', dimension: 'projectOwner', statement: 'No owner has proved control of this project’s site, repository or contract to HEY.', reason: 'owner_not_verified' }));

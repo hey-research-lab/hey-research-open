@@ -71,7 +71,7 @@ const page = <T>(items: T[], over: Partial<HeyPage<T>> = {}): HeyPage<T> => ({
 });
 
 /** An official X account with the 2026-10-18 additive fields at their empty values. */
-const officialX = (over: Partial<HeyOfficialX> & Pick<HeyOfficialX, 'handle' | 'url' | 'status' | 'checkedAt'>): HeyOfficialX => ({ linkHeld: null, corroboration: null, corroborationCheckedAt: null, foundByHey: false, ...over });
+const officialX = (over: Partial<HeyOfficialX> & Pick<HeyOfficialX, 'handle' | 'url' | 'status' | 'checkedAt'>): HeyOfficialX => ({ linkHeld: null, corroboration: null, corroborationCheckedAt: null, foundByHey: false, linkShown: true, ...over });
 
 describe('shared wording', () => {
   it('names a valuation by the kind the API sent, and an unknown kind never a market cap (M2 G9)', () => {
@@ -161,14 +161,20 @@ describe('find_projects', () => {
 
   it('says a record is unresearched, or has no builder source, instead of reporting a status', () => {
     expect(projectLine(project({ researchLevel: 'INDEXED', activityStatus: 'UNKNOWN' }), NOW)).toContain('UNKNOWN activity: not researched yet');
-    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false }), NOW)).toContain('no builder signal yet');
-    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: true }), NOW)).toContain('UNKNOWN activity: too few public sources to say either way');
+    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false }), NOW)).toContain('UNKNOWN activity: not measured — no builder source linked (no_builder_signal)');
+    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: true }), NOW)).toContain('UNKNOWN activity: not measured — activity unknown (not enough public sources to judge activity yet)');
     // Not beside a recorded ship (2026-09-25).
-    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false, lastShippedAt: '2026-08-05T00:00:00Z' }), NOW)).not.toContain('no builder signal yet');
+    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false, lastShippedAt: '2026-08-05T00:00:00Z' }), NOW)).not.toContain('no builder source linked');
     // The site's "Activity not measurable" (2026-09-28): a ship on record, nothing HEY can keep reading.
-    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false, lastShippedAt: '2026-08-05T00:00:00Z' }), NOW)).toContain('UNKNOWN activity: not measurable');
+    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false, lastShippedAt: '2026-08-05T00:00:00Z' }), NOW)).toContain('UNKNOWN activity: not measured — activity not measurable (no_readable_source)');
     // Whatever the source flag reads now (2026-10-28, DATA-10): UNKNOWN beside a ship is the scorer's no-coverage reading.
-    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: true, lastShippedAt: '2026-08-05T00:00:00Z' }), NOW)).toContain('UNKNOWN activity: not measurable');
+    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: true, lastShippedAt: '2026-08-05T00:00:00Z' }), NOW)).toContain('UNKNOWN activity: not measured — activity not measurable');
+    // The reasons the old tree had no words for (2026-11-13): a source held as context, and every source stopped answering.
+    expect(projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false, heldBuilderSource: true }), NOW)).toContain('builder source held, not counted (held_as_context)');
+    // The API's own reason wins when the answer carries it: the facts behind it are the read's, whole.
+    expect(
+      projectLine(project({ activityStatus: 'UNKNOWN', hasBuilderSource: false, activity: { label: 'Not measured — builder sources stopped answering', help: '', unknownReason: 'builder_sources_unavailable' } }), NOW),
+    ).toContain('UNKNOWN activity: not measured — builder sources stopped answering (builder_sources_unavailable)');
   });
 
   it('names a launch pool’s own supply for what it is, and prints no market figure it does not hold', () => {

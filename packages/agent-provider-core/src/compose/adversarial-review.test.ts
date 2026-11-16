@@ -39,6 +39,7 @@ const column = (slug: string) =>
     lastMeaningfulShipAt: '2026-09-29T00:00:00.000Z',
     velocity: { state: 'STEADY', current: 4, previous: 3 },
     verifiedBuilder: true,
+    researchLevel: 'VERIFIED_BUILDER',
     sources: { verified: 2, total: 3 },
   }) as unknown as HeyCompare['projects'][number];
 const compare = (slugs: string[], missing: string[]): HeyCompare => ({ projects: slugs.map(column), missing, ignoredSlugs: [] }) as unknown as HeyCompare;
@@ -257,6 +258,19 @@ describe('the agent text says "verified" only in "Verified Builder" (R2, 2026-10
     const text = renderAgentResponseText(answer, { detail: 'full' });
     expect(text).toContain('Verified Builder yes');
     expect(text).not.toMatch(/verified builder (yes|no)/);
+  });
+
+  it('compare_builders prints the badge only where the research level agrees with verifiedBuilder (showsVerifiedBuilder, 2026-11-13)', () => {
+    const page = compare(['agentos', 'pons'], []);
+    const disagreeing = { ...page, projects: page.projects.map((project) => ({ ...project, researchLevel: 'RESEARCHED' })) };
+    const answer = composeCompare(ctx(), { compare: disagreeing, peers: {}, scoredAt: {} });
+    // The contract's field keeps its meaning (machine rule 10); only the text follows the page.
+    expect(answer.data?.projects.every((project) => project.verifiedBuilder)).toBe(true);
+    expect(answer.data?.projects.every((project) => project.researchLevel === 'RESEARCHED')).toBe(true);
+    const text = renderAgentResponseText(answer, { detail: 'full' });
+    expect(text).toContain('Verified Builder no');
+    expect(text).not.toContain('Verified Builder yes');
+    expect(valid(answer)).toBe(true);
   });
 });
 

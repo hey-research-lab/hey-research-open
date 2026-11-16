@@ -7,6 +7,7 @@ import {
   researchLevelWords,
   researchLevelWordsFor,
   showsVerifiedBuilder,
+  showsVerifiedBuilderFlag,
   VERIFIED_BUILDER_SCOPE_WORDS,
   verifiedBuilderScopeWords,
 } from './research-level-words';
@@ -66,5 +67,17 @@ describe('showsVerifiedBuilder', () => {
     expect(showsVerifiedBuilder({ researchLevel: 'VERIFIED_BUILDER', catalogStatus: 'QUALIFIED' })).toBe(false);
     expect(showsVerifiedBuilder({ researchLevel: 'VERIFIED_BUILDER', catalogStatus: 'HIDDEN_CANDIDATE' })).toBe(false);
     expect(showsVerifiedBuilder({ researchLevel: undefined, catalogStatus: null })).toBe(false);
+  });
+});
+
+// 2026-11-13 state-machine audit: a machine answer carries the catalogue's badge as a boolean beside the level.
+describe('showsVerifiedBuilderFlag', () => {
+  it('reads the boolean as the catalogue column, under the same rule', () => {
+    expect(showsVerifiedBuilderFlag({ researchLevel: 'VERIFIED_BUILDER', verifiedBuilder: true })).toBe(true);
+    expect(showsVerifiedBuilderFlag({ researchLevel: 'RESEARCHED', verifiedBuilder: true })).toBe(false);
+    expect(showsVerifiedBuilderFlag({ researchLevel: 'VERIFIED_BUILDER', verifiedBuilder: false })).toBe(false);
+    // An answer that carries no level draws no badge: a text never claims more than the page.
+    expect(showsVerifiedBuilderFlag({ verifiedBuilder: true })).toBe(false);
+    expect(showsVerifiedBuilderFlag({ researchLevel: null, verifiedBuilder: true })).toBe(false);
   });
 });

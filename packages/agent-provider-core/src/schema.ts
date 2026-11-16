@@ -238,6 +238,14 @@ const researchData = z
     builderState: z
       .object({
         activityStatus: code,
+        /** The status in HEY's own words (2026-11-13, additive): the snapshot's `build.activity.label`, the chip every page prints. */
+        activityLabel: z.string().max(120).optional(),
+        /**
+         * Why an UNKNOWN status is unknown (2026-11-13, additive): the snapshot's `build.activity.unknownReason`
+         * (`no_builder_signal`, `held_as_context`, `no_readable_source`, `builder_sources_unavailable`); null when the status
+         * is not UNKNOWN or HEY cannot say why. Absent when the snapshot did not carry it.
+         */
+        activityUnknownReason: code.nullable().optional(),
         activityMeasured: z.boolean().nullable(),
         lastMeaningfulShipAt: iso.nullable(),
         meaningfulEvents30d: z.number().int().min(0).nullable(),
@@ -420,6 +428,8 @@ const compareProject = z
     /** The category every HEY card prints (additive, 2026-10-02): "Infrastructure", "AI Agents · Utility", or "Uncategorised". */
     category: agentTextSchema.nullable().optional(),
     verifiedBuilder: z.boolean(),
+    /** The scorer's research level (additive, 2026-11-13); the text prints the badge only where it and `verifiedBuilder` agree. */
+    researchLevel: code.nullable().optional(),
     sources: z.object({ verified: z.number().int().min(0), total: z.number().int().min(0) }).strict(),
     peer: z.object({ rulesVersion: code, state: code, cohort: code.nullable(), reason: code.nullable() }).strict().nullable(),
     explainUrl: url,
@@ -527,6 +537,8 @@ const candidate = z
     symbol: agentTextSchema.optional(),
     /** The project's activity status as every surface prints it (2026-10-17, AG-3, additive): building state, never a market figure. */
     activityStatus: code.optional(),
+    /** `activityStatus` in HEY's own words (2026-11-13, additive): the plain status word, never a guessed reason. */
+    activityLabel: z.string().max(120).optional(),
     /** How far HEY has researched it (2026-10-17, AG-3, additive): VERIFIED_BUILDER, QUALIFIED, or another catalog status. */
     catalogStatus: code.optional(),
   })

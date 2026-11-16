@@ -1,6 +1,7 @@
 import type { HeyProjectSnapshot, HeySummaryLine } from '@hey-research-lab/sdk';
 import type { DiscoveryGapWithheldReason, StillBuildingWithheldReason } from '@hey/scoring/withheld-words';
 import { INTEGRATION_RECORD_SENTENCE } from '@hey/scoring/research-level-words';
+import { tokenReasonSentence } from '@hey/scoring/verification-words';
 
 import { ageBucket, familyFreshness, SNAPSHOT_SOURCE_FAMILY, type AgentFreshnessEntry, type RefreshTier } from '../freshness';
 import type { AgentChange, AgentClaim, AgentFreshness, AgentResponseOf, AgentSourceType } from '../schema';
@@ -367,7 +368,7 @@ export function composeResearch(ctx: AgentComposeContext, input: ResearchInput):
               // disowns it, or names it beside a lookalike, is not "HEY has not seen the project name it".
               verification?.reason === 'site_disclaims_contract'
               ? `${TOKEN_REASON_WORDS.site_disclaims_contract} Its building activity does not apply to this token.`
-              : (verification?.reason ? TOKEN_REASON_WORDS[verification.reason] : undefined) ?? 'HEY has not seen the project name this token contract.',
+              : verification?.reason ? tokenReasonSentence(verification.reason) : 'HEY has not seen the project name this token contract.',
       ),
       status: state === 'VERIFIED' || state === 'MISMATCH' ? 'FACT' : 'UNKNOWN',
       value: state ?? null,
@@ -437,6 +438,7 @@ export function composeResearch(ctx: AgentComposeContext, input: ResearchInput):
     dimensions: snapshot.coverage,
     facts: {
       activityStatus: status,
+      ...(b.activity ? { activity: b.activity } : {}),
       tokenVerification: verification ? { status: verification.status as 'VERIFIED' | 'UNVERIFIED' | 'MISMATCH', ...(verification.reason ? { reason: verification.reason } : {}) } : null,
       ownerVerified: snapshot.verification.ownerVerified,
       buildMomentum: b.buildMomentum,
@@ -515,6 +517,8 @@ export function composeResearch(ctx: AgentComposeContext, input: ResearchInput):
       },
       builderState: {
         activityStatus: status,
+        // The snapshot's own words and reason (2026-11-13, additive): never re-derived here.
+        ...(b.activity ? { activityLabel: b.activity.label, activityUnknownReason: b.activity.unknownReason } : {}),
         activityMeasured: b.activityMeasured ?? null,
         lastMeaningfulShipAt: b.lastShippedAt ?? null,
         meaningfulEvents30d: events30d,

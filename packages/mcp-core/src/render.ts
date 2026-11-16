@@ -1,6 +1,9 @@
 import { DERIVED_TEXT_MAX, derivedText, isValuationNotPlausible, quoteExternal, quoteForTransport, recordTag, summaryIsSourceText, tokenNotTheProjectsWords, valuationWithheldClause } from '@hey/agent-provider-core';
+import { activityPresentation, unknownActivityReason } from '@hey/scoring/activity-words';
 import { TOKEN_MARKET_LABELS, tokenMarketStatusLabel } from '@hey/scoring/market-status-words';
+import { showsVerifiedBuilderFlag } from '@hey/scoring/research-level-words';
 import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
+import { isOfficialXLinkHeld, OFFICIAL_X_LINK_HOLD_WORDS } from '@hey/scoring/x-account-words';
 import type {
   HeyAccelerating,
   HeyAskAnswer,
@@ -288,20 +291,31 @@ export function officialXWords(officialX: NonNullable<HeyProject['officialX']>):
   if (!/^[A-Za-z0-9_]{1,15}$/.test(officialX.handle)) return undefined;
   const xStatus = officialX.status;
   const checked = typeof officialX.checkedAt === 'string' && /^\d{4}-\d{2}-\d{2}/.test(officialX.checkedAt) ? ` (checked ${officialX.checkedAt.slice(0, 10)})` : '';
-  // A handle now answering for another account is held until a moderator confirms (founder ruling 4, 2026-10-18).
-  if (officialX.linkHeld === 'handle_reassigned') return `X handle @${officialX.handle} now belongs to a different account; link held${checked}`;
-  // Another project's account (2026-10-18): its profile links that project's site, not this one's.
-  if (officialX.linkHeld === 'links_other_project') return `X account @${officialX.handle} links another project's site, not this one's; link held${checked}`;
-  // A moderator held the account as not the project's (2026-10-19).
-  if (officialX.linkHeld === 'not_the_project') return `X account @${officialX.handle} is not this project's account; link held by a moderator`;
-  // HEY's own holds (2026-11-09): a borrowed account copied onto the page, or another HEY page's account.
-  if (officialX.linkHeld === 'copied_pair') return `X account @${officialX.handle} reads as another party's account, not this project's; link held${checked}`;
-  if (officialX.linkHeld === 'account_of_another_page') return `X account @${officialX.handle} is another HEY page's account, not this one's; link held${checked}`;
+  // Every hold in its one set of words (2026-11-12, audit F6): `@hey/scoring` `x-account-words.ts`.
+  if (isOfficialXLinkHeld(officialX.linkHeld)) return OFFICIAL_X_LINK_HOLD_WORDS[officialX.linkHeld].machine(officialX.handle, checked);
   if (xStatus === 'SUSPENDED' || xStatus === 'UNAVAILABLE' || xStatus === 'NOT_FOUND') return `X account @${officialX.handle} ${xStatus === 'NOT_FOUND' ? 'not found' : xStatus.toLowerCase()}${checked}`;
   // The account's profile links the project's own site (founder ruling 1, 2026-10-18): trust in the account, nothing more.
   if (officialX.corroboration === 'mutual_site_link') return `X account @${officialX.handle} links back to the project's site${checked}`;
   return undefined;
 }
+
+/**
+ * What HEY claims about a project's activity, in the chip's own words (2026-11-13, state-machine audit): the reason an
+ * UNKNOWN is unknown is the API's `activity.unknownReason` when the answer carries it, else read from the card's facts by
+ * the one rule every surface reads (`unknownActivityReason`), and worded by `activityPresentation`. Until this, the MCP
+ * kept its own four-branch tree and had no words for "builder source held, not counted" or "builder sources stopped
+ * answering". An INDEXED record says HEY has not researched it, whatever its status column holds.
+ */
+export function activityClaim(project: HeyProject): string {
+  const reason = project.activity ? project.activity.unknownReason : unknownActivityReason({ ...project, lastMeaningfulShipAt: project.lastShippedAt });
+  if (project.activityStatus === 'UNKNOWN' && reason) return `UNKNOWN activity: ${lowerFirstWord(activityPresentation('UNKNOWN', reason).label)} (${reason})`;
+  if (project.researchLevel === 'INDEXED') return 'UNKNOWN activity: not researched yet';
+  if (project.activityStatus === 'UNKNOWN') return `UNKNOWN activity: ${lowerFirstWord(activityPresentation('UNKNOWN').label)} (${lowerFirstWord(activityPresentation('UNKNOWN').help).replace(/\.$/, '')})`;
+  return `DERIVED ${project.activityStatus.toLowerCase()}`;
+}
+
+/** "Not measured — …" as it reads after a colon. */
+const lowerFirstWord = (text: string): string => `${text.charAt(0).toLowerCase()}${text.slice(1)}`;
 
 /** One project on one line: identity, what HEY claims, and the context behind it. */
 export function projectLine(project: HeyProject, now?: Date): string {
@@ -314,20 +328,7 @@ export function projectLine(project: HeyProject, now?: Date): string {
   const parts = [quotedName(project.name, notTheProjects ? undefined : project.symbol)];
 
   // What HEY is actually claiming about activity comes before anything else.
-  parts.push(
-    // Not beside a last ship (2026-09-25): a project with a recorded ship has had a builder signal.
-    project.activityStatus === 'UNKNOWN' && project.hasBuilderSource === false && !project.lastShippedAt
-      ? 'UNKNOWN activity: no builder signal yet (no repository, changelog or feed to read; trading is not building)'
-      : // The site's "Activity not measurable" (2026-09-28): a ship on record, nothing HEY can keep reading — the scorer's
-        // reading whatever the source flag says now (2026-10-28, DATA-10).
-        project.activityStatus === 'UNKNOWN' && (project.hasBuilderSource === false || (project.hasBuilderSource === true && !!project.lastShippedAt))
-        ? 'UNKNOWN activity: not measurable (a ship on record, but no repository, changelog or feed HEY can keep reading)'
-        : project.researchLevel === 'INDEXED'
-        ? 'UNKNOWN activity: not researched yet'
-        : project.activityStatus === 'UNKNOWN'
-          ? 'UNKNOWN activity: too few public sources to say either way'
-          : `DERIVED ${project.activityStatus.toLowerCase()}`,
-  );
+  parts.push(activityClaim(project));
   // Not a Robinhood Chain builder, said beside the status it would otherwise be read as (2026-11-09 data-trust audit, lane E issue 1).
   if (project.integrationRecord === true) parts.push('integration record: no Robinhood Chain evidence, not a Verified Builder');
   else if (project.chainEvidence === false) parts.push('no Robinhood Chain evidence held');
@@ -1106,7 +1107,7 @@ export function renderCompare(page: HeyCompare): string {
         ? `DERIVED velocity: ${project.velocity.state.toLowerCase()} (${project.velocity.current}${project.velocity.previous === null ? '' : ` vs ${project.velocity.previous}`})`
         : 'UNKNOWN velocity',
       project.cadence?.medianIntervalDays !== undefined ? `DERIVED release cadence: every ${project.cadence.medianIntervalDays} days` : 'UNKNOWN release cadence',
-      `FACT Verified Builder: ${project.verifiedBuilder ? 'yes' : 'no'}; sources ${project.sources.verified} checked by HEY of ${project.sources.total}`,
+      `FACT Verified Builder: ${showsVerifiedBuilderFlag(project) ? 'yes' : 'no'}; sources ${project.sources.verified} checked by HEY of ${project.sources.total}`,
       // By the kind the API sends, not by comparing figures (2026-09-25); an unknown kind is a valuation (2026-09-26).
       project.marketCapUsd === undefined
         ? project.valuationWithheld

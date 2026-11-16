@@ -6,6 +6,24 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+### Added (2026-11-13)
+
+- `researchLevel` on each `HeyCompare` project and (optional) on each `HeyAgentCompareProject`, beside the unchanged
+  `verifiedBuilder` (the catalogue's badge). HEY draws the Verified Builder badge only where both say
+  `VERIFIED_BUILDER`, as the project page does.
+- Known-value lists for the public state vocabularies: `HEY_ACTIVITY_STATUSES`, `HEY_UNKNOWN_ACTIVITY_REASONS`,
+  `HEY_TOKEN_MARKET_STATUSES`, `HEY_TOKEN_MARKET_REASONS`, `HEY_TOKEN_VERIFICATION_STATUSES`,
+  `HEY_TOKEN_VERIFICATION_REASONS`, `HEY_SHIP_VERIFICATIONS`, `HEY_DISCOVERY_GAP_WITHHELD_REASONS`,
+  `HEY_STILL_BUILDING_WITHHELD_REASONS` and `HEY_OFFICIAL_X_LINK_HOLDS`. They are open: they only grow, so read a value
+  you do not know as unknown. The response types stay `string`.
+- `activity` (`label`, `help`, `unknownReason`) and `heldBuilderSource` on a project item, the project answer and the
+  snapshot's `build`: the status in HEY's own words, and why an `UNKNOWN` is unknown (`HeyUnknownActivityReason`).
+- `tokenMarket.classified` (project, detail, Market Integrity) and `marketStatusClassified` (token market): false when
+  HEY never classified the token's market; its status is then the stored `INSUFFICIENT_DATA` default.
+- `officialX.linkShown`: whether HEY's pages link the account. `url` is unchanged; link it only when this is true.
+- Partner card: `activity_facts_read` and `market_status.classified`.
+- Agent answers: `builderState.activityLabel` and `builderState.activityUnknownReason`; a candidate's `activityLabel`.
+
 ## 0.3.5 — 2026-11-09
 
 ### Added (2026-11-09)

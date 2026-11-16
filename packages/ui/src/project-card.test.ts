@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { explorerTokenUrl } from './brand';
 import { isAddressShaped, shortenAddress } from './format';
-import { ProjectCard, type ProjectCardData, formatPercentChange, marketLensLine, officialXCardState, tradeContextLine } from './project-card';
+import { ProjectCard, type ProjectCardData, cardLaunchWords, cardPreviewFacts, formatPercentChange, launchCellPhrase, marketLensLine, officialXCardState, tradeContextLine } from './project-card';
 import { ContractAddress } from './token-identity';
 
 const ADDRESS = '0x82aE0000000000000000000000000000000091bF';
@@ -186,6 +186,17 @@ describe('ProjectCard — fallbacks', () => {
     expect(render({ ...tokenBacked, token: undefined, activityStatus: 'UNKNOWN', onchainEvents24h: 5 })).not.toContain('card-context-line');
   });
 
+  it('words the launch cell once: a launchpad or a pool takes "via", a placeholder never does (2026-11-12, audit F5)', () => {
+    const phrase = (launchedVia: ProjectCardData['launchedVia'], marketVenue?: string) => launchCellPhrase(cardLaunchWords({ launchedVia, ...(marketVenue ? { marketVenue } : {}) }));
+    expect(phrase({ name: 'Pons' })).toBe('via Pons');
+    expect(phrase({ name: 'Unknown' })).toBe('Launch not observed');
+    expect(phrase(undefined)).toBe('Launch not observed');
+    expect(phrase({ name: 'Unknown' }, 'Uniswap v4')).toBe('via DEX (Uniswap v4)');
+    expect(phrase({ name: 'Independent' })).toBe('Independent');
+    expect(cardPreviewFacts({ ...tokenBacked, token: undefined, launchedVia: { name: 'Independent' } }).launchedViaWords).toBe('Independent');
+    expect(cardPreviewFacts({ ...tokenBacked, launchedVia: { name: 'Unknown' } }).launchedViaWords).toBe('Launch not observed');
+  });
+
   it('names the pool a token trades in when no launch record names a launchpad', () => {
     const html = render({ ...tokenBacked, launchedVia: { name: 'Unknown' }, marketVenue: 'Uniswap v4' });
     expect(html).toContain('DEX (Uniswap v4)');
@@ -256,6 +267,21 @@ describe('ProjectCard — fallbacks', () => {
     const disagree = { ...tokenBacked, tokenMarketStatus: 'INSUFFICIENT_DATA', tokenMarketReason: 'pool_readings_disagree' } as ProjectCardData;
     expect(marketLensLine(disagree)).toBe('Pool readings disagree');
     expect(renderLens(disagree)).toContain('data-valuation-state="unconfirmed"');
+  });
+
+  it('words every unconfirmed reason, and never a stale liquidity figure without its age (2026-11-12, audit F7)', () => {
+    const now = new Date('2026-11-12T12:00:00Z');
+    const stale = { ...tokenBacked, tokenMarketStatus: 'INSUFFICIENT_DATA', tokenMarketReason: 'liquidity_not_current', liquidityUsd: 209_000, volume24hUsd: 4_000 } as ProjectCardData;
+    expect(marketLensLine({ ...stale, marketCapObservedAt: new Date('2026-10-16T12:00:00Z') }, now)).toBe('Liquidity $209K, read 27 days ago · 24 h volume $4K');
+    // A reading dated inside the week cannot be the depth reading the reason names: no figure.
+    expect(marketLensLine({ ...stale, marketCapObservedAt: new Date('2026-11-12T08:00:00Z') }, now)).toBe('Liquidity last read more than 7 days ago · 24 h volume $4K');
+    expect(marketLensLine(stale, now)).not.toContain('$209K');
+    expect(tradeContextLine(stale)).toBe('Traded in the last 24 h');
+    const elsewhere = { ...tokenBacked, tokenMarketStatus: 'ACTIVE_MARKET', tokenMarketReason: 'liquidity_in_another_pool', liquidityUsd: 170 } as ProjectCardData;
+    expect(marketLensLine(elsewhere)).toBe('Liquidity read in another pool');
+    const unknownVolume = { ...tokenBacked, tokenMarketStatus: 'INSUFFICIENT_DATA', tokenMarketReason: 'volume_unknown', liquidityUsd: 12_000 } as ProjectCardData;
+    expect(marketLensLine(unknownVolume)).toBe('Liquidity $12K · 24 h volume not reported');
+    expect(tradeContextLine(unknownVolume)).toBe('Trading in the last 24 h not reported');
   });
 
   it('a default card prints a valuation only on a market HEY measures, for a verified token or an uncontested ticker (UI-7 2026-10-24, R5 2026-10-28)', () => {
@@ -463,6 +489,8 @@ describe('ProjectCard — tokenless', () => {
     expect(html).toContain('hoodlens.example');
     expect(html).toContain('@hoodlens');
     expect(html).toContain('Independent');
+    // Never "via Independent" (2026-11-12, audit F5): a placeholder takes no "via".
+    expect(html).not.toMatch(/>via<\/span>/);
     expect(html).toContain('data-has-token="false"');
     expect(html).not.toContain('Market cap');
     expect(html).not.toContain('contract-address');

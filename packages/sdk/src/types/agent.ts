@@ -116,6 +116,8 @@ export type HeyAgentCandidate = {
   /** The tracked token's ticker, its activity status and its catalog status (2026-10-17, additive): building state, never a market figure. */
   symbol?: HeyAgentText;
   activityStatus?: string;
+  /** `activityStatus` in HEY's own words (2026-11-13, additive): the plain status word, never a guessed reason. */
+  activityLabel?: string;
   catalogStatus?: string;
 };
 
@@ -138,6 +140,10 @@ export type HeyAgentResearchData = {
   };
   builderState: {
     activityStatus: string;
+    /** The status in HEY's own words (2026-11-13, additive): the snapshot's `build.activity.label`. */
+    activityLabel?: string;
+    /** Why an UNKNOWN status is unknown (2026-11-13, additive): the snapshot's `build.activity.unknownReason`; null when not UNKNOWN or HEY cannot say why. */
+    activityUnknownReason?: string | null;
     activityMeasured: boolean | null;
     lastMeaningfulShipAt: string | null;
     meaningfulEvents30d: number | null;
@@ -269,6 +275,8 @@ export type HeyAgentCompareProject = {
   /** The category every HEY card prints (additive, 2026-10-02). */
   category?: HeyAgentText | null;
   verifiedBuilder: boolean;
+  /** The scorer's research level (additive, 2026-11-13). HEY prints the badge only where it and `verifiedBuilder` agree. */
+  researchLevel?: string | null;
   sources: { verified: number; total: number };
   peer: { rulesVersion: string; state: string; cohort: string | null; reason: string | null } | null;
   explainUrl: string;

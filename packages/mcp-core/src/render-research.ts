@@ -1,4 +1,5 @@
 import { quoteExternal } from '@hey/agent-provider-core';
+import { launchpadNameOf } from '@hey/scoring/launch-origin-words';
 import type { HeySearchSuggestions } from '@hey-research-lab/sdk';
 
 /**
@@ -14,7 +15,11 @@ export function renderIdentitySearch(page: HeySearchSuggestions, baseUrl: string
     const contract = row.contract ? ` · contract ${row.contract}` : '';
     // An issuer's own token (2026-10-02): never a project, never a launch record.
     if (row.type === 'issuer') return `- ${name}${contract} · ${quoteExternal(row.label, 'token_metadata', 80)}, not a project on HEY — ${baseUrl}${row.target}`;
-    if (row.type === 'launch') return `- ${name}${contract} · a launch record, not a published project (via ${quoteExternal(row.launchedVia, 'launchpad', 80)}) — ${baseUrl}${row.target}`;
+    if (row.type === 'launch') {
+      // Never "via Unknown" (2026-11-12, audit F5): the placeholder names no launchpad.
+      const launchpad = launchpadNameOf(row.launchedVia);
+      return `- ${name}${contract} · a launch record, not a published project${launchpad ? ` (via ${quoteExternal(launchpad, 'launchpad', 80)})` : ''} — ${baseUrl}${row.target}`;
+    }
     const slug = /^\/project\/([a-z0-9][a-z0-9-]{0,119})$/.exec(row.target)?.[1];
     return `- ${name}${contract}${slug ? ` · slug ${slug}` : ''} — ${baseUrl}${row.target}`;
   });

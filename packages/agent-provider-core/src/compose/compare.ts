@@ -64,6 +64,7 @@ export function composeCompare(ctx: AgentComposeContext, input: CompareInput): A
       // The card's own category (`projectCategory`), never the raw catch-all narrative "Other".
       category: row.category ? heyText(row.category.label) : null,
       verifiedBuilder: row.verifiedBuilder,
+      researchLevel: row.researchLevel ?? null,
       sources: { verified: row.sources.verified, total: row.sources.total },
       peer: peer ? { rulesVersion: peer.rulesVersion, state: peer.state, cohort: peer.cohort?.key ?? null, reason: peer.reason } : null,
       explainUrl: `${ctx.baseUrl}/api/projects/${row.slug}/explain?fact=activity.status`,

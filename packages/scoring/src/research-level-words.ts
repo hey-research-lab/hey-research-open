@@ -32,6 +32,16 @@ export function showsVerifiedBuilder(facts: { researchLevel: string | null | und
   return facts.researchLevel === 'VERIFIED_BUILDER' && facts.catalogStatus === 'VERIFIED_BUILDER';
 }
 
+/**
+ * The same rule for a machine answer that carries the catalogue's badge as a boolean (`verifiedBuilder` on `/api/compare`
+ * and the agent contract, unchanged by machine rule 10) beside the scorer's `researchLevel` (2026-11-13, state-machine
+ * audit): the MCP and the agent text print the badge only where both agree. An answer with no level draws no badge — a
+ * text never claims more than HEY's page would.
+ */
+export function showsVerifiedBuilderFlag(facts: { researchLevel?: string | null | undefined; verifiedBuilder: boolean }): boolean {
+  return showsVerifiedBuilder({ researchLevel: facts.researchLevel, catalogStatus: facts.verifiedBuilder ? 'VERIFIED_BUILDER' : null });
+}
+
 /** The badge's word for a level; an unknown level reads as the lowest one, never as more research than HEY did. */
 export function researchLevelWords(level: string | null | undefined): { label: string; help: string } {
   return RESEARCH_LEVEL_WORDS[level as ResearchLevelWordsKey] ?? RESEARCH_LEVEL_WORDS.INDEXED;

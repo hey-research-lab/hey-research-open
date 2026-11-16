@@ -572,8 +572,8 @@ export const diff: HeyDiff = {
 
 export const compare: HeyCompare = {
   projects: [
-    { slug: 'agentos', name: 'AgentOS', url: `${BASE}/project/agentos`, activityStatus: 'SHIPPING', lastMeaningfulShipAt: '2026-09-24T10:00:00.000Z', buildMomentum: 67.4, verifiedBuilder: true, sources: { verified: 2, total: 5 }, marketCapUsd: 208_594, valuationKind: 'fdv', velocity: { state: 'ACCELERATING', current: 9, previous: 4 }, category: { label: 'AI Agents · Utility', narrative: { slug: 'ai-agents', name: 'AI Agents' }, projectKind: 'UTILITY' }, buildMomentumConsistency: { score: 67, activeWeeks: 4, windowWeeks: 6 } },
-    { slug: 'quiet-token', name: 'Quiet Token', url: `${BASE}/project/quiet-token`, activityStatus: 'UNKNOWN', verifiedBuilder: false, sources: { verified: 0, total: 1 }, marketCapUsd: 9_000, category: { label: 'Meme', narrative: null, projectKind: 'MEME' } },
+    { slug: 'agentos', name: 'AgentOS', url: `${BASE}/project/agentos`, activityStatus: 'SHIPPING', lastMeaningfulShipAt: '2026-09-24T10:00:00.000Z', buildMomentum: 67.4, verifiedBuilder: true, researchLevel: 'VERIFIED_BUILDER', sources: { verified: 2, total: 5 }, marketCapUsd: 208_594, valuationKind: 'fdv', velocity: { state: 'ACCELERATING', current: 9, previous: 4 }, category: { label: 'AI Agents · Utility', narrative: { slug: 'ai-agents', name: 'AI Agents' }, projectKind: 'UTILITY' }, buildMomentumConsistency: { score: 67, activeWeeks: 4, windowWeeks: 6 } },
+    { slug: 'quiet-token', name: 'Quiet Token', url: `${BASE}/project/quiet-token`, activityStatus: 'UNKNOWN', verifiedBuilder: false, researchLevel: 'INDEXED', sources: { verified: 0, total: 1 }, marketCapUsd: 9_000, category: { label: 'Meme', narrative: null, projectKind: 'MEME' } },
   ],
   missing: ['ghost'],
   ignoredSlugs: [],

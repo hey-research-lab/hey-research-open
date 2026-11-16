@@ -1,4 +1,5 @@
 import type { HeyChangeUpsert, HeyPublishedNamesakes } from '@hey-research-lab/sdk';
+import { activityPresentation } from '@hey/scoring/activity-words';
 
 import type { AgentCapability } from '../capabilities';
 import { MACHINE_TEXT_VERSION, derivedText, externalText, heyText, isSafeUrl, type AgentText } from '../text';
@@ -410,7 +411,7 @@ export function ambiguousRefusal<C extends AgentCapability>(ctx: AgentComposeCon
     url: candidate.url,
     ...(candidate.token ? { token: { chainId: candidate.token.chainId, address: candidate.token.address.toLowerCase() } } : {}),
     ...(candidate.symbol ? { symbol: externalText(candidate.symbol, 'project_record', undefined, 40) } : {}),
-    ...(candidate.activityStatus ? { activityStatus: candidate.activityStatus } : {}),
+    ...(candidate.activityStatus ? { activityStatus: candidate.activityStatus, activityLabel: activityPresentation(candidate.activityStatus).label } : {}),
     ...(candidate.catalogStatus ? { catalogStatus: candidate.catalogStatus } : {}),
   }));
   const count = Math.max(total?.count ?? listed.length, listed.length);

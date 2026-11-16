@@ -16,7 +16,10 @@
     "./activity-words": "./src/activity-words.ts",
     "./research-level-words": "./src/research-level-words.ts",
     "./withheld-words": "./src/withheld-words.ts",
-    "./verification-words": "./src/verification-words.ts"
+    "./verification-words": "./src/verification-words.ts",
+    "./x-account-words": "./src/x-account-words.ts",
+    "./launch-origin-words": "./src/launch-origin-words.ts",
+    "./state-vocabulary": "./src/state-vocabulary.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

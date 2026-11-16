@@ -1,0 +1,62 @@
+[
+  {
+    "id": 9101,
+    "tag_name": "latest",
+    "name": "Latest build",
+    "body": "Rolling build cut by CI.",
+    "html_url": "https://github.com/KyberNetwork/kyberswap-dex-lib/releases/tag/latest",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-16T09:00:00Z",
+    "created_at": "2026-11-16T08:55:00Z",
+    "assets": []
+  },
+  {
+    "id": 9102,
+    "tag_name": "v0.135.0-rc.1",
+    "name": "v0.135.0-rc.1",
+    "body": "Release candidate.",
+    "html_url": "https://github.com/KyberNetwork/kyberswap-dex-lib/releases/tag/v0.135.0-rc.1",
+    "draft": false,
+    "prerelease": true,
+    "published_at": "2026-11-15T12:00:00Z",
+    "created_at": "2026-11-15T11:50:00Z",
+    "assets": []
+  },
+  {
+    "id": 9103,
+    "tag_name": "v0.135.0",
+    "name": "",
+    "body": "Not published yet.",
+    "html_url": "https://github.com/KyberNetwork/kyberswap-dex-lib/releases/tag/untagged-9103",
+    "draft": true,
+    "prerelease": false,
+    "published_at": null,
+    "created_at": "2026-11-16T10:00:00Z",
+    "assets": []
+  },
+  {
+    "id": 9104,
+    "tag_name": "v0.134.80",
+    "name": "v0.134.80  —\n pool fixes",
+    "body": "Fixes two pool sources.",
+    "html_url": "https://github.com/KyberNetwork/kyberswap-dex-lib/releases/tag/v0.134.80",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-14T07:30:00Z",
+    "created_at": "2026-11-14T07:20:00Z",
+    "assets": [{ "name": "dex-lib.tar.gz", "size": 1024, "content_type": "application/gzip", "download_count": 12 }]
+  },
+  {
+    "id": 9105,
+    "tag_name": "v0.134.75",
+    "name": "v0.134.75",
+    "body": "",
+    "html_url": "https://github.com/KyberNetwork/kyberswap-dex-lib/releases/tag/v0.134.75",
+    "draft": false,
+    "prerelease": false,
+    "published_at": "2026-11-12T10:00:00Z",
+    "created_at": "2026-11-12T09:55:00Z",
+    "assets": []
+  }
+]

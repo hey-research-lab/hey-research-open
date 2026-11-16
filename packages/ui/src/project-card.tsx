@@ -15,8 +15,10 @@ import {
   tickerLabel,
 } from './format';
 import { builderSourcesGoneLine, type BuilderSourcesUnavailable } from '@hey/scoring/activity-words';
-import { discoveryGapMarketMeasurable, marketVolumeTooThin } from '@hey/scoring/token-market';
+import { discoveryGapMarketMeasurable, isTokenMarketReason, marketVolumeTooThin, type TokenMarketReason } from '@hey/scoring/token-market';
 import { valuationDisplay, valuationDisplayLabel, valuationHiddenCardWords, valuationHiddenSentence } from '@hey/scoring/valuation-display';
+import type { OfficialXLinkHeld } from '@hey/scoring/x-account-words';
+import { LAUNCH_NOT_OBSERVED_WORDS, launchOriginOf, launchOriginWords } from '@hey/scoring/launch-origin-words';
 import { projectCategory } from './project-category';
 import { ProjectLogo } from './project-logo';
 import { cardShipPhrase, displayShipTitle } from './ship-phrase';
@@ -207,7 +209,7 @@ export type ProjectCardData = {
     url: string;
     withheldLine?: string | undefined;
     status?: 'ACTIVE' | 'SUSPENDED' | 'UNAVAILABLE' | 'NOT_FOUND' | null | undefined;
-    linkHeld?: 'handle_reassigned' | 'links_other_project' | 'not_the_project' | 'copied_pair' | 'account_of_another_page' | undefined;
+    linkHeld?: OfficialXLinkHeld | undefined;
   };
   websiteUrl?: string;
   /** Kept for callers that still pass the fuller domain shape. */
@@ -254,6 +256,8 @@ export type CardPreviewFacts = {
   verification?: { value: string; label: string };
   token?: { chainId: number; contractAddress: string };
   launchedVia?: string;
+  /** The launch cell as printed: "via Pons", "Launch not observed", "Independent" (additive, 2026-11-12, audit F5). */
+  launchedViaWords?: string;
   officialX?: string;
   disclosure?: string;
 };
@@ -286,12 +290,28 @@ const VERIFIED_STATES = new Set(['PUBLICLY_VERIFIED', 'ADMIN_VERIFIED', 'SOURCE_
 /**
  * Where a token launched, when HEY holds no launch record (2026-10-12, audit
  * RD-10): the homepage and search printed "via Unknown". A card and a launch
- * record row say this instead, with no "via".
+ * record row say this instead, with no "via". The words live in `@hey/scoring`
+ * `launch-origin-words.ts` (2026-11-12, audit F5).
  */
-export const LAUNCH_NOT_OBSERVED = 'Launch not observed';
+export const LAUNCH_NOT_OBSERVED = LAUNCH_NOT_OBSERVED_WORDS;
 
-/** No launch origin HEY can name: none recorded, or the domain's "Unknown" placeholder. */
-export const launchNotObserved = (name: string | null | undefined): boolean => !name || name.trim() === '' || name === 'Unknown';
+/** No launch origin HEY can name: none recorded, or the domain's "Unknown" placeholder (`launchOriginOf`). */
+export const launchNotObserved = (name: string | null | undefined): boolean => launchOriginOf(name).kind === 'not_observed';
+
+/**
+ * The card's launch cell as one phrase (2026-11-12, audit F5): "via Pons", "via DEX (Uniswap v4)" for a token whose
+ * launch HEY did not observe but whose pool it reads, "Launch not observed", or "Independent" for a project with no
+ * token — never "via Unknown" or "via Independent".
+ */
+export function cardLaunchWords(project: Pick<ProjectCardData, 'launchedVia' | 'marketVenue'>): { label: string; takesVia: boolean; kind: 'launchpad' | 'venue' | 'not_observed' | 'no_token' } {
+  const origin = launchOriginOf(project.launchedVia);
+  if (origin.kind === 'not_observed' && project.marketVenue) {
+    // A venue HEY cannot name is "DEX" already (`venueLabel`): print it once, never "DEX (DEX)" (full audit, 2026-10-03).
+    return { label: project.marketVenue === 'DEX' ? 'DEX' : `DEX (${project.marketVenue})`, takesVia: true, kind: 'venue' };
+  }
+  const words = launchOriginWords(origin);
+  return { label: words.label, takesVia: words.via !== null, kind: origin.kind };
+}
 
 const hostOf = (url: string): string => {
   try {
@@ -403,6 +423,7 @@ export function cardPreviewFacts(
       : {}),
     ...(project.token ? { token: project.token } : {}),
     ...(launchUnobserved ? { launchedVia: LAUNCH_NOT_OBSERVED } : project.launchedVia?.name && !launchNotObserved(project.launchedVia.name) ? { launchedVia: project.launchedVia.name } : project.marketVenue ? { launchedVia: project.marketVenue === 'DEX' ? 'DEX' : `DEX (${project.marketVenue})` } : {}),
+    ...(launchUnobserved || project.launchedVia?.name || project.marketVenue ? { launchedViaWords: launchCellPhrase(cardLaunchWords(project)) } : {}),
     ...(project.officialX ? { officialX: project.officialX.withheldLine ? officialXCardState(project.officialX) : `@${project.officialX.handle}` } : {}),
     ...(disclosure ? { disclosure } : {}),
   };
@@ -560,11 +581,12 @@ export function ProjectCard({
 
   // REFERENCE: launch origin and official X, the card's last line on every variant.
   const launchUnobserved = launchNotObserved(project.launchedVia?.name) && !project.marketVenue;
+  const launch = cardLaunchWords(project);
   const origin = (
     <div className="flex items-center justify-between gap-3 text-[13px]">
       <span className="flex min-w-0 shrink-0 items-center gap-1.5" data-testid="launched-via">
-        {/* No launch record and no pool: say so, never "via Unknown" (2026-10-12, audit RD-10). */}
-        {launchUnobserved ? null : <span className="text-hey-muted">via</span>}
+        {/* No launch record and no pool: say so, never "via Unknown" (2026-10-12, audit RD-10), nor "via Independent" (F5). */}
+        {launch.takesVia ? <span className="text-hey-muted">via</span> : null}
         {launchUnobserved ? (
           <span className="truncate text-hey-muted" title="HEY did not observe where this token launched.">
             {LAUNCH_NOT_OBSERVED}
@@ -581,7 +603,7 @@ export function ProjectCard({
             {project.marketVenue === 'DEX' ? 'DEX' : `DEX (${project.marketVenue})`}
           </span>
         ) : (
-          <span className="truncate text-hey-secondary">{project.launchedVia?.name}</span>
+          <span className="truncate text-hey-secondary">{launch.label}</span>
         )}
       </span>
       {project.officialX?.withheldLine ? (
@@ -854,7 +876,7 @@ export function ProjectCard({
 
             {marketLens ? (
               <p className="-mt-1 text-[12.5px] leading-[1.5] text-hey-muted" data-testid="market-lens-line">
-                {marketLensLine(project)}
+                {marketLensLine(project, now)}
               </p>
             ) : contextLine ? (
               <p className="-mt-1 text-[12.5px] leading-[1.5] text-hey-muted" data-testid="card-context-line">
@@ -960,37 +982,107 @@ const STAGE_WORDS: Record<NonNullable<ProjectCardData['launchStage']>, string> =
 };
 
 /**
+ * What the Market Lens line prints for each classifier reason (2026-11-12, state-machine audit F7): one exhaustive table,
+ * so a reason added to `TOKEN_MARKET_REASONS` without a rule here fails the type check. Before it an if-chain named five
+ * of the eight unconfirmed reasons, and `liquidity_not_current` printed a liquidity figure with no age.
+ *  - `figures`: the reading's liquidity, volume, trades and move (with a clause when the volume is not reported);
+ *  - `dated_liquidity`: the same, the liquidity figure only beside its age, which the reason says is over a week;
+ *  - `words`: the sentence alone, no figure (the reading's figures are what is not confirmed);
+ *  - `launch_pool`: the launch pool's own presentation (its "liquidity" is the token's own supply).
+ * A launch pool is decided by `isLaunchPoolOnlyMarket` first, since it reads the status beside the reason.
+ */
+type LensRule =
+  | { kind: 'figures'; volumeMissing?: string }
+  | { kind: 'dated_liquidity'; minDays: number; undated: string }
+  | { kind: 'words'; words: string }
+  | { kind: 'launch_pool' };
+
+const FIGURES: LensRule = { kind: 'figures' };
+
+export const LENS_WORDS: Readonly<Record<TokenMarketReason, LensRule>> = {
+  trades_observed: FIGURES,
+  no_trades_24h: FIGURES,
+  no_liquidity_reading: FIGURES,
+  no_recent_reading_after_market: FIGURES,
+  readings_stale: FIGURES,
+  no_readings: FIGURES,
+  liquidity_reading_stale_after_market: FIGURES,
+  launch_pool_trading: { kind: 'launch_pool' },
+  launch_pool_volume_unknown: { kind: 'words', words: 'Launch pool, trading unknown' },
+  launch_pool_no_trades: { kind: 'words', words: LAUNCH_POOL_NO_TRADES_WORDS },
+  readings_implausible: { kind: 'words', words: 'Reported liquidity not confirmed' },
+  // The reading's own pool is nearly empty while another pool holds the liquidity: neither figure is this pool's market.
+  liquidity_in_another_pool: { kind: 'words', words: 'Liquidity read in another pool' },
+  no_volume_24h: FIGURES,
+  pool_readings_disagree: { kind: 'words', words: 'Pool readings disagree' },
+  removal_unconfirmed: { kind: 'words', words: 'Liquidity fall not confirmed' },
+  liquidity_gone_after_market: FIGURES,
+  no_liquidity: FIGURES,
+  liquidity_far_below_peak: FIGURES,
+  liquidity_below_threshold: FIGURES,
+  liquidity_below_exit_threshold: FIGURES,
+  liquidity_and_volume: FIGURES,
+  not_a_fungible_token: FIGURES,
+  reading_not_current: FIGURES,
+  // A liquid pool no reading of the last 36 hours measured a volume for (2026-10-12, DI-4).
+  volume_unknown: { kind: 'figures', volumeMissing: '24 h volume not reported' },
+  // A traded market whose depth reading is over a week old (2026-10-16, #139): the figure only beside its age.
+  liquidity_not_current: { kind: 'dated_liquidity', minDays: 7, undated: 'Liquidity last read more than 7 days ago' },
+  // The pool is almost all the token itself (2026-11-10): its "liquidity" is never printed as a depth figure.
+  liquidity_quote_side_thin: { kind: 'words', words: 'Reported liquidity is mostly the token itself' },
+};
+
+function lensRuleFor(project: ProjectCardData): LensRule {
+  if (project.tokenMarketStatus === 'TRADING_INACTIVE' && project.tokenMarketReason === 'launch_pool_no_trades') return LENS_WORDS.launch_pool_no_trades;
+  if (project.tokenMarketReason === 'launch_pool_volume_unknown') return LENS_WORDS.launch_pool_volume_unknown;
+  if (isLaunchPoolOnlyMarket(project.tokenMarketStatus, project.tokenMarketReason)) return { kind: 'launch_pool' };
+  if (!isTokenMarketReason(project.tokenMarketReason)) return FIGURES;
+  const rule = LENS_WORDS[project.tokenMarketReason];
+  // `launch_pool_trading` beside a status the launch-pool test did not take prints the figures, as before.
+  return rule.kind === 'launch_pool' || (rule.kind === 'words' && project.tokenMarketReason === 'launch_pool_no_trades') ? FIGURES : rule;
+}
+
+const tradesPhrase = (project: ProjectCardData): string | undefined =>
+  project.buys24h !== undefined && project.sells24h !== undefined ? `${project.buys24h.toLocaleString('en-US')} buys · ${project.sells24h.toLocaleString('en-US')} sells` : undefined;
+
+/** Whole days since the reading, or undefined when its time is not held. */
+function readingAgeDays(observedAt: Date | undefined, now: Date): number | undefined {
+  if (!observedAt) return undefined;
+  const days = Math.floor((now.getTime() - observedAt.getTime()) / 86_400_000);
+  return Number.isFinite(days) ? days : undefined;
+}
+
+/**
  * The Market Lens line: what the reading says about the pool, in words, with
  * nothing invented. A launch pool nobody traded says so; a reading without a
  * liquidity figure says which stage the token is in instead of printing a
  * dash; no reading at all names the stage or says the market is unread.
  */
-export function marketLensLine(project: ProjectCardData): string {
+export function marketLensLine(project: ProjectCardData, now: Date = new Date()): string {
   const parts: string[] = [];
   const liquidity = formatUsdCompact(project.liquidityUsd);
   const volume = formatUsdCompact(project.volume24hUsd);
-  if (project.tokenMarketStatus === 'TRADING_INACTIVE' && project.tokenMarketReason === 'launch_pool_no_trades') {
-    parts.push(LAUNCH_POOL_NO_TRADES_WORDS);
-  } else if (project.tokenMarketReason === 'launch_pool_volume_unknown') {
-    parts.push('Launch pool, trading unknown');
-  } else if (isLaunchPoolOnlyMarket(project.tokenMarketStatus, project.tokenMarketReason)) {
+  const rule = lensRuleFor(project);
+  if (rule.kind === 'words') {
+    parts.push(rule.words);
+  } else if (rule.kind === 'launch_pool') {
     // The pool's "liquidity" is the token's own supply, never a depth figure (RT2-01); its trades are real and stay.
     parts.push(LAUNCH_POOL_ONLY_PRESENTATION.label);
     if (volume) parts.push(`24 h volume ${volume}`);
-    if (project.buys24h !== undefined && project.sells24h !== undefined) parts.push(`${project.buys24h.toLocaleString('en-US')} buys · ${project.sells24h.toLocaleString('en-US')} sells`);
-  } else if (project.tokenMarketReason === 'readings_implausible') {
-    parts.push('Reported liquidity not confirmed');
-  } else if (project.tokenMarketReason === 'liquidity_quote_side_thin') {
-    // The pool is almost all the token itself (2026-11-10): its "liquidity" is never printed as a depth figure.
-    parts.push('Reported liquidity is mostly the token itself');
-  } else if (project.tokenMarketReason === 'pool_readings_disagree') {
-    parts.push('Pool readings disagree');
-  } else if (project.tokenMarketReason === 'removal_unconfirmed') {
-    parts.push('Liquidity fall not confirmed');
+    const trades = tradesPhrase(project);
+    if (trades) parts.push(trades);
   } else {
-    if (liquidity) parts.push(`Liquidity ${liquidity}`);
+    if (rule.kind === 'dated_liquidity') {
+      // Never a liquidity figure without its age: printed only when the reading's own date shows the age the reason says.
+      const days = readingAgeDays(project.marketCapObservedAt, now);
+      parts.push(liquidity && days !== undefined && days >= rule.minDays ? `Liquidity ${liquidity}, read ${days} days ago` : rule.undated);
+    } else if (liquidity) {
+      parts.push(`Liquidity ${liquidity}`);
+    }
     if (volume) parts.push(`24 h volume ${volume}`);
-    if (project.buys24h !== undefined && project.sells24h !== undefined) parts.push(`${project.buys24h.toLocaleString('en-US')} buys · ${project.sells24h.toLocaleString('en-US')} sells`);
+    else if (rule.kind === 'figures' && rule.volumeMissing) parts.push(rule.volumeMissing);
+    const trades = tradesPhrase(project);
+    if (trades) parts.push(trades);
     const move = formatPercentChange(project.priceChange24hPct);
     if (move) parts.push(`${move} / 24 h`);
   }
@@ -1011,6 +1103,42 @@ export function formatPercentChange(pct: number | undefined): string | undefined
 const eventsPhrase = (count: number): string => `${count.toLocaleString('en-US')} on-chain event${count === 1 ? '' : 's'} / 24 h`;
 
 /**
+ * What the context line says about trading for each classifier reason (2026-11-12, state-machine audit F7): exhaustive,
+ * so a new reason must be placed. A reason whose clause says whether the token traded in the last day gives its words;
+ * The status speaks first (an active market traded, an inactive one did not); a reason's words answer for any other
+ * status, and null says nothing — never a guess.
+ */
+export const TRADE_CONTEXT_WORDS: Readonly<Record<TokenMarketReason, string | null>> = {
+  trades_observed: 'Traded in the last 24 h',
+  no_trades_24h: 'No trades in 24 h',
+  no_liquidity_reading: null,
+  no_recent_reading_after_market: null,
+  readings_stale: null,
+  no_readings: null,
+  liquidity_reading_stale_after_market: null,
+  launch_pool_trading: null,
+  launch_pool_volume_unknown: 'Launch pool, trading unknown',
+  launch_pool_no_trades: LAUNCH_POOL_NO_TRADES_WORDS,
+  readings_implausible: null,
+  liquidity_in_another_pool: null,
+  no_volume_24h: 'No trades in 24 h',
+  pool_readings_disagree: null,
+  removal_unconfirmed: null,
+  liquidity_gone_after_market: null,
+  no_liquidity: null,
+  liquidity_far_below_peak: null,
+  liquidity_below_threshold: null,
+  liquidity_below_exit_threshold: null,
+  liquidity_and_volume: 'Traded in the last 24 h',
+  not_a_fungible_token: null,
+  reading_not_current: null,
+  volume_unknown: 'Trading in the last 24 h not reported',
+  // "the token traded in the last day, but the newest reading of its pool's liquidity is more than 7 days old".
+  liquidity_not_current: 'Traded in the last 24 h',
+  liquidity_quote_side_thin: null,
+};
+
+/**
  * The context line under an UNKNOWN token card (2026-09-13): what HEY does
  * know when it has nothing to read building from — whether the token traded
  * in the last 24 hours and how many events its contract emitted. Context, never a status;
@@ -1018,12 +1146,16 @@ const eventsPhrase = (count: number): string => `${count.toLocaleString('en-US')
  */
 export function tradeContextLine(project: ProjectCardData): string | undefined {
   const parts: string[] = [];
+  const reasonWords = isTokenMarketReason(project.tokenMarketReason) ? TRADE_CONTEXT_WORDS[project.tokenMarketReason] : null;
   if (isLaunchPoolOnlyMarket(project.tokenMarketStatus, project.tokenMarketReason)) parts.push(`${LAUNCH_POOL_ONLY_PRESENTATION.label} · traded in the last 24 h`);
-  else if (project.tokenMarketStatus === 'ACTIVE_MARKET') parts.push('Traded in the last 24 h');
   else if (project.tokenMarketStatus === 'TRADING_INACTIVE' && project.tokenMarketReason === 'launch_pool_no_trades') parts.push(LAUNCH_POOL_NO_TRADES_WORDS);
-  else if (project.tokenMarketReason === 'launch_pool_volume_unknown') parts.push('Launch pool, trading unknown');
+  else if (project.tokenMarketStatus === 'ACTIVE_MARKET') parts.push('Traded in the last 24 h');
   else if (project.tokenMarketStatus === 'TRADING_INACTIVE') parts.push('No trades in 24 h');
+  else if (reasonWords) parts.push(reasonWords);
   if (project.onchainEvents24h !== undefined) parts.push(eventsPhrase(project.onchainEvents24h));
   return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
+
+/** "via Pons", "Launch not observed", "Independent": the launch cell as one phrase (the preview's `launchedViaWords`). */
+export const launchCellPhrase = (words: ReturnType<typeof cardLaunchWords>): string => (words.takesVia ? `via ${words.label}` : words.label);

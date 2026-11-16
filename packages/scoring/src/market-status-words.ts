@@ -129,6 +129,17 @@ export const headed = (head: UnknownHead, reason: string): string => `${head} �
 
 /** The market label where HEY holds closes but has not classified the market yet. */
 export const NOT_CLASSIFIED_YET_LABEL = headed(UNKNOWN_HEADS.notMeasured, 'not classified yet');
+/**
+ * The market label where HEY may never have classified the market (2026-11-13, state-machine audit: "unknown is not a
+ * state"): a token no evaluation stamped (`classified: false` — the stored INSUFFICIENT_DATA default with no
+ * `market_status_at`), no status at all, or a status this build has no words for reads "Not measured — not classified
+ * yet", never "Market data insufficient". Otherwise the one label rule (`tokenMarketStatusLabel`). Words only.
+ */
+export function tokenMarketLabelOrNotClassified(status: string | null | undefined, reason?: string | null, classified?: boolean | null): string {
+  if (classified === false || !status || !Object.hasOwn(TOKEN_MARKET_LABELS, status)) return NOT_CLASSIFIED_YET_LABEL;
+  return tokenMarketStatusLabel(status as TokenMarketStatusValue, reason);
+}
+
 /** The market label where HEY holds a current reading but too few daily closes to classify it. */
 export const DAILY_HISTORY_TOO_SHORT_LABEL = headed(UNKNOWN_HEADS.notMeasured, 'daily history too short');
 

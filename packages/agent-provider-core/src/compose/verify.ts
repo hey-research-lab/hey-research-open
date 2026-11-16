@@ -1,5 +1,5 @@
 import type { HeyContract, HeyTokenLookup } from '@hey-research-lab/sdk';
-import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
+import { isTokenVerificationReason, tokenVerificationLabelFor, type TokenVerificationReason } from '@hey/scoring/verification-words';
 
 import { familyFreshness } from '../freshness';
 import type { AgentClaim, AgentEvidenceRef, AgentResponseOf, AgentUnknown, AgentVerifyData } from '../schema';
@@ -62,7 +62,11 @@ const REASON_SOURCE: Readonly<Record<string, { name: string; type: 'project_site
 
 type Verdict = AgentVerifyData['verdict'];
 
-const TOKEN_REASON_WORDS: Readonly<Record<string, string>> = {
+// The token lookup's own phrasing ("this contract"), keyed by the evaluator's typed reasons since 2026-11-13: an
+// untyped copy had no words for `issuer_token` or `site_lists_contract_among_others` (state-machine audit, gap 3).
+const TOKEN_REASON_WORDS: Readonly<Record<TokenVerificationReason, string>> = {
+  issuer_token: 'This contract is a token issued by a third party (a Stock Token or an issuer’s asset), not by the project.',
+  site_lists_contract_among_others: 'The project’s site lists this contract among other contracts, without naming it as the project’s own token.',
   onchain_signature: 'The project’s owner proved control of the deployer or the contract with an on-chain signature.',
   site_names_contract: 'The project’s own website names this contract.',
   deploy_record_in_own_repo: 'A deploy record in the project’s own official repository names this contract on this chain.',
@@ -153,7 +157,7 @@ export function composeVerify(ctx: AgentComposeContext, input: VerifyInput): Age
     verdict = status === 'VERIFIED' ? 'VERIFIED' : status === 'MISMATCH' ? 'CONTRACT_MISMATCH' : 'UNVERIFIED';
     reasonCode = status === 'MISMATCH' ? 'site_names_another_contract' : `token_${reason ?? 'not_checked'}`;
     reasons.push(heyText(ROLE_WORDS.token));
-    reasons.push(heyText(TOKEN_REASON_WORDS[reason ?? 'not_checked'] ?? 'HEY has not seen the project name this contract.'));
+    reasons.push(heyText(TOKEN_REASON_WORDS[isTokenVerificationReason(reason) ? reason : 'not_checked']));
     lookupSaysNotTheTokens = lookupProject.activityAppliesToToken === false;
     if (lookupSaysNotTheTokens && status === 'UNVERIFIED') {
       if (reason !== 'site_disclaims_contract') reasons.push(heyText(TICKER_CONTESTED_WORDS));

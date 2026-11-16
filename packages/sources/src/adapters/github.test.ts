@@ -140,6 +140,22 @@ describe('GitHub releases adapter', () => {
     expect(result.data?.[1]?.isPrerelease).toBe(true);
   });
 
+  // The Base preview's latest ships (2026-11-13) read this shape: drafts dropped here, prereleases flagged, the name kept as GitHub wrote it.
+  it('reads the Base preview fixture: drafts dropped, prereleases flagged, rolling tags kept for the caller to judge', async () => {
+    const stub = stubFetch({ status: 200, body: readFixture('github-releases-base-preview.json') });
+    const result = await adapter.fetch({ owner: 'KyberNetwork', repo: 'kyberswap-dex-lib' }, testContext({ fetchImpl: stub.fetchImpl }));
+
+    expect(stub.requests[0]?.url).toBe('https://api.github.com/repos/KyberNetwork/kyberswap-dex-lib/releases?per_page=30');
+    expect(result.data?.map((release) => [release.tag, release.isPrerelease])).toEqual([
+      ['latest', false],
+      ['v0.135.0-rc.1', true],
+      ['v0.134.80', false],
+      ['v0.134.75', false],
+    ]);
+    expect(result.data?.[2]?.url).toBe('https://github.com/KyberNetwork/kyberswap-dex-lib/releases/tag/v0.134.80');
+    expect(JSON.stringify(result.data)).not.toContain('download_count');
+  });
+
   it('returns an empty list rather than failing when there are no releases', async () => {
     const stub = stubFetch({ status: 200, body: '[]' });
     const result = await adapter.fetch(repoInput, testContext({ fetchImpl: stub.fetchImpl }));

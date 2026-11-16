@@ -185,15 +185,29 @@ export function builderSourcesGoneLine(input: {
  * stay the plain status word rather than guess; `heldBuilderSource` undefined
  * reads as no source held, the words before 2026-10-18.
  */
-export type UnknownActivityReason = 'no_builder_signal' | 'held_as_context' | 'no_readable_source' | 'builder_sources_unavailable';
+export const UNKNOWN_ACTIVITY_REASONS = ['no_builder_signal', 'held_as_context', 'no_readable_source', 'builder_sources_unavailable'] as const;
+export type UnknownActivityReason = (typeof UNKNOWN_ACTIVITY_REASONS)[number];
 
-export function unknownActivityReason(project: {
+/**
+ * The facts the activity words read, as one type (2026-11-12 state-machine audit, F2): the status, whether HEY reads a
+ * builder source (`hasBuilderSource`), whether it holds one only as context (`heldBuilderSource`), the last meaningful
+ * ship and, since 2026-11-11, whether every builder source stopped answering (`builderSourcesUnavailable`). Six
+ * readers re-picked two or three of these and dropped the last, so their chips kept the reasons before Rule B.
+ *
+ * A reader selects them together — `activityReadFactsSql` / `activityReadFactsSelection` in `@hey/domain`, read back
+ * with `activityReadFactsOf` — and hands the row whole to `unknownActivityReason` / `projectActivityWords`, never an
+ * object literal re-picking fields (`activity-read-facts.test.ts` fails the build on one). A key a reader does not
+ * hold is absent, which reads as "does not know": the words stay the plain status word rather than guess.
+ */
+export type ActivityReadFacts = {
   activityStatus: string;
   hasBuilderSource?: boolean | null | undefined;
   heldBuilderSource?: boolean | null | undefined;
   lastMeaningfulShipAt?: Date | string | null | undefined;
   builderSourcesUnavailable?: BuilderSourcesUnavailable | null | undefined;
-}): UnknownActivityReason | null {
+};
+
+export function unknownActivityReason(project: ActivityReadFacts): UnknownActivityReason | null {
   if (project.activityStatus !== 'UNKNOWN') return null;
   if (project.builderSourcesUnavailable) return 'builder_sources_unavailable';
   if (project.hasBuilderSource === undefined || project.hasBuilderSource === null) return null;
@@ -209,11 +223,20 @@ export function unknownActivityReason(project: {
 }
 
 /** The words for a status, with the reason an UNKNOWN is unknown: the one label map every surface reads. */
+/**
+ * Each UNKNOWN reason's words (2026-11-13, state-machine audit gap 10): a table keyed by the typed list, so a reason
+ * added to {@link UNKNOWN_ACTIVITY_REASONS} fails the build until it has words, where the if-chain before it fell
+ * through to the bare status word.
+ */
+export const UNKNOWN_ACTIVITY_REASON_WORDS: Readonly<Record<UnknownActivityReason, { label: string; help: string }>> = {
+  no_builder_signal: { label: NO_BUILDER_SIGNAL.label, help: NO_BUILDER_SIGNAL.help },
+  held_as_context: { label: BUILDER_SOURCE_HELD.label, help: BUILDER_SOURCE_HELD.help },
+  no_readable_source: { label: ACTIVITY_NOT_MEASURABLE.label, help: ACTIVITY_NOT_MEASURABLE.help },
+  builder_sources_unavailable: { label: BUILDER_SOURCES_STOPPED.label, help: BUILDER_SOURCES_STOPPED.help },
+};
+
 export function activityPresentation(status: string, unknownReason?: UnknownActivityReason | null): { label: string; help: string } {
-  if (status === 'UNKNOWN' && unknownReason === 'no_builder_signal') return { label: NO_BUILDER_SIGNAL.label, help: NO_BUILDER_SIGNAL.help };
-  if (status === 'UNKNOWN' && unknownReason === 'held_as_context') return { label: BUILDER_SOURCE_HELD.label, help: BUILDER_SOURCE_HELD.help };
-  if (status === 'UNKNOWN' && unknownReason === 'no_readable_source') return { label: ACTIVITY_NOT_MEASURABLE.label, help: ACTIVITY_NOT_MEASURABLE.help };
-  if (status === 'UNKNOWN' && unknownReason === 'builder_sources_unavailable') return { label: BUILDER_SOURCES_STOPPED.label, help: BUILDER_SOURCES_STOPPED.help };
+  if (status === 'UNKNOWN' && unknownReason) return { ...UNKNOWN_ACTIVITY_REASON_WORDS[unknownReason] };
   const words = ACTIVITY_STATUS_WORDS[status as ActivityStatusWordsKey] ?? ACTIVITY_STATUS_WORDS.UNKNOWN;
   return { label: words.label, help: words.help };
 }
@@ -222,12 +245,6 @@ export function activityPresentation(status: string, unknownReason?: UnknownActi
 export const activityStatusLabel = (status: string): string => activityChipWords((ACTIVITY_STATUS_WORDS[status as ActivityStatusWordsKey] ?? ACTIVITY_STATUS_WORDS.UNKNOWN).label).head;
 
 /** The words for one project's status, from the facts every surface holds. */
-export function projectActivityWords(project: {
-  activityStatus: string;
-  hasBuilderSource?: boolean | null | undefined;
-  heldBuilderSource?: boolean | null | undefined;
-  lastMeaningfulShipAt?: Date | string | null | undefined;
-  builderSourcesUnavailable?: BuilderSourcesUnavailable | null | undefined;
-}): { label: string; help: string } {
+export function projectActivityWords(project: ActivityReadFacts): { label: string; help: string } {
   return activityPresentation(project.activityStatus, unknownActivityReason(project));
 }
