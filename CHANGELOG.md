@@ -4,6 +4,10 @@ What changed, and when, for anyone reading the code or building on the API. Date
 change reached production. Older entries are condensed; the private repository keeps the full
 record.
 
+## 2026-11-17
+
+- **The bot audit's data and search items (2026-11-17).** A market's pools figure is not measured when HEY's chain pool index read the market reading's own pool more than ten times above or below the reading (`pools.figuresWithheld: index_contradicts_reading_pool`, additive; `liquidityUsd` and `depthOnePctUsd` absent), on the page, the API and the bot alike. A Top 10 or Top 50 share under 0.1% reads "<0.1%", never "0.0%", and the half-the-supply sentence is not printed over a remainder that small. A changelog day heading's ship is titled by its text, not its date. Search offers a name one swapped pair away beside typo-tolerant matches, and a page's own slug typed whole opens it unless another project carries it as a ticker. A `SECURITY.md` says how to report a vulnerability.
+
 ## 2026-11-16
 
 - **The Telegram bot's words (2026-11-16).** After an audit of 153 bot messages drawn from real data: a card's sentences end at a sentence's end, a token the project's site disowns or contradicts prints no ticker beside the project's name, an integration record says so, alerts and digests use the reader's words ("Project names this contract", "Owner proved control") and short dates, and two same-name choices are told apart by their slug. Display only.

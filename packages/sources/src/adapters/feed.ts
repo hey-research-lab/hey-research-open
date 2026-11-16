@@ -31,6 +31,11 @@ export type FeedEntry = {
   link?: string;
   summary?: string;
   publishedAt?: Date;
+  /**
+   * A changelog page's first bold or strong phrase under the heading (2026-11-17): the page's own name for its first
+   * change ("Your fly can hold BNB."). Read only as the title of an entry whose heading is a bare date.
+   */
+  lead?: string;
 };
 
 export type FeedResult = {

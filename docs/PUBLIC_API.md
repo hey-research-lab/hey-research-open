@@ -2130,7 +2130,10 @@ Added 2026-09-25, all optional and absent when HEY holds nothing:
   before the index keyed each v4 pool by its PoolId, so `pools`, `liquidityUsd` and
   `depthOnePctUsd` are absent; `index_misses_reading_pool` — as `indexMissesReadingPool`, and
   `depthOnePctUsd` is absent; `depth_below_measurable_share` — the depth is under 0.01% of the
-  reading's liquidity and is absent. One-sided pools (the side that is not the token under 1% of
+  reading's liquidity and is absent. Since 2026-11-17 (additive) `index_contradicts_reading_pool` —
+  the index read the very pool the market reading follows, on the reading's UTC day or the day
+  before, more than ten times above or below the reading's liquidity: the index valued that day's
+  pools at another price than the market, so `liquidityUsd` and `depthOnePctUsd` are absent. One-sided pools (the side that is not the token under 1% of
   the pool) are left out of `liquidityUsd` and `depthOnePctUsd` since the same day.
 - `distribution` — a summary of HEY's snapshot of the token's largest balances: `day`,
   `observedAt`, `holdersTotal` (distinct addresses holding a balance — addresses, never people),

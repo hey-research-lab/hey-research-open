@@ -573,11 +573,13 @@ export function renderTokenMarket(market: HeyTokenMarket, now: Date): string {
   const dist = market.distribution;
   if (dist) {
     const share = (v: number) => `${Math.round(v * 10) / 10}%`;
+    // A Top share is of balances above zero, so a stored 0 is under the figure's precision: "under 0.1%", never 0 (2026-11-17).
+    const topShare = (v: number) => (v < 0.05 ? 'under 0.1%' : share(v));
     const supply = [
       // Addresses, never people (product usage rule 2): the count is of distinct addresses with a balance.
       dist.holdersTotal === undefined ? undefined : `${dist.holdersTotal.toLocaleString('en-US')} distinct addresses holding it`,
-      dist.top10SharePct === undefined ? undefined : `largest 10 balances hold ${share(dist.top10SharePct)}`,
-      dist.top50SharePct === undefined ? undefined : `largest 50 hold ${share(dist.top50SharePct)}`,
+      dist.top10SharePct === undefined ? undefined : `largest 10 balances hold ${topShare(dist.top10SharePct)}`,
+      dist.top50SharePct === undefined ? undefined : `largest 50 hold ${topShare(dist.top50SharePct)}`,
       dist.burnedSharePct === undefined ? undefined : `${share(dist.burnedSharePct)} burned`,
       dist.pooledSharePct === undefined ? undefined : `${share(dist.pooledSharePct)} in pools`,
     ].filter((v): v is string => v !== undefined);

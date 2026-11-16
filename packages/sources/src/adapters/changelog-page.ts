@@ -34,6 +34,8 @@ export const MAX_CHANGELOG_ENTRIES = 50;
 const MAX_HEADING_TAG = 600;
 const MAX_HEADING_BODY = 2_048;
 const MAX_SECTION = 4_096;
+/** The longest lead phrase kept (2026-11-17): a title, not a paragraph. */
+const MAX_LEAD = 160;
 
 const MONTHS: Record<string, number> = {
   jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5, jun: 6, june: 6,
@@ -181,11 +183,15 @@ export function parseChangelogPage(html: string, pageUrl: string): FeedEntry[] {
     const externalId = `${page}#${anchor}`;
     if (seen.has(externalId)) continue;
     seen.add(externalId);
+    // The section's first bold or strong phrase (2026-11-17): a day heading's entries name their changes this way.
+    const leadHtml = /<(b|strong)\b[^>]{0,200}>([\s\S]{1,400}?)<\/\1\s*>/i.exec(section)?.[2];
+    const lead = leadHtml === undefined ? '' : sanitizeText(leadHtml).slice(0, MAX_LEAD);
     entries.push({
       externalId,
       title,
       link: id ? `${page}#${encodeURIComponent(id)}` : page,
       ...(sectionText === '' ? {} : { summary: sectionText.slice(0, 600) }),
+      ...(lead === '' ? {} : { lead }),
       publishedAt,
     });
   }

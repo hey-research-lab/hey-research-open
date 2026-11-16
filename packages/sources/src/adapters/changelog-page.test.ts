@@ -108,3 +108,22 @@ describe('the feed reader on a changelog source', () => {
     expect(result.data?.entries.length).toBeGreaterThan(0);
   });
 });
+
+describe('a changelog page’s day heading carries its first bold phrase (2026-11-17)', () => {
+  it('keeps the section’s first <b> or <strong> as the entry’s lead, and none when the section has none', () => {
+    const html = `<div class="cl">
+      <h2 class="cl-date"><time datetime="2026-11-16">2026-11-16</time></h2>
+      <ul>
+        <li><span class="cl-tag">Trading</span><p><b>Your fly can hold BNB.</b> Send BNB on BNB Smart Chain straight to your fly's wallet.</p></li>
+        <li><span class="cl-tag">Site</span><p><strong>Deposit from BNB Chain.</strong> Fund your fly with BNB.</p></li>
+      </ul>
+      <h2 class="cl-date"><time datetime="2026-11-12">2026-11-12</time></h2>
+      <ul><li><p>Hyperliquid bets for your fly, with the same rule as the sports bets.</p></li></ul>
+    </div>`;
+    const entries = parseChangelogPage(html, 'https://fly.example/changelog');
+    expect(entries.map((entry) => [entry.title, entry.lead])).toEqual([
+      ['2026-11-16', 'Your fly can hold BNB.'],
+      ['2026-11-12', undefined],
+    ]);
+  });
+});
