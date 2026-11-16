@@ -4,6 +4,10 @@ What changed, and when, for anyone reading the code or building on the API. Date
 change reached production. Older entries are condensed; the private repository keeps the full
 record.
 
+## 2026-11-16
+
+- **The Telegram bot's words (2026-11-16).** After an audit of 153 bot messages drawn from real data: a card's sentences end at a sentence's end, a token the project's site disowns or contradicts prints no ticker beside the project's name, an integration record says so, alerts and digests use the reader's words ("Project names this contract", "Owner proved control") and short dates, and two same-name choices are told apart by their slug. Display only.
+
 ## 2026-11-15
 
 - **A simpler Research Terminal, with keyboard shortcuts (2026-11-15).** Preview rows on What changed open the public receipt; the workspace header leads with the activity status and says when the project names its token's contract; the access panel on a locked page is one sentence, the sample project and one button; each place has one name and one selection colour; the timeline folds a code week, a repository's release day and a deploy run into one row; `?`, `g` chords, `j`/`k` and `1`–`5` work outside text fields (off on a phone, or by a switch), and the palette offers recent projects and `>` for commands. Display only: no status, score or API field changes.
