@@ -124,3 +124,29 @@ export const STILL_BUILDING_WITHHELD_WORDS: Readonly<Record<StillBuildingWithhel
 export function stillBuildingWithheldReason(value: unknown): StillBuildingWithheldReason | undefined {
   return typeof value === 'string' && (STILL_BUILDING_WITHHELD_REASONS as readonly string[]).includes(value) ? (value as StillBuildingWithheldReason) : undefined;
 }
+
+/**
+ * Why a project's Build Momentum is not published (founder, 2026-11-15, "yes"): sent by the API as
+ * `buildMomentumWithheld` beside a missing `buildMomentum`, so "not measured" is never read as 0 (machine rule 4).
+ * Read by `buildMomentumWithheldOf` (`momentum.ts`), the one rule; the stored score is unchanged.
+ * - `activity_unknown`: the activity status is UNKNOWN — HEY does not measure the project's building, so a stored
+ *   score is not shown beside it (the status half of `activityMeasuredSql`);
+ * - `builder_sources_unavailable`: the same, where the scorer filed the status UNKNOWN because every builder source
+ *   stopped answering (`components.activityUnknownReason`, hbm-v37);
+ * - `not_researched`: a stored 0 on a project whose activity research never ran (2026-09-25, A10-12);
+ * - `not_scored`: no score under the current rules.
+ */
+export const BUILD_MOMENTUM_WITHHELD_REASONS = ['activity_unknown', 'builder_sources_unavailable', 'not_researched', 'not_scored'] as const;
+export type BuildMomentumWithheldReason = (typeof BUILD_MOMENTUM_WITHHELD_REASONS)[number];
+
+export const BUILD_MOMENTUM_WITHHELD_WORDS: Readonly<Record<BuildMomentumWithheldReason, string>> = {
+  activity_unknown: 'Not measured — activity unknown',
+  builder_sources_unavailable: 'Not measured — builder sources stopped answering',
+  not_researched: 'Not measured — activity not researched yet',
+  not_scored: 'Not measured — not scored yet',
+};
+
+/** A reason read back from an answer: one of the list, or undefined for anything else. */
+export function buildMomentumWithheldReason(value: unknown): BuildMomentumWithheldReason | undefined {
+  return typeof value === 'string' && (BUILD_MOMENTUM_WITHHELD_REASONS as readonly string[]).includes(value) ? (value as BuildMomentumWithheldReason) : undefined;
+}

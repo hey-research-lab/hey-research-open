@@ -130,7 +130,8 @@ export function BuilderActivityWeeks({
                 isActive && index === lastActive ? 'bg-hey-ink' : isActive ? 'bg-hey-secondary' : '',
               )}
             />
-            <span aria-hidden="true" className="hey-telemetry text-hey-muted">
+            {/* The body face at the meta size, never mono (2026-11-15 platform critique, finding 14). */}
+            <span aria-hidden="true" className="text-t-meta tabular-nums text-hey-muted">
               W{String(index + 1).padStart(2, '0')}
             </span>
           </div>

@@ -239,7 +239,8 @@ export function ProjectListRow({ project, weeks, now, disclosure, preview, hideS
         {/* Only where the card may print a valuation (`cardShowsValuation`, R5); otherwise the cell stays empty. */}
         {facts.market.value ? (
           <span data-testid="market-cap" className="v2-row-value" {...(isFdv ? { title: FDV_HELP } : {})}>
-            <span className="font-semibold tabular-nums text-hey-ink">{facts.market.value}</span>
+            {/* Regular weight in the secondary colour (2026-11-15 platform critique, finding 13): the name leads the row, not a figure. */}
+            <span className="font-normal tabular-nums text-hey-secondary">{facts.market.value}</span>
             <span className="v2-row-value-kind">
               {facts.market.label}
               {facts.market.note ? ` · ${facts.market.note}` : ''}

@@ -482,6 +482,8 @@ export type HeyProjectDetail = HeyProject & {
   /** Present only when HEY actually ran the pipeline. A momentum of zero is "measured, nothing found"; absent is "not measured". */
   score?: {
     buildMomentum?: number;
+    /** Why `buildMomentum` is absent (2026-11-15, additive): `activity_unknown` beside an UNKNOWN status, and the other reasons. Absent beside a figure. */
+    buildMomentumWithheld?: HeyBuildMomentumWithheld;
     discoveryGap?: number;
     /** Why `discoveryGap` is absent (2026-09-30, additive): `market_too_thin` and the other reasons. Absent beside a gap, or on a score from before the rule. */
     discoveryGapWithheld?: HeyDiscoveryGapWithheld;
@@ -1112,6 +1114,15 @@ export type HeyDiscoveryGapWithheld =
   | 'no_build_momentum'
   /** 2026-10-12 (hbm-v27, additive): HEY holds no builder source it can read, so whether the project is building ahead of attention is not known. */
   | 'activity_unknown';
+
+/**
+ * Why a project's Build Momentum is absent (2026-11-15, additive): it is not measured, and this says why — never a
+ * zero. `activity_unknown`: the activity status is UNKNOWN, so HEY does not measure the project's building and no
+ * stored score is published beside it; `builder_sources_unavailable`: the same, because every builder source HEY read
+ * stopped answering; `not_researched`: a stored zero on a project whose activity research never ran; `not_scored`: no
+ * score under the current rules.
+ */
+export type HeyBuildMomentumWithheld = 'activity_unknown' | 'builder_sources_unavailable' | 'not_researched' | 'not_scored';
 
 /**
  * Why Still Building was not measured (2026-09-30), sent beside

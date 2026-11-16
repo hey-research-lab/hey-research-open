@@ -3,7 +3,7 @@
  * (2026-09-26). Each is read from HEY's own tables; none calls a provider.
  * Absent means HEY does not know; a withheld figure says it is withheld.
  */
-import type { HeyBuilderSourcesUnavailable, HeyCodeWeek, HeyDiscoveryGapWithheld, HeyOfficialX, HeyProject, HeyProjectActivity, HeyStillBuildingState, HeyStillBuildingWithheld, HeyUnderTheRadar } from './projects';
+import type { HeyBuilderSourcesUnavailable, HeyBuildMomentumWithheld, HeyCodeWeek, HeyDiscoveryGapWithheld, HeyOfficialX, HeyProject, HeyProjectActivity, HeyStillBuildingState, HeyStillBuildingWithheld, HeyUnderTheRadar } from './projects';
 import type { HeyPeerContext } from './graph';
 import type { HeyUsageSummary } from './usage';
 import type { HeyChangePrecision, HeyChangeType } from './changes';
@@ -566,6 +566,8 @@ export type HeyProjectSnapshot = {
     lastShippedAt?: string;
     /** Absent when not measured, as on the detail route. */
     buildMomentum?: number;
+    /** Why `buildMomentum` is absent (2026-11-15, additive), as on the detail route. */
+    buildMomentumWithheld?: HeyBuildMomentumWithheld;
     stillBuilding: boolean;
     /** `HELD`, `NOT_HELD` or `NOT_MEASURED` (2026-09-30, additive), beside the unchanged boolean. */
     stillBuildingState: HeyStillBuildingState;

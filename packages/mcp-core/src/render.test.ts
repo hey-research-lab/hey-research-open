@@ -9,6 +9,7 @@ import {
   STILL_BUILDING_MEANING,
   ago,
   atPrecision,
+  buildMomentumNotMeasuredWords,
   liquidityWords,
   projectLine,
   renderAccelerating,
@@ -940,6 +941,28 @@ describe('compare_projects', () => {
     expect(text).toContain('FACT valuation 9,000 USD (context)');
     expect(text).toContain('Not published: ghost.');
     expect(text.toLowerCase()).not.toMatch(/winner is|better|best/);
+  });
+
+  it('says why Build Momentum is not measured when the API sends a reason, never a figure (founder, 2026-11-15)', () => {
+    const [first, ...rest] = fx.compare.projects;
+    const { buildMomentum: _figure, ...withoutFigure } = first!;
+    const text = renderCompare({ ...fx.compare, projects: [{ ...withoutFigure, activityStatus: 'UNKNOWN', buildMomentumWithheld: 'activity_unknown' }, ...rest] });
+    expect(text).toContain('UNKNOWN Build Momentum: not measured — activity unknown (activity_unknown)');
+  });
+});
+
+describe('the snapshot says why Build Momentum is not measured (founder, 2026-11-15)', () => {
+  it('prints the reason the API sends, and no figure', () => {
+    const { buildMomentum: _figure, ...build } = fx.snapshot.build;
+    const text = renderSnapshot({ ...fx.snapshot, build: { ...build, activityStatus: 'UNKNOWN', buildMomentumWithheld: 'builder_sources_unavailable' } }, NOW);
+    expect(text).toContain('- UNKNOWN Build Momentum: not measured — builder sources stopped answering (builder_sources_unavailable)');
+    expect(text).not.toMatch(/DERIVED Build Momentum \d/);
+  });
+
+  it('still reads "not measured" for an answer with no reason or one this build does not know', () => {
+    const { buildMomentum: _figure, ...build } = fx.snapshot.build;
+    expect(renderSnapshot({ ...fx.snapshot, build }, NOW)).toContain('- UNKNOWN Build Momentum: not measured');
+    expect(buildMomentumNotMeasuredWords('some_new_reason')).toBe('not measured');
   });
 });
 

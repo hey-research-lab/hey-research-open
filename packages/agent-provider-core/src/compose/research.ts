@@ -523,7 +523,7 @@ export function composeResearch(ctx: AgentComposeContext, input: ResearchInput):
         lastMeaningfulShipAt: b.lastShippedAt ?? null,
         meaningfulEvents30d: events30d,
         buildMomentum: b.buildMomentum ?? null,
-        ...(b.buildMomentum === undefined ? { buildMomentumReason: 'not_measured' } : {}),
+        ...(b.buildMomentum === undefined ? { buildMomentumReason: 'not_measured', ...(b.buildMomentumWithheld ? { buildMomentumWithheld: b.buildMomentumWithheld } : {}) } : {}),
         stillBuilding: b.stillBuilding,
         ...(b.stillBuildingWithheld ? { stillBuildingWithheld: b.stillBuildingWithheld } : {}),
         // Round 4 (2026-09-30): the API's own state when it sends one, else read from stillBuilding and stillBuildingWithheld.

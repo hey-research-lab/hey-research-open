@@ -149,6 +149,8 @@ export type HeyAgentResearchData = {
     meaningfulEvents30d: number | null;
     buildMomentum: number | null;
     buildMomentumReason?: string;
+    /** Why Build Momentum is absent (2026-11-15, additive), as the snapshot sends it; `buildMomentumReason` keeps its value. */
+    buildMomentumWithheld?: string;
     stillBuilding: boolean;
     /** Why Still Building was not measured (2026-09-30, additive), beside `stillBuilding: false`. */
     stillBuildingWithheld?: string;

@@ -60,6 +60,15 @@ describe('a builder list row', () => {
     expect(html).toContain('$1.2M');
   });
 
+  it('prints the valuation at regular weight in the secondary colour, never bolder than the name (2026-11-15, finding 13)', () => {
+    const html = row(measured);
+    const figure = html.match(/data-testid="market-cap"[^>]*><span class="([^"]+)"/)?.[1];
+    expect(figure).toBeDefined();
+    expect(figure).toContain('font-normal');
+    expect(figure).toContain('text-hey-secondary');
+    expect(figure).not.toMatch(/font-(semibold|bold|medium)/);
+  });
+
   it('never nests an interactive element: the Preview button is its own cell, outside the link', () => {
     const html = row(measured, { preview });
     expect(html).not.toMatch(/<a [^>]*>(?:(?!<\/a>).)*<button/s);

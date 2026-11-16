@@ -4,6 +4,7 @@ import { TOKEN_MARKET_LABELS, tokenMarketStatusLabel } from '@hey/scoring/market
 import { showsVerifiedBuilderFlag } from '@hey/scoring/research-level-words';
 import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
 import { isOfficialXLinkHeld, OFFICIAL_X_LINK_HOLD_WORDS } from '@hey/scoring/x-account-words';
+import { BUILD_MOMENTUM_WITHHELD_WORDS, buildMomentumWithheldReason } from '@hey/scoring/withheld-words';
 import type {
   HeyAccelerating,
   HeyAskAnswer,
@@ -1097,12 +1098,22 @@ export function renderChangesParts(page: HeyChangesPage): RenderedParts {
   return { body, footer: `\n${showing}\n${rest}`, footerIfCut: `\n${cut}\n${rest}` };
 }
 
+/**
+ * "not measured", with the API's reason when it sends one (2026-11-15, additive `buildMomentumWithheld`): the scoring
+ * package's own words, lower-cased after the head ("not measured — activity unknown (activity_unknown)"). An answer
+ * with no reason, or one this build does not know, still reads "not measured", never a figure.
+ */
+export function buildMomentumNotMeasuredWords(withheld: string | undefined): string {
+  const reason = buildMomentumWithheldReason(withheld);
+  return reason ? `${BUILD_MOMENTUM_WITHHELD_WORDS[reason].replace(/^Not measured/, 'not measured')} (${reason})` : 'not measured';
+}
+
 export function renderCompare(page: HeyCompare): string {
   const rows = page.projects.map((project) =>
     [
       `## ${quotedName(project.name)} — ${project.url}`,
       `${activityTag(project.activityStatus)} activity status: ${project.activityStatus.toLowerCase().replace(/_/g, ' ')}${project.lastMeaningfulShipAt ? `; last meaningful ship ${day(project.lastMeaningfulShipAt)}` : ''}`,
-      project.buildMomentum === undefined ? 'UNKNOWN Build Momentum: not measured' : `DERIVED Build Momentum ${Math.round(project.buildMomentum)}`,
+      project.buildMomentum === undefined ? `UNKNOWN Build Momentum: ${buildMomentumNotMeasuredWords(project.buildMomentumWithheld)}` : `DERIVED Build Momentum ${Math.round(project.buildMomentum)}`,
       project.velocity && project.velocity.current !== null
         ? `DERIVED velocity: ${project.velocity.state.toLowerCase()} (${project.velocity.current}${project.velocity.previous === null ? '' : ` vs ${project.velocity.previous}`})`
         : 'UNKNOWN velocity',

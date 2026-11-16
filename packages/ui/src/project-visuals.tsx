@@ -21,6 +21,26 @@ export function ShippingStreak({ weeks, className }: { weeks: number; className?
   );
 }
 
+/** Fewer weeks HEY has read than this, and the chart is one sentence (2026-11-15 platform critique, finding 7). */
+export const BUILDER_ACTIVITY_MIN_OBSERVED_WEEKS = 4;
+
+/**
+ * The Builder activity chart as one sentence, where HEY has read fewer than `BUILDER_ACTIVITY_MIN_OBSERVED_WEEKS` of
+ * its weeks (2026-11-15 platform critique, finding 7): a 200 px chart of which eleven bars were hatched "not yet read"
+ * said less than a line does. The weeks HEY read are counted; the ones before stay "not yet read", never zero (machine
+ * rule 9). Null where the chart says more: enough weeks read, none read at all (the page's own "not read" line), or no
+ * weeks.
+ */
+export function builderActivityFewWeeksSentence(weeks: readonly { ships: number; notRead?: boolean }[]): string | null {
+  const read = weeks.filter((week) => !week.notRead);
+  if (weeks.length === 0 || read.length === 0 || read.length >= BUILDER_ACTIVITY_MIN_OBSERVED_WEEKS) return null;
+  const ships = read.reduce((sum, week) => sum + week.ships, 0);
+  const span = `${read.length} ${read.length === 1 ? 'week' : 'weeks'}`;
+  const counted = ships > 0 ? `${ships.toLocaleString('en-US')} meaningful, source-backed ${ships === 1 ? 'ship' : 'ships'}` : 'No meaningful, source-backed updates';
+  const earlier = read.length < weeks.length ? '; earlier weeks are not yet read, not zero' : '';
+  return `${counted} in the ${span} since HEY began reading this project’s sources${earlier}.`;
+}
+
 /**
  * Builder activity over twelve weeks (UI/UX V2 section 32).
  * Meaningful events only, with the week's headline ship as its label.
@@ -273,16 +293,18 @@ export function BuildMomentumPanel({
       <dl className={cn('space-y-3.5', heading && 'mt-5')}>
         {components.map((component, index) => (
           <div key={component.label} className="grid grid-cols-[1fr_auto] items-baseline gap-x-4">
-            <dt className="hey-telemetry col-start-1 row-start-1 text-hey-secondary">
+            {/* Labels in the body face at the meta size (2026-11-15 platform critique, finding 14): mono is for machine strings only. */}
+            <dt className="col-start-1 row-start-1 text-t-meta font-medium text-hey-secondary">
               {component.label}
             </dt>
-            <dd className="hey-telemetry relative col-start-2 row-start-1 tabular-nums text-hey-ink">
+            <dd className="relative col-start-2 row-start-1 text-t-meta font-medium tabular-nums text-hey-ink">
               {Math.round(component.value)}
               {index === strongest ? <span className="sr-only"> — strongest component</span> : null}
             </dd>
             <dd className="col-span-2 row-start-2 mt-1.5 h-1.5 bg-hey-subtle">
+              {/* One bar colour (finding 14): the strongest component is named in text, never by a second fill. */}
               <span
-                className={cn('block h-full', index === strongest ? 'bg-hey-ink' : 'bg-hey-accent')}
+                className="block h-full bg-hey-accent"
                 style={{ width: `${Math.min(100, Math.max(0, component.value))}%` }}
               />
             </dd>

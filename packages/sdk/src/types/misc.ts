@@ -8,7 +8,7 @@
 
 import type { HeyChangePrecision, HeyChangeType } from './changes';
 import type { HeyChangeActivityState, HeyChangeReporter, HeyChangeStage } from './snapshot';
-import type { HeyActivityStatus, HeyLiquidityKind } from './projects';
+import type { HeyActivityStatus, HeyBuildMomentumWithheld, HeyLiquidityKind } from './projects';
 
 /* ---------------------------------------------------------------- builders */
 
@@ -405,6 +405,8 @@ export type HeyCompare = {
     activityStatus: string;
     lastMeaningfulShipAt?: string;
     buildMomentum?: number;
+    /** Why `buildMomentum` is absent (2026-11-15, additive), as on the detail route. */
+    buildMomentumWithheld?: HeyBuildMomentumWithheld;
     verifiedBuilder: boolean;
     /** The scorer's research level (additive, 2026-11-13). HEY draws the badge only where it and `verifiedBuilder` agree. */
     researchLevel: string;

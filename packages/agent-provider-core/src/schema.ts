@@ -251,6 +251,8 @@ const researchData = z
         meaningfulEvents30d: z.number().int().min(0).nullable(),
         buildMomentum: z.number().nullable(),
         buildMomentumReason: code.optional(),
+        /** Why Build Momentum is absent (2026-11-15, additive), as the snapshot sends it: `activity_unknown` beside an UNKNOWN status. `buildMomentumReason` keeps its value. */
+        buildMomentumWithheld: code.optional(),
         stillBuilding: z.boolean(),
         /** Why Still Building was not measured (2026-09-30, additive): beside `stillBuilding: false`, as the API sends it. */
         stillBuildingWithheld: code.optional(),

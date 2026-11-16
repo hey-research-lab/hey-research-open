@@ -31,7 +31,7 @@ import { DISCOVERY_GAP_WITHHELD_WORDS, STILL_BUILDING_WITHHELD_WORDS as SCORING_
 import { tokenVerificationLabelFor } from '@hey/scoring/verification-words';
 import { INTEGRATION_RECORD_SENTENCE, showsVerifiedBuilder } from '@hey/scoring/research-level-words';
 
-import { activityTag, atPrecision, composedWords, derivedWords, liquidityWords, money, officialXWords, quotedName, recordTag, shownOf, STILL_BUILDING_MEANING, stillBuildingEvidence, summaryWords, TAG_LEGEND, tokenMarketWords, valuationWord } from './render';
+import { activityTag, atPrecision, buildMomentumNotMeasuredWords, composedWords, derivedWords, liquidityWords, money, officialXWords, quotedName, recordTag, shownOf, STILL_BUILDING_MEANING, stillBuildingEvidence, summaryWords, TAG_LEGEND, tokenMarketWords, valuationWord } from './render';
 
 /**
  * The machine-layer reads as text (2026-09-26): snapshot, coverage, explain,
@@ -229,7 +229,7 @@ export function renderSnapshot(s: HeyProjectSnapshot, now?: Date): string {
   else lines.push(`- ${activityTag(b.activityStatus)} activity status: ${pretty(b.activityStatus)}${b.lastShippedAt ? `; last meaningful ship ${b.lastShippedAt.slice(0, 10)}` : ''}`);
   // Every builder source stopped answering (2026-11-11, Rule B): the API's own dated line, said once, never strengthened.
   if (b.builderSourcesUnavailable) lines.push(`- FACT ${b.builderSourcesUnavailable.line} (since ${b.builderSourcesUnavailable.since.slice(0, 10)})`);
-  lines.push(b.buildMomentum === undefined ? '- UNKNOWN Build Momentum: not measured' : `- DERIVED Build Momentum ${b.buildMomentum}${s.scoringVersion ? ` (${s.scoringVersion})` : ''}`);
+  lines.push(b.buildMomentum === undefined ? `- UNKNOWN Build Momentum: ${buildMomentumNotMeasuredWords(b.buildMomentumWithheld)}` : `- DERIVED Build Momentum ${b.buildMomentum}${s.scoringVersion ? ` (${s.scoringVersion})` : ''}`);
   lines.push(
     b.discoveryGap !== undefined
       ? `- DERIVED Discovery Gap ${b.discoveryGap}`
