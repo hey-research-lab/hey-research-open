@@ -1837,9 +1837,15 @@ export function TerminalChartInteractive({
                 {label}
               </span>
             ))}
+            {/*
+              The crosshair's date sits on the axis, just under the lane, above it in the stack:
+              it takes no press, or it would cover the lower edge of the lane marks' targets
+              at the hovered day (2026-11-21, train step 6's gate).
+            */}
             {showCross ? (
               <span
-                className="absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-[var(--hey-radius-tooltip)] bg-[var(--hey-tooltip-bg)] px-1.5 py-0.5 text-[var(--hey-tooltip-ink)]"
+                data-testid="chart-crosshair-date"
+                className="pointer-events-none absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-[var(--hey-radius-tooltip)] bg-[var(--hey-tooltip-bg)] px-1.5 py-0.5 text-[var(--hey-tooltip-ink)]"
                 style={{ left: x(at) }}
               >
                 {rowWhen(model, model.rows[at]![0])}
