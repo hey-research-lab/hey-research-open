@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CHAIN_REGISTRY, CHAIN_SLUGS, chainById, configuredRpcUrls, enabledChains, homeChain, isPublicChain } from './chains';
+import { CHAIN_REGISTRY, CHAIN_SLUGS, chainById, chainIdForDefillamaLabel, configuredRpcUrls, enabledChains, homeChain, isPublicChain } from './chains';
 import { ROBINHOOD_CHAIN_ID } from './constants';
 import { homeChainIdFromRawEnv, parseServerEnv, safeParseServerEnv } from './env';
 
@@ -31,6 +31,14 @@ describe('the chain registry', () => {
     ]);
     expect(CHAIN_REGISTRY.base.bitqueryNetwork).toBeNull();
     expect(CHAIN_REGISTRY.ethereum.bitqueryNetwork).toBeNull();
+  });
+
+  it('names the chain a DefiLlama read is about by its exact label, and refuses any other (WP1.7a)', () => {
+    expect(chainIdForDefillamaLabel('Robinhood Chain')).toBe(ROBINHOOD_CHAIN_ID);
+    expect(chainIdForDefillamaLabel('Base')).toBe(8453);
+    expect(chainIdForDefillamaLabel('Ethereum')).toBe(1);
+    expect(() => chainIdForDefillamaLabel('robinhood chain')).toThrow(/no registered chain/);
+    expect(() => chainIdForDefillamaLabel('Elysium')).toThrow(/no registered chain/);
   });
 });
 

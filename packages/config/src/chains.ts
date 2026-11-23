@@ -94,6 +94,18 @@ export function chainById(id: number): ChainMetadata | undefined {
 }
 
 /**
+ * The chain a DefiLlama read is about, by the exact label it was asked for (`defillamaLabel`; WP1.7a): the DeFi rows a
+ * read writes carry this id. Throws on a label no registered chain carries — a read HEY has no chain for is a
+ * programming error, never a guess.
+ */
+export function chainIdForDefillamaLabel(label: string): number {
+  for (const slug of CHAIN_SLUGS) {
+    if (CHAIN_REGISTRY[slug].defillamaLabel === label) return CHAIN_REGISTRY[slug].id;
+  }
+  throw new Error(`no registered chain has the DefiLlama label "${label}"`);
+}
+
+/**
  * One chain's configured settings: the shape of `env.chain` (the home chain's), in the same key order, so the home
  * chain's entry and the alias are one object.
  */
