@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Contracts HEY's watched token deployers created in the last hours
@@ -112,8 +112,8 @@ export function normalizeBitqueryRecentCreations(rows: readonly z.infer<typeof r
   return { creations, rows: count, truncated: false };
 }
 
-export function createBitqueryRecentCreationsAdapter(): SourceAdapter<BitqueryRecentCreationsInput, BitqueryRecentCreations> {
-  return {
+export function createBitqueryRecentCreationsAdapter(): SourceAdapter<BitqueryChainInput & BitqueryRecentCreationsInput, BitqueryRecentCreations> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.senders.length > 0 &&
@@ -143,5 +143,5 @@ export function createBitqueryRecentCreationsAdapter(): SourceAdapter<BitqueryRe
         },
       ), BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }

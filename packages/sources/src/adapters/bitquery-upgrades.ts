@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Every proxy upgrade the chain recorded for a set of contracts, from genesis
@@ -137,8 +137,8 @@ export function normalizeBitqueryUpgrades(rows: readonly z.infer<typeof rowSchem
   return out.sort((a, b) => a.blockNumber - b.blockNumber || a.logIndex - b.logIndex);
 }
 
-export function createBitqueryUpgradesAdapter(): SourceAdapter<BitqueryUpgradesInput, BitqueryUpgradeEvent[]> {
-  return {
+export function createBitqueryUpgradesAdapter(): SourceAdapter<BitqueryChainInput & BitqueryUpgradesInput, BitqueryUpgradeEvent[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.addresses.length > 0 && input.addresses.length <= BITQUERY_UPGRADE_BATCH && input.addresses.every((address) => ADDRESS.test(address)) && input.apiKey.length > 0,
@@ -164,5 +164,5 @@ export function createBitqueryUpgradesAdapter(): SourceAdapter<BitqueryUpgradesI
         },
       ), BITQUERY_POINTS.upgrades);
     },
-  };
+  });
 }

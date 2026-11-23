@@ -4,7 +4,7 @@ import { type SourceAdapter, type SourceContext, type SourceResult } from '../ad
 import { performSourceFetch } from '../http/perform';
 import { dexPoolFactoryById } from '../factories/dex-pools';
 import { toNumber } from '../market';
-import { BITQUERY_BATCH_SIZE, BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_BATCH_SIZE, BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * A token's pools, and how much of it can actually be sold (2026-09-15).
@@ -379,8 +379,8 @@ export function normalizeBitqueryPools(
     .sort((a, b) => a.tokenAddress.localeCompare(b.tokenAddress));
 }
 
-export function createBitqueryPoolsAdapter(): SourceAdapter<BitqueryPoolsInput, BitqueryTokenPools[]> {
-  return {
+export function createBitqueryPoolsAdapter(): SourceAdapter<BitqueryChainInput & BitqueryPoolsInput, BitqueryTokenPools[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.addresses.length > 0 &&
@@ -409,5 +409,5 @@ export function createBitqueryPoolsAdapter(): SourceAdapter<BitqueryPoolsInput, 
         },
       ), 2 * BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }

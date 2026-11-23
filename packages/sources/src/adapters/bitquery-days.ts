@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
 import { toNumber } from '../market';
-import { BITQUERY_BATCH_SIZE, BITQUERY_DEFAULT_BASE_URL, BITQUERY_DEFAULT_DATASET, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset } from './bitquery';
+import { BITQUERY_BATCH_SIZE, BITQUERY_DEFAULT_BASE_URL, BITQUERY_DEFAULT_DATASET, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Bitquery, by the day (2026-09-13): the rows HEY's own daily index is built
@@ -400,8 +400,8 @@ const post = (input: { apiKey: string; baseUrl?: string }, query: string, variab
   allowedContentTypes: ['application/json'],
 });
 
-export function createBitqueryTradeDaysAdapter(): SourceAdapter<BitqueryTradeDaysInput, BitqueryTokenDay[]> {
-  return {
+export function createBitqueryTradeDaysAdapter(): SourceAdapter<BitqueryChainInput & BitqueryTradeDaysInput, BitqueryTokenDay[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.addresses.length > 0 && input.addresses.length <= BITQUERY_BATCH_SIZE && input.addresses.every((address) => ADDRESS.test(address)) && input.apiKey.length > 0,
@@ -422,11 +422,11 @@ export function createBitqueryTradeDaysAdapter(): SourceAdapter<BitqueryTradeDay
         },
       }), (input.dataset ?? BITQUERY_DEFAULT_DATASET) === 'realtime' ? 3 * BITQUERY_POINTS.perRealtimeCube : 3 * BITQUERY_POINTS.archiveCube);
     },
-  };
+  });
 }
 
-export function createBitqueryChainDaysAdapter(): SourceAdapter<BitqueryChainDaysInput, BitqueryChainDay[]> {
-  return {
+export function createBitqueryChainDaysAdapter(): SourceAdapter<BitqueryChainInput & BitqueryChainDaysInput, BitqueryChainDay[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) => input.apiKey.length > 0,
     async fetch(input, ctx: SourceContext): Promise<SourceResult<BitqueryChainDay[]>> {
@@ -441,5 +441,5 @@ export function createBitqueryChainDaysAdapter(): SourceAdapter<BitqueryChainDay
         },
       }), 4 * BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }

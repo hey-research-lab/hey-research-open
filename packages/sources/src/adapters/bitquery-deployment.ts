@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_FULL_DATASET, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_FULL_DATASET, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Who deployed a contract, read from the chain's own calls (2026-09-15).
@@ -135,10 +135,10 @@ export function normalizeBitqueryDeployment(
 }
 
 export function createBitqueryDeploymentAdapter(): SourceAdapter<
-  BitqueryDeploymentInput,
+  BitqueryChainInput & BitqueryDeploymentInput,
   BitqueryDeployment | undefined
 > {
-  return {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) => ADDRESS.test(input.address) && input.apiKey.length > 0,
     async fetch(input, ctx: SourceContext): Promise<SourceResult<BitqueryDeployment | undefined>> {
@@ -167,7 +167,7 @@ export function createBitqueryDeploymentAdapter(): SourceAdapter<
         },
       ), (input.dataset ?? BITQUERY_FULL_DATASET) === 'realtime' ? BITQUERY_POINTS.perRealtimeCube : BITQUERY_POINTS.deployment);
     },
-  };
+  });
 }
 
 /** The default document, kept as a constant for the contract tests. */

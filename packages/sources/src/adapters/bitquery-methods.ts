@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
 import { toNumber } from '../market';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Calls per method, per contract, per UTC day (founder decision F9, 2026-09-27).
@@ -153,8 +153,8 @@ export function normalizeBitqueryMethodDays(rows: readonly z.infer<typeof rowSch
   );
 }
 
-export function createBitqueryMethodDaysAdapter(): SourceAdapter<BitqueryMethodDaysInput, BitqueryMethodDaysRead> {
-  return {
+export function createBitqueryMethodDaysAdapter(): SourceAdapter<BitqueryChainInput & BitqueryMethodDaysInput, BitqueryMethodDaysRead> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.addresses.length > 0 &&
@@ -188,5 +188,5 @@ export function createBitqueryMethodDaysAdapter(): SourceAdapter<BitqueryMethodD
         },
       ), input.dataset === 'realtime' ? BITQUERY_POINTS.perRealtimeCube : BITQUERY_POINTS.archiveCube);
     },
-  };
+  });
 }

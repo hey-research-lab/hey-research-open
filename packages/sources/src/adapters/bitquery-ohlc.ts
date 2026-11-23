@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
 import { toNumber } from '../market';
-import { BITQUERY_BATCH_SIZE, BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_BATCH_SIZE, BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 import { ROBINHOOD_QUOTE_ASSETS } from './bitquery-days';
 
 /**
@@ -168,8 +168,8 @@ export function normalizeBitqueryOhlc(rows: readonly z.infer<typeof rowSchema>[]
 /** Short: every read asks for a different window, and a bar still open moves. */
 const CACHE_TTL_SECONDS = 60;
 
-export function createBitqueryOhlcAdapter(): SourceAdapter<BitqueryOhlcInput, BitqueryOhlcRead> {
-  return {
+export function createBitqueryOhlcAdapter(): SourceAdapter<BitqueryChainInput & BitqueryOhlcInput, BitqueryOhlcRead> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery-ohlc',
     canHandle: (input) =>
       input.addresses.length > 0 &&
@@ -206,5 +206,5 @@ export function createBitqueryOhlcAdapter(): SourceAdapter<BitqueryOhlcInput, Bi
         BITQUERY_POINTS.perRealtimeCube,
       );
     },
-  };
+  });
 }

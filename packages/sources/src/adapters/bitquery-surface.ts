@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_FULL_DATASET, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_FULL_DATASET, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, type BitqueryDataset, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * What a contract actually answers, from the decoded chain (2026-09-15).
@@ -178,10 +178,10 @@ export function normalizeBitquerySurface(
 }
 
 export function createBitquerySurfaceAdapter(): SourceAdapter<
-  BitquerySurfaceInput,
+  BitqueryChainInput & BitquerySurfaceInput,
   BitquerySurface
 > {
-  return {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) => ADDRESS.test(input.address) && input.apiKey.length > 0,
     async fetch(input, ctx: SourceContext): Promise<SourceResult<BitquerySurface>> {
@@ -213,5 +213,5 @@ export function createBitquerySurfaceAdapter(): SourceAdapter<
         },
       ), BITQUERY_POINTS.surface);
     },
-  };
+  });
 }

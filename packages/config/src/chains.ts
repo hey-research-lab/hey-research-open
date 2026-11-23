@@ -94,6 +94,31 @@ export function chainById(id: number): ChainMetadata | undefined {
 }
 
 /**
+ * A rule asked about a chain it has no ruling for (multichain WP1.8, 2026-11-12). Every rule that decides who is a
+ * builder on a chain, who is ranked against whom, or what a market measure means — the chain-evidence rule, the
+ * chain-native predicate, the fingerprint markers, the Bitquery adapters — is ruled for Robinhood Chain alone until a
+ * founder ruling names another chain (D5 for Base, phase 2). Asking it about another chain is a programming error, and
+ * it throws this before any SQL is composed or any request is sent, so an unruled chain can never be read as "no
+ * evidence" or "not measured" by accident.
+ */
+export class ChainNotRuledError extends Error {
+  readonly rule: string;
+  readonly chainId: number;
+
+  constructor(rule: string, chainId: number) {
+    super(`${rule} has no ruling for chain ${chainId}; it is ruled for Robinhood Chain (${ROBINHOOD_CHAIN_ID}) only`);
+    this.name = 'ChainNotRuledError';
+    this.rule = rule;
+    this.chainId = chainId;
+  }
+}
+
+/** Throws `ChainNotRuledError` unless `chainId` is one of the chains the rule is ruled for. */
+export function assertChainRuled(rule: string, chainId: number, ruled: readonly number[] = [ROBINHOOD_CHAIN_ID]): void {
+  if (!ruled.includes(chainId)) throw new ChainNotRuledError(rule, chainId);
+}
+
+/**
  * The chain a DefiLlama read is about, by the exact label it was asked for (`defillamaLabel`; WP1.7a): the DeFi rows a
  * read writes carry this id. Throws on a label no registered chain carries — a read HEY has no chain for is a
  * programming error, never a guess.

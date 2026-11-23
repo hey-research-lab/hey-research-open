@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
 import { toNumber } from '../market';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Contract usage, a hundred contracts at a time (2026-09-14).
@@ -178,8 +178,8 @@ export function normalizeBitqueryContractDays(data: NonNullable<NonNullable<z.in
   return [...byKey.values()].sort((a, b) => a.address.localeCompare(b.address) || a.day.localeCompare(b.day));
 }
 
-export function createBitqueryContractActivityAdapter(): SourceAdapter<BitqueryContractActivityInput, BitqueryContractDay[]> {
-  return {
+export function createBitqueryContractActivityAdapter(): SourceAdapter<BitqueryChainInput & BitqueryContractActivityInput, BitqueryContractDay[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.addresses.length > 0 &&
@@ -213,5 +213,5 @@ export function createBitqueryContractActivityAdapter(): SourceAdapter<BitqueryC
         },
       ), 3 * BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }

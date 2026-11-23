@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
 import { toNumber } from '../market';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * The graph half of the bubble map: every transfer edge between a known set of
@@ -117,8 +117,8 @@ export function normalizeBitqueryHolderGraph(
   return { edges: [...byPair.values()].sort((a, b) => b.transfers - a.transfers || a.from.localeCompare(b.from)) };
 }
 
-export function createBitqueryHolderGraphAdapter(): SourceAdapter<BitqueryHolderGraphInput, BitqueryHolderGraph> {
-  return {
+export function createBitqueryHolderGraphAdapter(): SourceAdapter<BitqueryChainInput & BitqueryHolderGraphInput, BitqueryHolderGraph> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       ADDRESS.test(input.token) &&
@@ -151,5 +151,5 @@ export function createBitqueryHolderGraphAdapter(): SourceAdapter<BitqueryHolder
         },
       ), BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }

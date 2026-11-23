@@ -25,3 +25,4 @@ export * from './launch-origin-words';
 export * from './commit-automation';
 export * from './feed-data-stream';
 export * from './dependency-bump';
+export * from './market-thresholds';

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
 import { toNumber } from '../market';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * Token distribution: who holds a token, and which of them move it between
@@ -253,8 +253,8 @@ export function normalizeBitqueryHolders(
   };
 }
 
-export function createBitqueryHoldersAdapter(): SourceAdapter<BitqueryHoldersInput, BitqueryHolders> {
-  return {
+export function createBitqueryHoldersAdapter(): SourceAdapter<BitqueryChainInput & BitqueryHoldersInput, BitqueryHolders> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) => ADDRESS.test(input.token) && input.apiKey.length > 0,
     async fetch(input, ctx: SourceContext): Promise<SourceResult<BitqueryHolders>> {
@@ -292,5 +292,5 @@ export function createBitqueryHoldersAdapter(): SourceAdapter<BitqueryHoldersInp
         },
       ), 2 * BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }

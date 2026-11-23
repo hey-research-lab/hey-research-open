@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { assertChainRuled } from '@hey/config/chains';
+import { ROBINHOOD_CHAIN_ID } from '@hey/config/constants';
+
 import { resolveNow, type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { SourceError } from '../errors';
 import { performSourceFetch } from '../http/perform';
@@ -64,6 +67,28 @@ export function bitqueryAnswerError(errors: readonly { message: string }[]): Sou
  */
 export const BITQUERY_DEFAULT_BASE_URL = 'https://streaming.bitquery.io/graphql';
 export const BITQUERY_NETWORK = 'robinhood';
+
+/**
+ * The one chain Bitquery is read for (multichain WP1.8, 2026-11-12; D12: no Bitquery on a new chain). Every Bitquery
+ * adapter takes an optional `chainId`; absent means Robinhood Chain, and any other refuses — `canHandle` answers false
+ * and `fetch` throws `ChainNotRuledError` before a request is sent or a point spent.
+ */
+export const BITQUERY_CHAIN_ID = ROBINHOOD_CHAIN_ID;
+
+/** What a Bitquery adapter's input may say about its chain. */
+export type BitqueryChainInput = { chainId?: number | undefined };
+
+/** Wrap a Bitquery adapter so it refuses every chain but `BITQUERY_CHAIN_ID` (see above). */
+export function bitqueryHomeChainOnly<I, O>(adapter: SourceAdapter<I, O>): SourceAdapter<BitqueryChainInput & I, O> {
+  return {
+    name: adapter.name,
+    canHandle: (input) => (input.chainId ?? BITQUERY_CHAIN_ID) === BITQUERY_CHAIN_ID && adapter.canHandle(input),
+    fetch: async (input, ctx) => {
+      assertChainRuled(`the Bitquery ${adapter.name} adapter`, input.chainId ?? BITQUERY_CHAIN_ID, [BITQUERY_CHAIN_ID]);
+      return adapter.fetch(input, ctx);
+    },
+  };
+}
 export const BITQUERY_BATCH_SIZE = 100;
 
 /**
@@ -357,8 +382,8 @@ export function readBitqueryTrades(rows: readonly Row[], since: Date): BitqueryT
   return out;
 }
 
-export function createBitqueryTradesAdapter(): SourceAdapter<BitqueryTradesInput, BitqueryTokenTrades[]> {
-  return {
+export function createBitqueryTradesAdapter(): SourceAdapter<BitqueryChainInput & BitqueryTradesInput, BitqueryTokenTrades[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.addresses.length > 0 &&
@@ -394,7 +419,7 @@ export function createBitqueryTradesAdapter(): SourceAdapter<BitqueryTradesInput
         },
       ), BITQUERY_POINTS.perRealtimeCube);
     },
-  };
+  });
 }
 
 /*
@@ -532,8 +557,8 @@ export function normalizeBitqueryTradedTokens(rows: readonly z.infer<typeof disc
   return out;
 }
 
-export function createBitqueryDiscoveryAdapter(): SourceAdapter<BitqueryDiscoveryInput, BitqueryTradedToken[]> {
-  return {
+export function createBitqueryDiscoveryAdapter(): SourceAdapter<BitqueryChainInput & BitqueryDiscoveryInput, BitqueryTradedToken[]> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery-discovery',
     canHandle: (input) => input.count > 0 && input.count <= 1000 && input.offset >= 0 && input.apiKey.length > 0,
     async fetch(input, ctx: SourceContext): Promise<SourceResult<BitqueryTradedToken[]>> {
@@ -567,5 +592,5 @@ export function createBitqueryDiscoveryAdapter(): SourceAdapter<BitqueryDiscover
         },
       ), (input.dataset ?? BITQUERY_FULL_DATASET) === 'realtime' ? BITQUERY_POINTS.perRealtimeCube : bitqueryDiscoveryPagePoints(input.since, input.till, resolveNow(ctx)));
     },
-  };
+  });
 }

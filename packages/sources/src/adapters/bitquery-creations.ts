@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
 import { performSourceFetch } from '../http/perform';
-import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints } from './bitquery';
+import { BITQUERY_DEFAULT_BASE_URL, BITQUERY_NETWORK, BITQUERY_POINTS, bitqueryAnswerError, withBitqueryPoints, bitqueryHomeChainOnly, type BitqueryChainInput } from './bitquery';
 
 /**
  * How many contracts each of a set of deployers created in a window
@@ -80,8 +80,8 @@ export function normalizeBitqueryCreations(rows: readonly z.infer<typeof rowSche
   return { counts, rows: rows?.length ?? 0 };
 }
 
-export function createBitqueryCreationsAdapter(): SourceAdapter<BitqueryCreationsInput, BitqueryCreationCounts> {
-  return {
+export function createBitqueryCreationsAdapter(): SourceAdapter<BitqueryChainInput & BitqueryCreationsInput, BitqueryCreationCounts> {
+  return bitqueryHomeChainOnly({
     name: 'bitquery',
     canHandle: (input) =>
       input.senders.length > 0 &&
@@ -111,5 +111,5 @@ export function createBitqueryCreationsAdapter(): SourceAdapter<BitqueryCreation
         },
       ), BITQUERY_POINTS.creations);
     },
-  };
+  });
 }
