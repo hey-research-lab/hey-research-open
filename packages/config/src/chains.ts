@@ -44,6 +44,11 @@ export type ChainMetadata = {
   readonly defillamaLabel: string;
   /** Bitquery's EVM network name; null where HEY does not use Bitquery (no Bitquery on a new chain, D12). */
   readonly bitqueryNetwork: string | null;
+  /**
+   * The market-discovery search terms (`DISCOVER_MARKET_PROJECTS`, the worker's `discoveryQueries`; WP1.10). Empty on a
+   * chain whose seeds are ruled otherwise (Base: D6, no token sweep).
+   */
+  readonly discoveryQueries: readonly string[];
 };
 
 /**
@@ -61,6 +66,7 @@ export const CHAIN_REGISTRY: { readonly [S in ChainSlug]: ChainMetadata & { read
     coingeckoPlatform: 'robinhood',
     defillamaLabel: 'Robinhood Chain',
     bitqueryNetwork: 'robinhood',
+    discoveryQueries: ['robinhood chain', 'robinhood'],
   },
   base: {
     id: BASE_CHAIN_ID,
@@ -72,6 +78,7 @@ export const CHAIN_REGISTRY: { readonly [S in ChainSlug]: ChainMetadata & { read
     coingeckoPlatform: 'base',
     defillamaLabel: 'Base',
     bitqueryNetwork: null,
+    discoveryQueries: [],
   },
   ethereum: {
     id: ETHEREUM_CHAIN_ID,
@@ -83,6 +90,7 @@ export const CHAIN_REGISTRY: { readonly [S in ChainSlug]: ChainMetadata & { read
     coingeckoPlatform: 'ethereum',
     defillamaLabel: 'Ethereum',
     bitqueryNetwork: null,
+    discoveryQueries: [],
   },
 };
 
@@ -167,6 +175,21 @@ export function enabledChains(env: ChainsEnv): readonly number[] {
 /** Whether a chain is shown on public surfaces. `HEY_CHAINS_PUBLIC`, default the home chain alone. */
 export function isPublicChain(env: ChainsEnv, id: number): boolean {
   return env.chains.public.includes(id);
+}
+
+/**
+ * One enabled chain's settings by id (WP1.10): the home chain's are `env.chain` (whatever id the host names, a testnet
+ * included); another chain's are its registry slot's. Throws for a chain this host does not read
+ * (`HEY_CHAINS_ENABLED`), so no worker builds a configuration for a chain it was not told to read.
+ */
+export function chainSettingsFor(env: ChainsEnv, chainId: number): ChainSettings {
+  if (!env.chains.enabled.includes(chainId)) throw new Error(`chain ${chainId} is not enabled on this host (HEY_CHAINS_ENABLED)`);
+  if (chainId === env.chain.chainId) return env.chain;
+  for (const slug of CHAIN_SLUGS) {
+    if (slug === HOME_CHAIN_SLUG) continue;
+    if (env.chains.settings[slug].chainId === chainId) return env.chains.settings[slug];
+  }
+  throw new Error(`chain ${chainId} has no registry entry`);
 }
 
 /**
