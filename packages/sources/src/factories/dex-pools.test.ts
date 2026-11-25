@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { readFixture, stubFetch, testContext } from '../testing';
-import { DEX_POOL_FACTORIES, DEX_POOL_SKIP_TOKENS, dexPoolFactoryById, enabledDexPoolFactories, isDexPoolDiscovery } from './dex-pools';
+import {
+  DEX_POOL_FACTORIES,
+  DEX_POOL_SKIP_TOKENS,
+  DEX_VENUE_LABELS,
+  dexPoolFactoryById,
+  dexVenueLabelByAddress,
+  enabledDexPoolFactories,
+  isDexPoolDiscovery,
+} from './dex-pools';
 import { decodeLaunchHookClaim, scanFactory } from './indexer';
 import { factoryById, LAUNCH_FACTORIES } from './registry';
 
@@ -234,5 +242,29 @@ describe('DEX pool factories (coverage audit, 2026-09-30)', () => {
       expect(factory.hookDataWord).toBe(factory.id === 'UNISWAP_V4_POOLS' ? 2 : undefined);
       expect(Boolean(factory.launchHook)).toBe(factory.id === 'DOPPLER_AIRLOCK');
     }
+  });
+});
+
+describe('DEX venue labels (Base, multichain WP2.2, 2026-11-12)', () => {
+  it('name Base venues without ever reaching the pool sweep', () => {
+    expect(DEX_VENUE_LABELS.map((venue) => venue.id)).toEqual([
+      'BASE_UNISWAP_V2_FACTORY',
+      'BASE_UNISWAP_V3_FACTORY',
+      'BASE_UNISWAP_V4_POOL_MANAGER',
+      'BASE_UNISWAP_UNIVERSAL_ROUTER',
+    ]);
+    for (const venue of DEX_VENUE_LABELS) {
+      expect(venue.chainId).toBe(8453);
+      expect(venue.labelOnly).toBe(true);
+      expect(venue.factoryAddress).toMatch(/^0x[0-9a-f]{40}$/);
+      expect(venue.sourceUrl).toMatch(/^https:\/\/developers\.uniswap\.org\//);
+      expect('launchpad' in venue).toBe(false);
+      expect(dexPoolFactoryById(venue.id)).toBeUndefined();
+      expect(isDexPoolDiscovery(venue.id)).toBe(false);
+      expect(DEX_POOL_FACTORIES.some((factory) => factory.factoryAddress === venue.factoryAddress)).toBe(false);
+      expect(dexVenueLabelByAddress(8453, venue.factoryAddress.toUpperCase().replace('0X', '0x'))).toBe(venue);
+      expect(dexVenueLabelByAddress(4663, venue.factoryAddress)).toBeUndefined();
+    }
+    expect(enabledDexPoolFactories(8453)).toEqual([]);
   });
 });

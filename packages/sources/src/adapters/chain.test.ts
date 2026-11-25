@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { readFixture, stubFetch, testContext } from '../testing';
 import { createBlockscoutVerifiedAdapter } from './blockscout-verified';
-import { createRpcContractAdapter, minimalProxyTarget } from './rpc';
+import { createRpcContractAdapter, isSafeProxyRuntime, minimalProxyTarget } from './rpc';
 
 const ADDRESS = '0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa';
 
@@ -27,6 +27,19 @@ describe('RPC contract adapter', () => {
     expect(minimalProxyTarget('0x6080604052')).toBeUndefined();
     const plain = await adapter.fetch(input, testContext({ fetchImpl: stubFetch({ status: 200, body: readFixture('rpc-getcode.json') }).fetchImpl }));
     expect(plain.data).not.toHaveProperty('minimalProxyTarget');
+  });
+
+  it('reads a Safe proxy (a multisig wallet) from its own bytecode, and nothing from other code (2026-11-24)', async () => {
+    // Recorded from Base on 2026-11-24: the SafeProxy Base rehearsal 3 counted as kerne's ship (0x52d3…4877).
+    const safe = await adapter.fetch(input, testContext({ fetchImpl: stubFetch({ status: 200, body: readFixture('rpc-getcode-base-safe-proxy.json') }).fetchImpl }));
+    expect(safe.data).toMatchObject({ isContract: true, safeProxy: true });
+    const plain = await adapter.fetch(input, testContext({ fetchImpl: stubFetch({ status: 200, body: readFixture('rpc-getcode.json') }).fetchImpl }));
+    expect(plain.data).not.toHaveProperty('safeProxy');
+    expect(isSafeProxyRuntime(undefined)).toBe(false);
+    expect(isSafeProxyRuntime('0x')).toBe(false);
+    // The selector alone, in any other opening, is not the proxy.
+    expect(isSafeProxyRuntime('0x6080604052a619486e')).toBe(false);
+    expect(isSafeProxyRuntime('0x363d3d373d3d3d363d73581f7b996e6d3e436c537989157c9cb36421419b5af43d82803e903d91602b57fd5bf3')).toBe(false);
   });
 
   it('treats an empty code response as a non-contract address', async () => {

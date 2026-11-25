@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { enabledFactories, factoryById, LAUNCH_FACTORIES } from './registry';
+import {
+  enabledFactories,
+  factoryByAddress,
+  factoryById,
+  LAUNCH_FACTORIES,
+  LAUNCH_FACTORY_LABELS,
+  launchFactoryLabelById,
+  launchpadFactoryByAddress,
+} from './registry';
 
 /**
  * The registry is data, and data drifts: a duplicated id would make two
@@ -175,5 +183,53 @@ describe('launch factory registry', () => {
       expect(topic).toMatch(/^0x[0-9a-f]{64}$/);
       expect(topic).not.toBe(factoryById('PONS_V2')!.eventTopic0);
     }
+  });
+});
+
+/**
+ * Base launch factories are labels only (multichain WP2.2, 2026-11-12; D6 and D8 ruled 2026-11-11): HEY names them on
+ * Base and never scans them, so no Robinhood Chain reader and no launch scan sees them.
+ */
+describe('label-only launch factories (Base, WP2.2)', () => {
+  it('are on Base, label-only, unique, sourced, and never in the scanned registry', () => {
+    const ids = LAUNCH_FACTORY_LABELS.map((factory) => factory.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const factory of LAUNCH_FACTORY_LABELS) {
+      expect(factory.chainId).toBe(8453);
+      expect(factory.labelOnly).toBe(true);
+      expect(factory.enabled).toBe(false);
+      expect(factory.id).toMatch(/^BASE_[A-Z0-9_]+$/);
+      expect(factory.factoryAddress).toMatch(/^0x[0-9a-fA-F]{40}$/);
+      expect(factory.launchpad).toMatch(/^[a-z][a-z0-9-]*$/);
+      expect(factory.verification).toMatch(/8453/);
+      expect(factory.sourceUrl).toMatch(/^https:\/\//);
+      expect(factoryById(factory.id)).toBeUndefined();
+      expect(LAUNCH_FACTORIES.some((scanned) => scanned.id === factory.id)).toBe(false);
+      expect(factoryByAddress(8453, factory.factoryAddress)).toBeUndefined();
+      expect(launchFactoryLabelById(factory.id)).toBe(factory);
+      expect(launchpadFactoryByAddress(8453, factory.factoryAddress.toUpperCase().replace('0X', '0x'))).toBe(factory);
+      // An address names a factory only on the chain HEY read it on.
+      expect(launchpadFactoryByAddress(4663, factory.factoryAddress)).toBeUndefined();
+    }
+  });
+
+  it('carries Clanker v5 (deployed 2026-10-31) and the six Clanker factories before it, the ZoraFactory and the Virtuals bonding curve', () => {
+    expect(LAUNCH_FACTORY_LABELS.filter((factory) => factory.launchpad === 'clanker').map((factory) => factory.version)).toEqual([
+      'v5', 'v4.0.0', 'v3.1.0', 'v3.0.0', 'v2.0.0', 'v1.0.0', 'v0',
+    ]);
+    expect(launchFactoryLabelById('BASE_CLANKER_V5')).toMatchObject({ factoryAddress: '0x572e88D3cD7f23E4241EB6ceDD96667271bF09A0', deployedOn: '2026-10-31' });
+    expect(launchFactoryLabelById('BASE_ZORA_FACTORY')?.factoryAddress).toBe('0x777777751622c0d3258f214F9DF38E35BF45baF3');
+    expect(launchFactoryLabelById('BASE_VIRTUALS_BONDING')?.factoryAddress).toBe('0x1A540088125d00dD3990f9dA45CA0859af4d3B01');
+    // Not confirmed from their own docs on 2026-11-12, so not here.
+    expect(LAUNCH_FACTORY_LABELS.some((factory) => /flaunch|doppler/.test(factory.launchpad))).toBe(false);
+  });
+
+  it('never reach enabledFactories, on Base or at home', () => {
+    expect(enabledFactories(8453)).toEqual([]);
+    expect(enabledFactories(4663).some((factory) => factory.labelOnly === true)).toBe(false);
+    expect(LAUNCH_FACTORIES.some((factory) => factory.labelOnly === true)).toBe(false);
+    expect(enabledFactories(4663).map((factory) => factory.id)).toEqual(LAUNCH_FACTORIES.filter((factory) => factory.enabled).map((factory) => factory.id));
+    // A Robinhood Chain scanned factory still answers by address, as before.
+    expect(launchpadFactoryByAddress(4663, '0xD3f2cC1731b7Fd17f28798835C2E02f0a1839A94')?.id).toBe('CLANKER_V4');
   });
 });

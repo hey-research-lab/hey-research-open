@@ -148,3 +148,83 @@ export const dexPoolFactoryById = (id: string): DexPoolFactoryConfig | undefined
 /** Whether a discovery value names a DEX pool factory rather than a launch. */
 export const isDexPoolDiscovery = (value: string | null | undefined): boolean =>
   typeof value === 'string' && DEX_POOL_FACTORIES.some((factory) => factory.id === value);
+
+/**
+ * DEX venues HEY names on a chain it does not sweep (multichain WP2.2, 2026-11-12). D6 (ruled 2026-11-11) rules out a
+ * token sweep on Base, so Base's Uniswap deployments are never in {@link DEX_POOL_FACTORIES} and never scanned: these
+ * entries only say which venue a contract is — a pool, a factory or a router on a holder map, a creation's entry point.
+ * Like a pool factory, a venue is never a launchpad and carries no `launchpad` key.
+ *
+ * Each address is the one Uniswap's own deployment pages list for Base (8453), read on 2026-11-12, and each answered
+ * eth_getCode on 8453 with the byte length given (https://base-rpc.publicnode.com, block 56,432,556).
+ */
+export type DexVenueLabel = {
+  id: string;
+  name: string;
+  venue: DexPoolFactoryConfig['venue'];
+  /** What the contract is at the venue: the pool factory, the v4 singleton every pool lives in, or a swap router. */
+  role: 'factory' | 'pool_manager' | 'router';
+  chainId: number;
+  /** Lower-cased. */
+  factoryAddress: string;
+  labelOnly: true;
+  verification: string;
+  sourceUrl: string;
+};
+
+export const DEX_VENUE_LABELS: readonly DexVenueLabel[] = [
+  {
+    // https://developers.uniswap.org/docs/protocols/v2/deployments ("Base", Factory Contract Address)
+    id: 'BASE_UNISWAP_V2_FACTORY',
+    name: 'Uniswap V2 factory',
+    venue: 'uniswap-v2',
+    role: 'factory',
+    chainId: 8453,
+    factoryAddress: '0x8909dc15e40173ff4699343b6eb8132c65e18ec6',
+    labelOnly: true,
+    verification: "Uniswap's v2 deployments page lists this as the Base factory; 13,859 bytes of code on 8453 (2026-11-12)",
+    sourceUrl: 'https://developers.uniswap.org/docs/protocols/v2/deployments',
+  },
+  {
+    // https://developers.uniswap.org/docs/protocols/v3/deployments/v3-base-deployments (UniswapV3Factory, Base Address)
+    id: 'BASE_UNISWAP_V3_FACTORY',
+    name: 'Uniswap V3 factory',
+    venue: 'uniswap-v3',
+    role: 'factory',
+    chainId: 8453,
+    factoryAddress: '0x33128a8fc17869897dce68ed026d694621f6fdfd',
+    labelOnly: true,
+    verification: "Uniswap's v3 Base deployments page lists this as UniswapV3Factory; 24,535 bytes of code on 8453 (2026-11-12)",
+    sourceUrl: 'https://developers.uniswap.org/docs/protocols/v3/deployments/v3-base-deployments',
+  },
+  {
+    // https://developers.uniswap.org/docs/protocols/v4/deployments ("Base: 8453", PoolManager)
+    id: 'BASE_UNISWAP_V4_POOL_MANAGER',
+    name: 'Uniswap v4 PoolManager',
+    venue: 'uniswap-v4',
+    role: 'pool_manager',
+    chainId: 8453,
+    factoryAddress: '0x498581ff718922c3f8e6a244956af099b2652b2b',
+    labelOnly: true,
+    verification: "Uniswap's v4 deployments page lists this as the Base PoolManager; 24,009 bytes of code on 8453 (2026-11-12)",
+    sourceUrl: 'https://developers.uniswap.org/docs/protocols/v4/deployments',
+  },
+  {
+    // https://developers.uniswap.org/docs/protocols/v4/deployments ("Base: 8453", Universal Router)
+    id: 'BASE_UNISWAP_UNIVERSAL_ROUTER',
+    name: 'Uniswap Universal Router',
+    venue: 'uniswap-v4',
+    role: 'router',
+    chainId: 8453,
+    factoryAddress: '0x6ff5693b99212da76ad316178a184ab56d299b43',
+    labelOnly: true,
+    verification: "Uniswap's v4 deployments page lists this as the Base Universal Router; 19,499 bytes of code on 8453 (2026-11-12)",
+    sourceUrl: 'https://developers.uniswap.org/docs/protocols/v4/deployments',
+  },
+];
+
+/** The DEX venue a contract is on a chain, if HEY names one there. Never a scan source: {@link dexPoolFactoryById} answers those. */
+export const dexVenueLabelByAddress = (chainId: number, address: string): DexVenueLabel | undefined => {
+  const wanted = address.toLowerCase();
+  return DEX_VENUE_LABELS.find((venue) => venue.chainId === chainId && venue.factoryAddress === wanted);
+};

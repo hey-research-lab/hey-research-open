@@ -23,6 +23,24 @@ describe('explorer smart-contract detail (audit D rec. 5)', () => {
     expect(refused.errorCode).toBe('BLOCKED_URL');
   });
 
+  it('asks with the chain in the path when told to (Base rehearsal 2: the query form answers 404 for Base), never without the key', async () => {
+    const stub = stubFetch({ status: 200, body: readFixture('explorer-smart-contract-published.json'), headers: JSON_HEADERS });
+    const result = await createExplorerContractAdapter().fetch(
+      { ...PRO, chainId: 8453, chainInPath: true, address: '0xF8BC08092C06DB6148114DCF82AF881F1085F92B' },
+      testContext({ fetchImpl: stub.fetchImpl }),
+    );
+    expect(stub.requests[0]?.url).toBe('https://api.blockscout.com/8453/api/v2/smart-contracts/0xf8bc08092c06db6148114dcf82af881f1085f92b?apikey=proapi_secret');
+    expect(hasData(result)).toBe(true);
+    expect(result.sourceUrl).not.toContain('proapi_secret');
+    const noChain = stubFetch({ status: 200, body: readFixture('explorer-smart-contract-published.json'), headers: JSON_HEADERS });
+    const refused = await createExplorerContractAdapter().fetch(
+      { baseUrl: PRO.baseUrl, apiKey: PRO.apiKey, chainInPath: true, address: '0xf8bc08092c06db6148114dcf82af881f1085f92b' },
+      testContext({ fetchImpl: noChain.fetchImpl }),
+    );
+    expect(noChain.requests).toHaveLength(0);
+    expect(refused.errorCode).toBe('BLOCKED_URL');
+  });
+
   it('says source published for a contract whose source was submitted for its own address', async () => {
     const { result } = await read('explorer-smart-contract-published.json', '0xf8bc08092c06db6148114dcf82af881f1085f92b');
     expect(hasData(result)).toBe(true);

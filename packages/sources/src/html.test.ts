@@ -283,3 +283,22 @@ describe('a contract linked on either Robinhood Chain explorer (2026-11-15)', ()
     ]);
   });
 });
+
+describe('a contract linked on a Base explorer (multichain WP2.5)', () => {
+  const MIXED = '0xAe172D8c5E428D4b7C70f9E593b207F9daC9BF3e';
+  const canonical = 'https://base.blockscout.com/address/0xae172d8c5e428d4b7c70f9e593b207f9dac9bf3e';
+
+  it('keeps Base explorer links apart from Robinhood Chain ones, one address each', () => {
+    const page = [
+      `<a href="https://basescan.org/address/${MIXED}">Vault</a>`,
+      `<a href="https://www.basescan.org/token/${MIXED}#code">Vault token</a>`,
+      `<a href="https://base.blockscout.com/address/${MIXED}?tab=contract">Vault on Blockscout</a>`,
+      `<a href="https://robinhoodchain.blockscout.com/address/${MIXED}">Robinhood</a>`,
+      `<a href="https://basescan.org/tx/0x${'1'.repeat(64)}">A transaction</a>`,
+      `<a href="https://basescan.org.evil.example/address/${MIXED}">Not Basescan</a>`,
+    ].join('');
+    const meta = extractHtmlMetadata(page, 'https://example.org');
+    expect(meta.baseContractUrls).toEqual([canonical]);
+    expect(meta.contractUrls).toEqual([`https://robinhoodchain.blockscout.com/address/${MIXED.toLowerCase()}`]);
+  });
+});

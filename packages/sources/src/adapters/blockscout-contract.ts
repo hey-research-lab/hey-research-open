@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { type SourceAdapter, type SourceContext, type SourceResult } from '../adapter';
-import { explorerApiUrl, explorerNotKeyed, isKeyedExplorerApi, redactResultUrl, type ExplorerApi } from '../http/explorer-api';
+import { explorerApiUrl, explorerChainApiUrl, explorerNotKeyed, isKeyedExplorerApi, redactResultUrl, type ExplorerApi } from '../http/explorer-api';
 import { performSourceFetch } from '../http/perform';
 import { opt } from '../optional';
 import { abiSignatures, type ContractSource } from './explorer-etherscan';
@@ -153,7 +153,15 @@ export function normalizeExplorerContractDetail(raw: z.infer<typeof detailSchema
   };
 }
 
-export type ExplorerContractInput = ExplorerApi & { address: string };
+export type ExplorerContractInput = ExplorerApi & {
+  address: string;
+  /**
+   * Ask with the chain in the path (`https://api.blockscout.com/8453/api/v2/smart-contracts/…`), not as `?chain_id=`
+   * (Base rehearsal 2, 2026-11-21: the query form answers 404 for Base's records, the path form answers them, read by
+   * hand that day). Robinhood Chain's reads leave it unset and send exactly the request they sent before.
+   */
+  chainInPath?: boolean;
+};
 
 export function createExplorerContractAdapter(): SourceAdapter<ExplorerContractInput, ExplorerContractDetail> {
   return {
@@ -164,7 +172,9 @@ export function createExplorerContractAdapter(): SourceAdapter<ExplorerContractI
     async fetch(input, ctx: SourceContext): Promise<SourceResult<ExplorerContractDetail>> {
       // Keyed only (2026-09-30): the instance is never read, and no request leaves without the key.
       if (!isKeyedExplorerApi(input)) return explorerNotKeyed(ctx);
-      const url = explorerApiUrl(input, `/api/v2/smart-contracts/${input.address.toLowerCase()}`);
+      const path = `/api/v2/smart-contracts/${input.address.toLowerCase()}`;
+      const url = input.chainInPath ? explorerChainApiUrl(input, path) : explorerApiUrl(input, path);
+      if (!url) return explorerNotKeyed(ctx);
       const result = await performSourceFetch(
         ctx,
         {

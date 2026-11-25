@@ -53,6 +53,9 @@
       }
     }
   },
+  "baseBudgets": {
+    "websiteDailyReads": "[undefined]"
+  },
   "market": {
     "dexscreenerBaseUrl": "https://api.dexscreener.com",
     "geckoterminalBaseUrl": "https://api.geckoterminal.com/api/v2",

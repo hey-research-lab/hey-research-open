@@ -283,6 +283,47 @@ export class OpenDevDataTaxonomy {
   }
 
   /**
+   * The repositories the taxonomy lists under each of these GitHub owners (multichain WP2.6, 2026-11-17): every
+   * repository of the owner, keyed by the lower-cased owner, each with whether `ecosystem` lists it — directly or
+   * through one of its sub-ecosystems. Used to find a seeded team's repositories (D6: Open Dev Data finds a seed's
+   * repositories, never a seed itself). An owner the taxonomy does not hold is absent: a reading of this one index.
+   */
+  reposOfOwners(owners: Iterable<string>, ecosystem: string): Map<string, { url: string; inEcosystem: boolean }[]> {
+    const wanted = new Set([...owners].map((owner) => owner.toLowerCase()));
+    const inEcosystem = new Set<number>();
+    const root = this.ecoIds.get(ecosystem);
+    if (root !== undefined) {
+      const seen = new Set<number>([root]);
+      const queue = [root];
+      while (queue.length > 0) {
+        const eco = queue.pop()!;
+        for (const repo of this.ecoRepos.get(eco) ?? []) inEcosystem.add(repo);
+        for (const child of this.children.get(eco) ?? []) {
+          if (seen.has(child)) continue;
+          seen.add(child);
+          queue.push(child);
+        }
+      }
+    }
+    const answer = new Map<string, Map<string, boolean>>();
+    for (const [url, id] of this.repoIds) {
+      const normalized = normalizeGithubRepoUrl(url);
+      if (!normalized) continue;
+      const owner = ownerOf(normalized);
+      if (!wanted.has(owner)) continue;
+      const repos = answer.get(owner) ?? new Map<string, boolean>();
+      repos.set(normalized, (repos.get(normalized) ?? false) || inEcosystem.has(id));
+      answer.set(owner, repos);
+    }
+    return new Map(
+      [...answer].map(([owner, repos]) => [
+        owner,
+        [...repos].map(([url, listed]) => ({ url, inEcosystem: listed })).sort((a, b) => a.url.localeCompare(b.url)),
+      ]),
+    );
+  }
+
+  /**
    * Where each of these repositories is listed, keyed by its normalised URL
    * (`normalizeGithubRepoUrl`). A repository the taxonomy does not list is
    * absent from the answer: "not listed" is a reading of this one index.

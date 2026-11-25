@@ -106,6 +106,14 @@ describe('the taxonomy replay agrees with Electric Capital’s own tool', () => 
   ]);
   const names = (url: string) => answer.get(url)?.ecosystems.map((eco) => eco.name);
 
+  it('lists a seeded owner\'s repositories with whether an ecosystem holds them (WP2.6)', () => {
+    const owners = snapshot.taxonomy.reposOfOwners(['ACME', 'walletco', 'nowhere'], 'Base');
+    expect(owners.get('acme')).toEqual([{ url: 'https://github.com/acme/multichain-sdk', inEcosystem: true }]);
+    expect(owners.get('walletco')?.every((repo) => repo.url.startsWith('https://github.com/walletco/') && repo.inEcosystem === false)).toBe(true);
+    expect(owners.has('nowhere')).toBe(false);
+    expect(snapshot.taxonomy.reposOfOwners(['acme'], 'No Such Ecosystem').get('acme')).toEqual([{ url: 'https://github.com/acme/multichain-sdk', inEcosystem: false }]);
+  });
+
   it('lists a repository under each ecosystem that holds it directly, with the tags it carries', () => {
     expect(names('https://github.com/walletco/mobile')).toEqual(['Ethereum', 'WalletCo']);
     expect(answer.get('https://github.com/walletco/mobile')?.tags).toEqual(['#wallet']);

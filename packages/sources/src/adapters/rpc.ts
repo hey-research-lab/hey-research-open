@@ -32,6 +32,11 @@ export type ContractExistence = {
    * for any other contract.
    */
   minimalProxyTarget?: string;
+  /**
+   * The address runs Safe's proxy (2026-11-24, Base rehearsal 3): a multisig wallet, read from its own bytecode
+   * ({@link isSafeProxyRuntime}). Present only when it matched; absent for any other contract.
+   */
+  safeProxy?: true;
 };
 
 /**
@@ -43,6 +48,21 @@ const EIP1167_RUNTIME = /^0x363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91
 export function minimalProxyTarget(code: string | undefined): string | undefined {
   const match = EIP1167_RUNTIME.exec((code ?? '').toLowerCase());
   return match ? `0x${match[1]}` : undefined;
+}
+
+/**
+ * Safe's proxy runtime (2026-11-24, Base rehearsal 3): the masterCopy proxy every Safe wallet is — `GnosisSafeProxy`
+ * 1.1.1 to 1.3.0 and `SafeProxy` 1.4.1 — whose code loads its singleton from storage slot 0 (`6000 54`, masked to 20
+ * bytes) and answers `masterCopy()` (selector `0xa619486e`) itself before delegating. Only the opening up to the
+ * selector is matched, so the compiler's metadata trailer (which differs by version) does not matter. Checked on
+ * 2026-11-24 against the Base SafeProxy rehearsal 3 counted (`0x52d3…4877`, slot 0 holding SafeL2 1.4.1) and the
+ * `proxyRuntimeCode()` of the 1.3.0 factories on Base (`0xa6B7…6AB2`, `0xC228…10BC`) and the 1.1.1 factory on Ethereum.
+ */
+const SAFE_PROXY_RUNTIME = /^0x608060405273f{40}600054167fa619486e0{56}/;
+
+/** Whether an address's runtime code is a Safe proxy: a multisig wallet, never a project's product contract. */
+export function isSafeProxyRuntime(code: string | undefined): boolean {
+  return SAFE_PROXY_RUNTIME.test((code ?? '').toLowerCase());
 }
 
 const CACHE_TTL_SECONDS = 3600;
@@ -95,6 +115,7 @@ export function createRpcContractAdapter(): SourceAdapter<RpcInput, ContractExis
               isContract: hex.length > 0,
               bytecodeSize: Math.floor(hex.length / 2),
               ...(target ? { minimalProxyTarget: target } : {}),
+              ...(isSafeProxyRuntime(code) ? { safeProxy: true as const } : {}),
             };
           },
         },

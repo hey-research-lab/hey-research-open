@@ -72,6 +72,37 @@ export type LaunchFactoryConfig = {
   /** How the address and event were confirmed. */
   verification: string;
   sourceUrl: string;
+  /**
+   * Never true on a scanned entry (the registry test holds it): a factory HEY only names is a {@link LaunchFactoryLabel}
+   * in {@link LAUNCH_FACTORY_LABELS}, and {@link enabledFactories} refuses the flag whatever list it reads.
+   */
+  labelOnly?: boolean;
+};
+
+/**
+ * A launch factory HEY names but never scans (multichain WP2.2, 2026-11-12; CLAUDE.md "Multichain rules", D8 ruled
+ * 2026-11-11 for Base). It says which launchpad an address belongs to — a holder map's "Launch factory", a creation's
+ * entry point — and nothing else: no launch event is read from it, it is never in {@link enabledFactories}, never a
+ * `discovered_via` value and never a tie between a repository and a token (the 2026-10-22 launch-factory rule).
+ * D6 rules out a token sweep and a launchpad census on Base, so every Base factory is one of these.
+ *
+ * Same shape as a scanned entry where the fields mean the same thing; no start block, topic or token position, because
+ * none is ever read. Each address was checked against the launchpad's own documentation (`sourceUrl`) and read on chain
+ * (`verification`).
+ */
+export type LaunchFactoryLabel = {
+  id: string;
+  name: string;
+  launchpad: string;
+  version?: string;
+  chainId: number;
+  factoryAddress: `0x${string}`;
+  /** The day the launchpad's docs say it was deployed, when they say it. */
+  deployedOn?: string;
+  labelOnly: true;
+  enabled: false;
+  verification: string;
+  sourceUrl: string;
 };
 
 /**
@@ -1132,8 +1163,98 @@ function robinpadFactories(): LaunchFactoryConfig[] {
   ];
 }
 
+/*
+ * Base launch factories, labels only (multichain WP2.2, 2026-11-12; D8 ruled 2026-11-11). Every address below was
+ * matched against the launchpad's own page on 2026-11-12 and read on Base the same day: eth_getCode through
+ * https://base-rpc.publicnode.com (chain id 8453, block 56,432,556) answered with code of the length given.
+ *
+ * Not here, and why (listed for a person): Clanker v4.1.0 (its docs name no factory for it), Virtuals' AgentFactory (not
+ * on Virtuals' address page), Flaunch's position managers and Doppler's Airlock on Base (neither named by D8; Flaunch's
+ * own sources disagreed in the 2026-11-07 research). Nothing is scanned on Base: these name, they never read.
+ */
+const CLANKER_DOCS = 'https://clanker.gitbook.io/clanker-documentation/references/deployed-contracts';
+const clankerOnBase = (
+  id: string,
+  version: string,
+  factoryAddress: `0x${string}`,
+  contract: string,
+  codeBytes: number,
+  deployedOn?: string,
+): LaunchFactoryLabel => ({
+  id,
+  name: 'Clanker',
+  launchpad: 'clanker',
+  version,
+  chainId: 8453,
+  factoryAddress,
+  ...(deployedOn ? { deployedOn } : {}),
+  labelOnly: true,
+  enabled: false,
+  verification: `Clanker's deployed-contracts page lists ${contract} ${version} on Base at this address${deployedOn ? ` ("Deployed on October 31, 2026")` : ''}; ${codeBytes.toLocaleString('en-US')} bytes of code on 8453 (eth_getCode, block 56,432,556, 2026-11-12)`,
+  sourceUrl: CLANKER_DOCS,
+});
+
+export const LAUNCH_FACTORY_LABELS: readonly LaunchFactoryLabel[] = [
+  // Clanker v5 Factory, current since 31 Oct 2026 (its hook 0x5E32…2AcC and FeeEscrow 0x5dd2…FA61 are not factories).
+  clankerOnBase('BASE_CLANKER_V5', 'v5', '0x572e88D3cD7f23E4241EB6ceDD96667271bF09A0', 'the Factory', 23_776, '2026-10-31'),
+  clankerOnBase('BASE_CLANKER_V4_0', 'v4.0.0', '0xE85A59c628F7d27878ACeB4bf3b35733630083a9', 'the Clanker contract', 12_375),
+  clankerOnBase('BASE_CLANKER_V3_1', 'v3.1.0', '0x2A787b2362021cC3eEa3C24C4748a6cD5B687382', 'the Clanker contract', 17_351),
+  clankerOnBase('BASE_CLANKER_V3_0', 'v3.0.0', '0x375C15db32D28cEcdcAB5C03Ab889bf15cbD2c5E', 'the Clanker contract', 24_528),
+  clankerOnBase('BASE_CLANKER_V2', 'v2.0.0', '0x732560fa1d1A76350b1A500155BA978031B53833', 'the Clanker contract', 19_449),
+  clankerOnBase('BASE_CLANKER_V1', 'v1.0.0', '0x9B84fcE5Dcd9a38d2D01d5D72373F6b6b067c3e1', 'the Clanker contract', 12_110),
+  clankerOnBase('BASE_CLANKER_V0', 'v0', '0x250c9FB2b411B48273f69879007803790A6AeA47', 'SocialDexDeployer', 9_216),
+  {
+    // https://docs.zora.co/coins/contracts/factory: "deployed at the same address across all supported chains" (Base 8453, Base Sepolia).
+    id: 'BASE_ZORA_FACTORY',
+    name: 'Zora',
+    launchpad: 'zora',
+    chainId: 8453,
+    factoryAddress: '0x777777751622c0d3258f214F9DF38E35BF45baF3',
+    labelOnly: true,
+    enabled: false,
+    verification:
+      "Zora's coins docs name ZoraFactory at this address on Base (8453), the same on every chain it supports; a 130-byte proxy on 8453 (eth_getCode, block 56,432,556, 2026-11-12)",
+    sourceUrl: 'https://docs.zora.co/coins/contracts/factory',
+  },
+  {
+    // https://whitepaper.virtuals.io/info-hub/important-links-and-resources/virtuals-protocol-contract-addresses
+    id: 'BASE_VIRTUALS_BONDING',
+    name: 'Virtuals',
+    launchpad: 'virtuals',
+    chainId: 8453,
+    factoryAddress: '0x1A540088125d00dD3990f9dA45CA0859af4d3B01',
+    labelOnly: true,
+    enabled: false,
+    verification:
+      "Virtuals' contract-address page names this the Base Chain bonding curve (launchpad); 1,167 bytes of code on 8453 (eth_getCode, block 56,432,556, 2026-11-12)",
+    sourceUrl: 'https://whitepaper.virtuals.io/info-hub/important-links-and-resources/virtuals-protocol-contract-addresses',
+  },
+];
+
+/**
+ * The factories HEY scans on a chain. Label-only entries are excluded twice over: they live in
+ * {@link LAUNCH_FACTORY_LABELS}, never in {@link LAUNCH_FACTORIES}, and the filter refuses the flag whatever list it reads.
+ */
 export const enabledFactories = (chainId: number): LaunchFactoryConfig[] =>
-  LAUNCH_FACTORIES.filter((factory) => factory.enabled && factory.chainId === chainId);
+  LAUNCH_FACTORIES.filter((factory) => factory.enabled && factory.labelOnly !== true && factory.chainId === chainId);
+
+/** A label-only factory by its id, or undefined. Never a scanned factory: {@link factoryById} answers those. */
+export const launchFactoryLabelById = (id: string): LaunchFactoryLabel | undefined =>
+  LAUNCH_FACTORY_LABELS.find((factory) => factory.id === id);
+
+/**
+ * The launchpad a contract belongs to on a chain, scanned or label-only. A display read: it names, never scans, and a
+ * caller that needs a scanned factory reads {@link factoryByAddress}, which never answers a label.
+ */
+export const launchpadFactoryByAddress = (
+  chainId: number,
+  address: string,
+): LaunchFactoryConfig | LaunchFactoryLabel | undefined => {
+  const wanted = address.toLowerCase();
+  const on = (factory: { chainId: number; factoryAddress: string }) =>
+    factory.chainId === chainId && factory.factoryAddress.toLowerCase() === wanted;
+  return LAUNCH_FACTORIES.find(on) ?? LAUNCH_FACTORY_LABELS.find(on);
+};
 
 export const factoryById = (id: string): LaunchFactoryConfig | undefined =>
   LAUNCH_FACTORIES.find((factory) => factory.id === id);

@@ -231,6 +231,20 @@ export const serverEnvSchema = z
       ethereum: z.object({ rpcUrl: optionalUrl, rpcFallbackUrl: optionalUrl }),
     }),
 
+    /**
+     * Base's provider caps a host may set (2026-11-24, founder "2. naikkan"; D14: chain-prefixed keys only).
+     *
+     *  - HEY_BASE_WEBSITE_DAILY_READS: `base-website`'s daily cap — a Base page's own site and up to two of its own docs
+     *    pages. Unset, the code's figure (`BASE_WEBSITE_DAILY_READS` in `@hey/domain`: 600, launch week from 25 Nov 2026;
+     *    revisit after the first beta week). A whole number from 0 to 5,000; 0 reads no Base site. Never touches
+     *    Robinhood Chain's `website` budget. Worker only.
+     */
+    baseBudgets: z.object({
+      websiteDailyReads: optionalString
+        .transform((value) => (value === undefined ? undefined : Number(value)))
+        .pipe(z.number().int('HEY_BASE_WEBSITE_DAILY_READS is a whole number').min(0).max(5_000).optional()),
+    }),
+
     market: z.object({
       dexscreenerBaseUrl: requiredUrlWithDefault(DEFAULT_DEXSCREENER_BASE_URL),
       geckoterminalBaseUrl: requiredUrlWithDefault(DEFAULT_GECKOTERMINAL_BASE_URL),
@@ -1105,6 +1119,7 @@ function shapeEnv(raw: RawEnv) {
       base: { rpcUrl: raw.BASE_RPC_URL, rpcFallbackUrl: raw.BASE_RPC_FALLBACK_URL },
       ethereum: { rpcUrl: raw.ETH_RPC_URL, rpcFallbackUrl: raw.ETH_RPC_FALLBACK_URL },
     },
+    baseBudgets: { websiteDailyReads: raw.HEY_BASE_WEBSITE_DAILY_READS },
     market: {
       dexscreenerBaseUrl: raw.DEXSCREENER_BASE_URL,
       coingeckoApiKey: raw.COINGECKO_API_KEY,
@@ -1274,6 +1289,7 @@ export const ENV_KEY_BY_PATH: Record<string, string> = {
   'chains.base.rpcFallbackUrl': 'BASE_RPC_FALLBACK_URL',
   'chains.ethereum.rpcUrl': 'ETH_RPC_URL',
   'chains.ethereum.rpcFallbackUrl': 'ETH_RPC_FALLBACK_URL',
+  'baseBudgets.websiteDailyReads': 'HEY_BASE_WEBSITE_DAILY_READS',
   'market.dexscreenerBaseUrl': 'DEXSCREENER_BASE_URL',
   'market.coingeckoApiKey': 'COINGECKO_API_KEY',
   'market.bitqueryApiKey': 'BITQUERY_API_KEY',

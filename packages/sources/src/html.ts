@@ -300,6 +300,13 @@ export type HtmlMetadata = {
    */
   contractUrls: string[];
   /**
+   * Contract pages the site links on a Base explorer (multichain WP2.5, 2026-11-17): `basescan.org` or
+   * `base.blockscout.com`, address or token pages, kept as `https://base.blockscout.com/address/0x…` with the address
+   * lower-cased. Never mixed with `contractUrls` (Robinhood Chain's): an address names a contract only on its own chain.
+   * Read only for a page HEY holds for Base; registering one is the Base contract read's (`chains/base/contract-reads.ts`).
+   */
+  baseContractUrls: string[];
+  /**
    * X accounts the page links to (2026-10-02, outsider audit OA-A): the
    * lower-cased handles of `x.com/<handle>` / `twitter.com/<handle>` anchors,
    * a post's author included. What the project's own site says its account
@@ -307,6 +314,9 @@ export type HtmlMetadata = {
    */
   xHandles: string[];
 };
+
+/** A Base explorer's address or token page (multichain WP2.5): exact hosts only, `www.` allowed. */
+const BASE_EXPLORER_CONTRACT_LINK = /^https?:\/\/(?:www\.)?(?:basescan\.org|base\.blockscout\.com)\/(?:address|token)\/(0x[0-9a-fA-F]{40})(?:[/?#]|$)/i;
 
 /**
  * The explorer every HEY page links (`ROBINHOOD_EXPLORER_URL`): the host a
@@ -457,7 +467,7 @@ export function parseForgeRepoUrl(url: URL): ForgeRepoLink | undefined {
 }
 
 export function extractHtmlMetadata(html: string, baseUrl?: string): HtmlMetadata {
-  const meta: HtmlMetadata = { feedUrls: [], githubUrls: [], docsUrls: [], forgeUrls: [], securityUrls: [], contractUrls: [], xHandles: [] };
+  const meta: HtmlMetadata = { feedUrls: [], githubUrls: [], docsUrls: [], forgeUrls: [], securityUrls: [], contractUrls: [], baseContractUrls: [], xHandles: [] };
   const xHandles = new Set<string>();
   let anchorsSeen = 0;
   const page = html.length > MAX_EXTRACT_CHARS ? html.slice(0, MAX_EXTRACT_CHARS) : html;
@@ -557,6 +567,7 @@ export function extractHtmlMetadata(html: string, baseUrl?: string): HtmlMetadat
   meta.forgeUrls = [...links.forges.values()];
   meta.securityUrls = [...links.security];
   meta.contractUrls = [...links.contracts];
+  meta.baseContractUrls = [...links.baseContracts];
   meta.xHandles = [...xHandles];
   return meta;
 }
@@ -604,6 +615,8 @@ class ProjectLinks {
   readonly forges = new Map<string, ForgeRepoLink>();
   readonly security = new Set<string>();
   readonly contracts = new Set<string>();
+  /** Contracts the site links on a Base explorer (WP2.5): never the Robinhood Chain set above. */
+  readonly baseContracts = new Set<string>();
   /** Feeds the site links from an anchor on its own domain (2026-10-18). */
   readonly feeds = new Set<string>();
   private anchors = 0;
@@ -643,6 +656,11 @@ class ProjectLinks {
     const contract = explorerContractLink(resolved);
     if (contract) {
       if (this.contracts.size < MAX_LINKS_PER_KIND) this.contracts.add(contract.url);
+      return;
+    }
+    const baseContract = BASE_EXPLORER_CONTRACT_LINK.exec(resolved);
+    if (baseContract?.[1]) {
+      if (this.baseContracts.size < MAX_LINKS_PER_KIND) this.baseContracts.add(`https://base.blockscout.com/address/${baseContract[1].toLowerCase()}`);
       return;
     }
 
