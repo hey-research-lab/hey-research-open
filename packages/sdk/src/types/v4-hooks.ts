@@ -64,6 +64,8 @@ export type HeyV4Hook = {
   tie: string;
   tieDetail?: string;
   deploymentEvidenceId?: string;
+  /** `launch_window` (additive, 2026-11-26): listed on a deployment sent within 24 h of the token's creation, never counted. */
+  deploymentContextReason?: 'launch_window';
   deployedAt?: string;
   deployedBlock?: number;
   firstPoolInit: { block: number; at?: string };
@@ -188,6 +190,8 @@ export type HeyV4HookDetail = {
     tie: string;
     tieDetail: string | null;
     deploymentEvidenceId: string | null;
+    /** `launch_window` (additive, 2026-11-26): listed on a launch-window deployment, which never counts; null otherwise. */
+    deploymentContextReason: 'launch_window' | null;
     reviewedAt: string | null;
     factory: { address: string; explorer: string; tieBasis: 'followup' | 'declared' | 'linked'; tie: string; deploymentEvidenceId: string | null } | null;
   } | null;

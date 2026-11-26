@@ -507,3 +507,30 @@ describe('hood.fun legacy launchpad (coverage audit, 2026-09-30)', () => {
     });
   });
 });
+
+describe('clank.trade (2026-11-26)', () => {
+  it('decodes a saved live log from a clank.trade factory: the token, never the curve or the creator', async () => {
+    const clank = factoryById('CLANK_TRADE_V2')!;
+    const stub = stubFetch({ status: 200, body: readFixture('clank-trade-launch.json') });
+    const result = await scanFactory(
+      clank,
+      { rpcUrl: 'https://rpc.example', fromBlock: 93_063_060, toBlock: 93_063_060, sleep: noSleep },
+      testContext({ fetchImpl: stub.fetchImpl }),
+    );
+    // Nomi Labs ($NOMI), launched in tx 0x2020f755…; topics[2] is its bonding curve, topics[3] its creator.
+    expect(result.launches).toEqual([
+      {
+        sourceId: 'CLANK_TRADE_V2',
+        chainId: 4663,
+        contractAddress: '0x9775c880c2640b288b1fabfd64340fcf2ace153c',
+        blockNumber: 93_063_060,
+        txHash: '0x2020f75505b2f281d38d56057b3772d11ef47f7a8ae61298cc113f5f6a70cbe1',
+        factoryAddress: '0x798daaa0707c1e538bb5acf0867ac0e1a84cccf2',
+        version: 'v2',
+      },
+    ]);
+    const body = JSON.parse(String(stub.requests[0]?.init?.body)) as { params: { address: string; topics: string[] }[] };
+    expect(body.params[0]?.address).toBe('0x798daaa0707c1e538bb5acf0867ac0e1a84cccf2');
+    expect(body.params[0]?.topics).toEqual([clank.eventTopic0]);
+  });
+});

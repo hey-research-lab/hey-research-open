@@ -285,6 +285,53 @@ function pangeaFactories(): LaunchFactoryConfig[] {
   ];
 }
 
+/**
+ * clank.trade (clank.trade, "Launch and trade Stock Memes on Robinhood Chain"), added 2026-11-26 (founder, "ok tambah
+ * clank.trade tu sekali"). Not Clanker (clanker.world, `CLANKER_V4`): another operator, another contract family.
+ *
+ * Each factory is a Blockscout-verified `ClankLaunchFactory` (contracts/ClankLaunchFactory.sol, solc 0.8.26), deployed
+ * with its `ClankLaunchDeployer` and `ClankHookDeployer` by one key, 0x5e818104…E3d7, which also deployed the USDG
+ * sponsored executor clank.trade's own app bundle pins (0x70178EdB…20Ad9). Its source says its records are "Pons-shaped"
+ * on purpose, and its launch event is Pons V2's own signature, `TokenLaunched(address indexed token, address indexed
+ * curve, address indexed deployer, address pairToken, uint256 launchConfigId, uint256 graduationThreshold)` →
+ * `0x8d4aad49…` (keccak256 of the declaration equals the live topic): the token in topics[1], the bonding curve in
+ * topics[2], the creator in topics[3], then data words pairToken (zero for ETH) / launchConfigId / graduationThreshold.
+ * No name or ticker in the event; the scan reads them from the token. Only the factory address tells it from Pons, so
+ * these entries never carry Pons' lifecycle topics and are never `launchpad: 'pons'` (the fee-recipient claim and the
+ * launch-stage reader stay Pons V2's).
+ *
+ * Census 2026-11-26 (`eth_getLogs` on each factory from its creation block to 123,506,114): 549 launches on the three
+ * below, every one a distinct token. The 60 coins clank.trade's own front page lists all sit in them. A fourth
+ * contract by the same key, 0xa0e75f9f…f5C5 (unverified, deployed at block 58,186,050), emitted the same event 3 times
+ * between 59.0M and 60.5M (FELIX and two others); clank.trade answers "Coin not found" for each, so it is a test
+ * deployment, not the launchpad's, and is not here.
+ */
+function clankTradeFactories(): LaunchFactoryConfig[] {
+  const TOKEN_LAUNCHED = '0x8d4aad4953d0ca700d468f3753aa14432d1b35b43ec6409f051fb6aa43a89607' as const;
+  const entry = (id: string, version: string, factoryAddress: `0x${string}`, startBlock: number, verification: string): LaunchFactoryConfig => ({
+    id,
+    name: 'clank.trade',
+    launchpad: 'clanktrade',
+    version,
+    chainId: 4663,
+    factoryAddress,
+    startBlock,
+    eventTopic0: TOKEN_LAUNCHED,
+    tokenTopicIndex: 1,
+    enabled: true,
+    verification,
+    sourceUrl: 'https://clank.trade/',
+  });
+  return [
+    entry('CLANK_TRADE_V1', 'v1', '0xb45beb38f21be1d29e6b9c6e9dc4222d1c12f1f1', 63_910_000,
+      'verified ClankLaunchFactory created at block 63,917,462 (tx 0x10f0a55a…) by 0x5e818104…; 88 launches 63,956,162–69,856,919, all against ETH; SAAS (0x09292e1d…), its last, answers symbol() and has a clank.trade coin page (census 2026-11-26)'),
+    entry('CLANK_TRADE_V2', 'v2', '0x798daaa0707c1e538bb5acf0867ac0e1a84cccf2', 69_060_000,
+      'verified ClankLaunchFactory created at block 69,067,760 (tx 0x3bb3ac8c…) by 0x5e818104…; 394 launches 69,863,864–101,876,553, against ETH or WETH; NOMI (0x9775c880…, tx 0x2020f755…, block 93,063,060) in topics[1] answers symbol() and has a clank.trade coin page, which nomilabs.si links (census 2026-11-26)'),
+    entry('CLANK_TRADE_V3', 'v3', '0xbd07ff9b0dd6f8b4026d2024dec126223fb99cad', 101_990_000,
+      'verified ClankLaunchFactory created at block 101,995,680 (tx 0x4109744e…) by 0x5e818104…; 67 launches 102,088,509–118,592,903, against ETH and other pair tokens; 50 of the 60 coins on clank.trade\'s front page, ANTV (0x0f137570…) among them, answering symbol() (census 2026-11-26)'),
+  ];
+}
+
 export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
   {
     id: 'PONS_V2',
@@ -1045,6 +1092,7 @@ export const LAUNCH_FACTORIES: readonly LaunchFactoryConfig[] = [
     sourceUrl: 'https://lift.fun/',
   },
   ...pangeaFactories(),
+  ...clankTradeFactories(),
   /**
    * Cook Market (cook.market), added 2026-11-13: DefiLlama's cook-market adapter names this CookLauncherFactory and its
    * CookHook (0xfe3e…3044, in Uniswap's hooklist); the same deployer set up Cook's buyback and called `setCookToken`.

@@ -27,7 +27,7 @@ const detail = (listed: boolean): HeyV4HookDetail => ({
     ? { slug: 'hook-lister', name: 'Hook Lister', url: 'https://heyresearch.xyz/project/hook-lister', activityStatus: 'SHIPPING', activityLabel: 'Shipping', latestShip: null, latestShipReason: 'no_counted_ship' }
     : null,
   declaredBy: null,
-  tie: listed ? { basis: 'project', basisLabel: 'Listed by the project', tie: 'Listed by the project as its own contract', tieDetail: 'the project’s own contract listing names it', deploymentEvidenceId: null, reviewedAt: null, factory: null } : null,
+  tie: listed ? { basis: 'project', basisLabel: 'Listed by the project', tie: 'Listed by the project as its own contract', tieDetail: 'the project’s own contract listing names it', deploymentEvidenceId: null, deploymentContextReason: null, reviewedAt: null, factory: null } : null,
   creation: listed
     ? { state: 'TIED', words: 'read; tied to a published project', checked: true, checkedAt: '2026-10-02T06:00:00.000Z', deployedAt: '2026-09-30T10:00:00.000Z', deployedBlock: 76640000 }
     : { state: 'LAUNCH_INSTANCE', words: 'created through a launch protocol’s factory; not tied to a published project', checked: true, checkedAt: '2026-10-02T06:00:00.000Z', deployedAt: null, deployedBlock: null },
@@ -79,6 +79,15 @@ describe('renderV4Hook', () => {
     expect(text).toContain('created through a launch protocol’s factory');
     expect(text).toContain('no standing receipt');
     expect(text).not.toContain('Hook Lister');
+  });
+
+  it('never says a launch-window deployment counts, and says a counted one does (2026-11-26)', () => {
+    const base = detail(true);
+    const launch = renderV4Hook({ ...base, relatedShip: { deployment: { id: 'ship:launch', kind: 'hook_deployment', countsAsBuilding: false }, deploymentReason: null } });
+    expect(launch).toContain('FACT: its follow-up deployment record (not counted as building) — ship:launch.');
+    expect(launch).not.toContain('counts through');
+    const counted = renderV4Hook({ ...base, relatedShip: { deployment: { id: 'ship:counted', kind: 'hook_deployment', countsAsBuilding: true }, deploymentReason: null } });
+    expect(counted).toContain('FACT: the follow-up deployment it counts through — ship:counted.');
   });
 
   it('is a tool that reads the hook through the SDK, at the API’s own path', async () => {

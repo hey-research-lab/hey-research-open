@@ -39,7 +39,12 @@ export function renderV4Hook(h: HeyV4HookDetail): string {
   const weeks = pools.weekly.weeks.filter((week) => week.pools !== null && week.pools > 0).map((week) => `${week.isoWeek} ${week.pools}${week.complete ? '' : ' (so far)'}`);
   lines.push(`FACT: pools HEY recorded by week (by when HEY recorded them, not block time; last ${pools.weekly.weeks.length} weeks) — ${weeks.length > 0 ? weeks.join(', ') : 'none in these weeks'}.`);
   lines.push(`FACT: first pool HEY read at block ${h.when.firstPoolInitBlock}${h.when.firstPoolInitAt ? ` (${h.when.firstPoolInitAt.slice(0, 10)})` : ''}; newest at block ${h.when.lastPoolInitBlock}.`);
-  if (h.relatedShip.deployment) lines.push(`FACT: ${h.relatedShip.deployment.kind === 'hook_deployment' ? 'the follow-up deployment it counts through' : 'the factory’s own deployment'} — ${h.relatedShip.deployment.id}.`);
+  if (h.relatedShip.deployment) {
+    const d = h.relatedShip.deployment;
+    // A launch-window deployment (2026-11-26) is on record and never counted: never "counts through".
+    const what = d.kind === 'hook_deployment' ? (d.countsAsBuilding ? 'the follow-up deployment it counts through' : 'its follow-up deployment record (not counted as building)') : 'the factory’s own deployment';
+    lines.push(`FACT: ${what} — ${d.id}.`);
+  }
   for (const unknown of h.unknowns) lines.push(`UNKNOWN: ${unknown.label.toLowerCase()} — ${unknown.words}`);
   lines.push('', `Evidence: ${h.listed ? h.id : `${h.id} (no standing receipt: HEY lists no project for this hook)`} · ${h.explorer}`);
   lines.push('', TAG_LEGEND, h.trademark, h.disclaimer);

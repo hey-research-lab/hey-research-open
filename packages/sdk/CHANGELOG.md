@@ -6,6 +6,13 @@ All notable changes to `@hey-research-lab/sdk` are recorded here. The format fol
 
 ## Unreleased
 
+### Added (2026-11-26)
+
+- `deploymentContextReason` on a v4 hook list item (`HeyV4Hook`, optional) and on a hook's `tie` (`HeyV4HookDetail`,
+  `'launch_window' | null`): a hook the project's own token deployer created is listed on the chain basis even when its
+  deployment came within 24 hours of the token's own creation, while the project's token is verified and its own. That
+  deployment is launch provenance and never counts as building, so the item carries no `deploymentEvidenceId`.
+
 ### Added (2026-11-13)
 
 - `researchLevel` on each `HeyCompare` project and (optional) on each `HeyAgentCompareProject`, beside the unchanged

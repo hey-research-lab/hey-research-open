@@ -174,6 +174,31 @@ describe('launch factory registry', () => {
     expect(LAUNCH_FACTORIES.some((factory) => factory.eventTopic0 === '0xbd886f85b7731f66269f57707414d435bf8df930d3357a10becc48a69377f6d5')).toBe(false);
   });
 
+  it('reads clank.trade from its own three factories, Pons V2’s event signature on other addresses, never as Clanker or Pons (2026-11-26)', () => {
+    const clank = LAUNCH_FACTORIES.filter((factory) => factory.launchpad === 'clanktrade');
+    expect(clank.map((factory) => [factory.id, factory.factoryAddress, factory.startBlock])).toEqual([
+      ['CLANK_TRADE_V1', '0xb45beb38f21be1d29e6b9c6e9dc4222d1c12f1f1', 63_910_000],
+      ['CLANK_TRADE_V2', '0x798daaa0707c1e538bb5acf0867ac0e1a84cccf2', 69_060_000],
+      ['CLANK_TRADE_V3', '0xbd07ff9b0dd6f8b4026d2024dec126223fb99cad', 101_990_000],
+    ]);
+    for (const factory of clank) {
+      expect(factory).toMatchObject({ name: 'clank.trade', enabled: true, tokenTopicIndex: 1, sourceUrl: 'https://clank.trade/' });
+      // The same TokenLaunched signature as Pons V2: only the address tells them apart.
+      expect(factory.eventTopic0).toBe(factoryById('PONS_V2')!.eventTopic0);
+      expect(factory.eventStrings).toBeUndefined();
+      expect(factory.lifecycleTopics).toBeUndefined();
+      expect(factory.verification).toMatch(/census 2026-11-26/);
+      expect(factoryByAddress(4663, factory.factoryAddress)?.launchpad).toBe('clanktrade');
+    }
+    // Each factory's first block sits before its creation block and its first launch.
+    expect(factoryById('CLANK_TRADE_V1')!.startBlock).toBeLessThanOrEqual(63_917_462);
+    expect(factoryById('CLANK_TRADE_V2')!.startBlock).toBeLessThanOrEqual(69_067_760);
+    expect(factoryById('CLANK_TRADE_V3')!.startBlock).toBeLessThanOrEqual(101_995_680);
+    // Clanker (clanker.world) is another launchpad and keeps its own key; the test deployment clank.trade does not list stays out.
+    expect(factoryById('CLANKER_V4')?.launchpad).toBe('clanker');
+    expect(LAUNCH_FACTORIES.some((factory) => factory.factoryAddress.toLowerCase() === '0xa0e75f9f1cb5aec7307da01c8171070a2a83f5c5')).toBe(false);
+  });
+
   it('reads a launch lifecycle only on the Pons V2 factory, beside its launch topic (2026-10-15)', () => {
     const withLifecycle = LAUNCH_FACTORIES.filter((factory) => factory.lifecycleTopics && factory.lifecycleTopics.length > 0).map((factory) => factory.id);
     expect(withLifecycle).toEqual(['PONS_V2']);
