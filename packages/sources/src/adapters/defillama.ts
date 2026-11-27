@@ -82,6 +82,10 @@ const protocolSchema = z.object({
   forkedFromIds: z.array(z.union([z.string(), z.number()])).nullish(),
   deadUrl: z.boolean().nullish(),
   dimensions: z.record(z.string(), z.unknown()).nullish(),
+  // Widened 2026-11-27 (the Base registry ruling): the registry's own marks that a protocol is gone.
+  deprecated: z.boolean().nullish(),
+  rugged: z.boolean().nullish(),
+  deadFrom: z.union([z.string(), z.number()]).nullish(),
 });
 
 /** The fields added on 2026-09-27: a malformed one is dropped from the row, never the row. */
@@ -97,6 +101,9 @@ const WIDENED_FIELDS = [
   'forkedFromIds',
   'deadUrl',
   'dimensions',
+  'deprecated',
+  'rugged',
+  'deadFrom',
 ] as const;
 
 /** The envelope only: each row is judged on its own in the normalizer. */
@@ -186,6 +193,14 @@ export type EcosystemListing = {
   deadUrl?: boolean;
   /** Metric families the registry has an adapter for (`fees`, `dexs`, …): what it can measure, not a measurement. */
   dimensions?: string[];
+  /**
+   * The registry's own marks that the protocol is gone (2026-11-27): deprecated, rugged, or dead from a date it names
+   * (verbatim). Present only when the registry sends them; a listing carrying one is no Base registry evidence
+   * (`baseRegistryEvidenceSql`).
+   */
+  deprecated?: boolean;
+  rugged?: boolean;
+  deadFrom?: string;
   source: 'defillama';
 };
 
@@ -265,6 +280,9 @@ export function createDefillamaAdapter(): SourceAdapter<DefillamaInput, Ecosyste
                 ...opt('methodologyUrl', protocol.tvlCodePath && HTTP_PATTERN.test(protocol.tvlCodePath.trim()) ? protocol.tvlCodePath.trim() : undefined),
                 ...opt('geckoId', protocol.gecko_id?.trim() || undefined),
                 ...opt('parentProtocolSlug', protocol.parentProtocolSlug?.trim() || undefined),
+                ...opt('deprecated', protocol.deprecated === true ? true : undefined),
+                ...opt('rugged', protocol.rugged === true ? true : undefined),
+                ...opt('deadFrom', protocol.deadFrom === null || protocol.deadFrom === undefined || String(protocol.deadFrom).trim() === '' ? undefined : String(protocol.deadFrom).trim()),
                 ...opt(
                   'listedAt',
                   typeof protocol.listedAt === 'number'

@@ -1,0 +1,69 @@
+{
+  "transactions": [
+    {
+      "hash": "0x1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f801",
+      "transactionType": "CREATE",
+      "contractName": "HarborVault",
+      "contractAddress": "0x7A11c0FFeE00000000000000000000000000BA5E",
+      "function": null,
+      "arguments": ["0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"],
+      "transaction": {
+        "from": "0x5151515151515151515151515151515151515151",
+        "gas": "0x2a3b4c",
+        "value": "0x0",
+        "input": "0x60806040",
+        "nonce": "0x0",
+        "chainId": "0x2105"
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    },
+    {
+      "hash": "0x2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80102",
+      "transactionType": "CALL",
+      "contractName": "FiatTokenProxy",
+      "contractAddress": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "function": "approve(address,uint256)",
+      "arguments": ["0x7A11c0FFeE00000000000000000000000000BA5E", "1"],
+      "transaction": { "from": "0x5151515151515151515151515151515151515151", "to": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", "input": "0x095ea7b3", "nonce": "0x1", "chainId": "0x2105" },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    },
+    {
+      "hash": "0x3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8010203",
+      "transactionType": "CALL",
+      "contractName": "Clanker",
+      "contractAddress": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
+      "function": "deployToken((string,string))",
+      "arguments": ["(Harbor,HRB)"],
+      "transaction": { "from": "0x5151515151515151515151515151515151515151", "to": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9", "input": "0x1234abcd", "nonce": "0x2", "chainId": "0x2105" },
+      "additionalContracts": [
+        { "transactionType": "CREATE2", "contractName": "ClankerToken", "address": "0xB0B0b0B0b0B0B0b0b0B0b0B0B0b0B0b0B0B0b0B0", "initCode": "0x6080" }
+      ],
+      "isFixedGasLimit": false
+    },
+    {
+      "hash": "0x4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f801020304",
+      "transactionType": "CREATE",
+      "contractName": "MockOracle",
+      "contractAddress": "0xD00dD00DD00dd00dD00Dd00dD00DD00Dd00dd00D",
+      "function": null,
+      "arguments": [],
+      "transaction": { "from": "0x5151515151515151515151515151515151515151", "input": "0x6080", "nonce": "0x3", "chainId": "0x2105" },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [
+    { "transactionHash": "0x1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f801", "status": "0x1" },
+    { "transactionHash": "0x2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80102", "status": "0x1" },
+    { "transactionHash": "0x3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f8010203", "status": "0x1" },
+    { "transactionHash": "0x4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f801020304", "status": "0x1" }
+  ],
+  "libraries": [],
+  "pending": [],
+  "returns": {},
+  "timestamp": 1764000000,
+  "chain": 8453,
+  "commit": "4f2c9a1"
+}

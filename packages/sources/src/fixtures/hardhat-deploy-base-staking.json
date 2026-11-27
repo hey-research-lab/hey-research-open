@@ -1,0 +1,18 @@
+{
+  "address": "0x5747a4b1a6b0000000000000000000000000c0de",
+  "abi": [{ "type": "function", "name": "stake", "inputs": [{ "name": "amount", "type": "uint256" }], "outputs": [], "stateMutability": "nonpayable" }],
+  "transactionHash": "0x5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80102030405",
+  "receipt": {
+    "to": null,
+    "from": "0x5151515151515151515151515151515151515151",
+    "contractAddress": "0x5747a4b1a6b0000000000000000000000000c0de",
+    "transactionHash": "0x5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f708192a3b4c5d6e7f80102030405",
+    "blockNumber": 23000000,
+    "status": 1
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "abc",
+  "bytecode": "0x6080",
+  "deployedBytecode": "0x6080"
+}

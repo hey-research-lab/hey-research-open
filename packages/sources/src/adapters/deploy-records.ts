@@ -59,6 +59,17 @@ export type DeployedContract = {
   txHash?: string;
   /** The record carries the creating transaction (Foundry CREATE, hardhat-deploy, Ignition). */
   created: boolean;
+  /**
+   * Every name the record gives the contract (2026-11-27, a Base page's deployment records): Foundry's `contractName`,
+   * hardhat-deploy's file name and its own `contractName`, a hand-kept entry's key. Absent when the record names none.
+   */
+  names?: string[];
+  /**
+   * Who the record says made the creation, lower-cased (2026-11-27): a Foundry transaction's sender, and for a contract a
+   * creation made (`additionalContracts`) the contract it was sent to; hardhat-deploy's receipt sender. A launch factory
+   * among them never ties a contract to a page (the 2026-10-22 rule). Absent when the record names none.
+   */
+  deployers?: string[];
 };
 
 const MAX_PATH_CHARS = 300;
@@ -107,9 +118,26 @@ const DEPLOYMENTS_FOLDER_FILE = /(^|\/)deployments?\/[^/.][^/]*\.json$/i;
 const LIKELY_NETWORK = /robin|rh|hood|4663|mainnet/i;
 const LOCAL_NETWORK = /^(localhost|hardhat|local|anvil|ganache|dev)$/i;
 
+/** A hand-kept addresses file (2026-11-27, Base only): `addresses.json`, `contract-addresses.json`, near the root. */
+const ADDRESSES_JSON = /(^|\/)(contracts?[-_]?)?addresses[^/]*\.json$/i;
+
+export type DeployRecordPlanOptions = {
+  chainId?: number;
+  maxNetworks?: number;
+  /**
+   * The hardhat-deploy network folders read for this chain by name (2026-11-27, founder "ok buat 1, 2 dan 4": Base's
+   * `base`, `base-mainnet`, `base_mainnet`). Given, only those folders are kept, with or without a `.chainId` file (one
+   * that is there must still name the chain, the reader's test). Omitted, every folder with a `.chainId` (the home rule).
+   */
+  networkNames?: readonly string[];
+  /** Also read a hand-kept `addresses*.json` near the root (2026-11-27, Base only); its chain is still read from the file. */
+  addressFiles?: boolean;
+};
+
 /** The paths worth reading in a repository's tree, capped. `chainId` is the chain asked about. */
-export function planDeployRecordReads(paths: readonly string[], options: { chainId?: number; maxNetworks?: number } = {}): DeployRecordPlan {
+export function planDeployRecordReads(paths: readonly string[], options: DeployRecordPlanOptions = {}): DeployRecordPlan {
   const chainId = options.chainId ?? ROBINHOOD_CHAIN_ID;
+  const networkNames = options.networkNames ? new Set(options.networkNames.map((name) => name.toLowerCase())) : undefined;
   const foundry = FOUNDRY(chainId);
   const ignition = IGNITION(chainId);
   const files: DeployRecordFile[] = [];
@@ -150,11 +178,15 @@ export function planDeployRecordReads(paths: readonly string[], options: { chain
     if (ASSET_LIST_PATH.test(path)) continue;
     if (DEPLOYMENTS_FOLDER_FILE.test(path) ? depth <= HAND_KEPT_MAX_DEPTH + 1 : DEPLOYMENTS_JSON.test(path) && depth <= HAND_KEPT_MAX_DEPTH) {
       files.push({ path, kind: 'DEPLOYMENTS_JSON' });
+    } else if (options.addressFiles && ADDRESSES_JSON.test(path) && depth <= HAND_KEPT_MAX_DEPTH) {
+      files.push({ path, kind: 'DEPLOYMENTS_JSON' });
     }
   }
 
+  const networkName = (network: HardhatNetwork): string => (network.dir.split('/').pop() ?? '').toLowerCase();
   const hardhatNetworks = [...networks.values()]
-    .filter((network) => network.chainIdPath !== '' && network.files.length > 0)
+    .filter((network) => network.files.length > 0)
+    .filter((network) => (networkNames ? networkNames.has(networkName(network)) : network.chainIdPath !== ''))
     .filter((network) => !LOCAL_NETWORK.test(network.dir.split('/').pop() ?? ''))
     .sort((a, b) => Number(LIKELY_NETWORK.test(b.dir.split('/').pop() ?? '')) - Number(LIKELY_NETWORK.test(a.dir.split('/').pop() ?? '')) || a.dir.localeCompare(b.dir))
     .slice(0, options.maxNetworks ?? 6);
@@ -201,6 +233,19 @@ const parseJson = (text: string): unknown => {
   }
 };
 
+/**
+ * What a parse answers beyond the home reader's fields (2026-11-27, Base): every name and maker the record gives. Asked
+ * for by the Base reader alone (`provenance: true`); the home reader's answers are unchanged.
+ */
+export type DeployRecordParseOptions = { networkNames?: readonly string[]; provenance?: boolean };
+
+const withoutProvenance = (contract: DeployedContract): DeployedContract => {
+  const { names: _names, deployers: _deployers, ...rest } = contract;
+  return rest;
+};
+const shaped = (contracts: DeployedContract[], options: DeployRecordParseOptions): DeployedContract[] =>
+  options.provenance ? contracts : contracts.map(withoutProvenance);
+
 const dedupe = (contracts: DeployedContract[]): DeployedContract[] => {
   const byAddress = new Map<string, DeployedContract>();
   for (const contract of contracts) {
@@ -222,6 +267,7 @@ const foundrySchema = z.object({
         transactionType: z.string().nullish(),
         contractName: z.string().nullish(),
         contractAddress: z.string().nullish(),
+        transaction: z.object({ from: z.string().nullish(), to: z.string().nullish() }).passthrough().nullish(),
         additionalContracts: z
           .array(z.object({ address: z.string().nullish(), transactionType: z.string().nullish(), contractName: z.string().nullish() }).passthrough())
           .nullish(),
@@ -232,7 +278,7 @@ const foundrySchema = z.object({
 }).passthrough();
 
 /** Contracts a Foundry broadcast created on `chainId`; null when the file is not a broadcast for that chain. */
-export function parseFoundryBroadcast(text: string, chainId: number = ROBINHOOD_CHAIN_ID): DeployedContract[] | null {
+export function parseFoundryBroadcast(text: string, chainId: number = ROBINHOOD_CHAIN_ID, options: DeployRecordParseOptions = {}): DeployedContract[] | null {
   const parsed = foundrySchema.safeParse(parseJson(text));
   if (!parsed.success) return null;
   const record = parsed.data;
@@ -251,18 +297,34 @@ export function parseFoundryBroadcast(text: string, chainId: number = ROBINHOOD_
     const type = (tx.transactionType ?? '').toUpperCase();
     const creates = type === 'CREATE' || type === 'CREATE2';
     const address = normalAddress(tx.contractAddress);
+    const sender = normalAddress(tx.transaction?.from);
+    const sentTo = normalAddress(tx.transaction?.to);
     if (creates && address) {
       const name = bounded(tx.contractName);
-      out.push({ address, created: true, ...(name ? { contractName: name } : {}), ...(hash ? { txHash: hash } : {}) });
+      out.push({
+        address,
+        created: true,
+        ...(name ? { contractName: name, names: [name] } : {}),
+        ...(hash ? { txHash: hash } : {}),
+        ...(sender ? { deployers: [sender] } : {}),
+      });
     }
     for (const extra of tx.additionalContracts ?? []) {
       const extraAddress = normalAddress(extra.address);
       if (!extraAddress) continue;
       const name = bounded(extra.contractName);
-      out.push({ address: extraAddress, created: true, ...(name ? { contractName: name } : {}), ...(hash ? { txHash: hash } : {}) });
+      // A contract a creation made: the contract the transaction was sent to made it, on the sender's behalf.
+      const makers = [...new Set([sentTo, sender].filter((maker): maker is string => maker !== undefined))];
+      out.push({
+        address: extraAddress,
+        created: true,
+        ...(name ? { contractName: name, names: [name] } : {}),
+        ...(hash ? { txHash: hash } : {}),
+        ...(makers.length > 0 ? { deployers: makers } : {}),
+      });
     }
   }
-  return dedupe(out);
+  return shaped(dedupe(out), options);
 }
 
 /* ------------------------------------------------------- hardhat-deploy */
@@ -276,11 +338,15 @@ export function parseHardhatChainId(text: string): number | null {
 const hardhatSchema = z.object({
   address: z.string(),
   transactionHash: z.string().nullish(),
-  receipt: z.object({ transactionHash: z.string().nullish(), contractAddress: z.string().nullish(), status: z.union([z.number(), z.string()]).nullish() }).passthrough().nullish(),
+  contractName: z.string().nullish(),
+  receipt: z
+    .object({ transactionHash: z.string().nullish(), contractAddress: z.string().nullish(), from: z.string().nullish(), status: z.union([z.number(), z.string()]).nullish() })
+    .passthrough()
+    .nullish(),
 }).passthrough();
 
 /** A hardhat-deploy deployment record; null when it is not one, or records no deploying transaction. */
-export function parseHardhatDeployment(text: string, path: string): DeployedContract | null {
+export function parseHardhatDeployment(text: string, path: string, options: DeployRecordParseOptions = {}): DeployedContract | null {
   const parsed = hardhatSchema.safeParse(parseJson(text));
   if (!parsed.success) return null;
   const address = normalAddress(parsed.data.address);
@@ -292,7 +358,19 @@ export function parseHardhatDeployment(text: string, path: string): DeployedCont
   if (status === 0 || status === '0' || status === '0x0') return null;
   const name = bounded(path.split('/').pop()?.replace(/\.json$/i, ''));
   if (name && MOCK_NAME.test(name)) return null;
-  return { address, created: true, txHash: hash, ...(name ? { contractName: name } : {}) };
+  // The file's name, and the record's own `contractName` when it carries one (2026-11-27).
+  const named = bounded(parsed.data.contractName);
+  const names = [...new Set([name, named].filter((value): value is string => value !== undefined))];
+  const sender = normalAddress(parsed.data.receipt?.from);
+  const contract: DeployedContract = {
+    address,
+    created: true,
+    txHash: hash,
+    ...(name ? { contractName: name } : {}),
+    ...(names.length > 0 ? { names } : {}),
+    ...(sender ? { deployers: [sender] } : {}),
+  };
+  return options.provenance ? contract : withoutProvenance(contract);
 }
 
 /* ------------------------------------------------------------ Ignition */
@@ -358,15 +436,29 @@ const deploymentsJsonSchema = z.union([z.record(z.string(), z.unknown()), z.arra
  * list says its chain. A file that names no chain is not a record for this
  * one, whatever addresses it holds.
  */
-export function parseDeploymentsJson(text: string, chainId: number = ROBINHOOD_CHAIN_ID, path?: string, repo?: RecordRepository): DeployedContract[] | null {
+export function parseDeploymentsJson(
+  text: string,
+  chainId: number = ROBINHOOD_CHAIN_ID,
+  path?: string,
+  repo?: RecordRepository,
+  options: DeployRecordParseOptions = {},
+): DeployedContract[] | null {
   const parsed = deploymentsJsonSchema.safeParse(parseJson(text));
   if (!parsed.success) return null;
   const found: Named[] = [];
   const data = parsed.data;
   // A file that says it records another repository's deployment is that repository's record, not this one's.
   if (repo && !Array.isArray(data) && namesAnotherRepository(data, repo)) return null;
-  // The file's own name may be the chain: `deployments/4663.json`, `deployments.4663.json`.
-  const named = path ? new RegExp(`(^|[^0-9])${chainId}([^0-9]|$)`).test(path.split('/').pop() ?? '') : false;
+  /*
+   * The network names that stand for the chain (2026-11-27, Base only: `base`, `base-mainnet`, `base_mainnet`): a key
+   * named so whose value is an object of entries, or a file named so, records the chain unambiguously. A key whose value
+   * is an address (`"base": "0x…"`, a base asset) is never one.
+   */
+  const networkNames = new Set((options.networkNames ?? []).map((name) => name.toLowerCase()));
+  const isNetworkKey = (key: string): boolean => networkNames.has(key.toLowerCase());
+  const fileName = (path?.split('/').pop() ?? '').replace(/\.json$/i, '');
+  // The file's own name may be the chain: `deployments/4663.json`, `deployments.4663.json`, or (Base) `deployments/base.json`.
+  const named = path ? new RegExp(`(^|[^0-9])${chainId}([^0-9]|$)`).test(path.split('/').pop() ?? '') || isNetworkKey(fileName) : false;
 
   const chainOf = (record: Record<string, unknown>): unknown => {
     for (const key of CHAIN_KEYS) if (key in record) return record[key];
@@ -388,11 +480,18 @@ export function parseDeploymentsJson(text: string, chainId: number = ROBINHOOD_C
   } else {
     // `{ "4663": { … } }`, one level down at most: `{ "deployments": { "4663": … } }`.
     const chainKey = String(chainId);
+    const isEntries = (value: unknown): boolean => value !== null && typeof value === 'object' && !Array.isArray(value);
     const holders: unknown[] = [];
     if (chainKey in data) holders.push(data[chainKey]);
+    for (const [key, value] of Object.entries(data).slice(0, 100)) {
+      if (isNetworkKey(key) && isEntries(value)) holders.push(value);
+    }
     for (const value of Object.values(data).slice(0, 100)) {
       if (value && typeof value === 'object' && !Array.isArray(value) && chainKey in (value as Record<string, unknown>)) {
         holders.push((value as Record<string, unknown>)[chainKey]);
+      }
+      if (networkNames.size > 0 && isEntries(value)) {
+        for (const [key, inner] of Object.entries(value as Record<string, unknown>).slice(0, 100)) if (isNetworkKey(key) && isEntries(inner)) holders.push(inner);
       }
     }
     for (const holder of holders) addressesIn(holder, undefined, 0, found);
@@ -404,11 +503,11 @@ export function parseDeploymentsJson(text: string, chainId: number = ROBINHOOD_C
     out.push({
       address: named.address,
       created: named.txHash !== undefined,
-      ...(named.key ? { contractName: named.key } : {}),
+      ...(named.key ? { contractName: named.key, names: [named.key] } : {}),
       ...(named.txHash ? { txHash: named.txHash } : {}),
     });
   }
-  return dedupe(out);
+  return shaped(dedupe(out), options);
 }
 
 /** The repository a record was read from. */
@@ -446,18 +545,25 @@ export const LIBRARY_REPOSITORY_PATTERN = '([-_.](lib|libs|sdk|sdks)$|^(lib|sdk)
 export const isLibraryRepository = (name: string): boolean => new RegExp(LIBRARY_REPOSITORY_PATTERN, 'i').test(name.replace(/\.git$/i, ''));
 
 /** One parsed file, by kind; null when the file is not a record for `chainId`. */
-export function parseDeployRecord(kind: DeployRecordKind, path: string, text: string, chainId: number = ROBINHOOD_CHAIN_ID, repo?: RecordRepository): DeployedContract[] | null {
+export function parseDeployRecord(
+  kind: DeployRecordKind,
+  path: string,
+  text: string,
+  chainId: number = ROBINHOOD_CHAIN_ID,
+  repo?: RecordRepository,
+  options: DeployRecordParseOptions = {},
+): DeployedContract[] | null {
   switch (kind) {
     case 'FOUNDRY_BROADCAST':
-      return parseFoundryBroadcast(text, chainId);
+      return parseFoundryBroadcast(text, chainId, options);
     case 'IGNITION':
       return parseIgnitionAddresses(text);
     case 'HARDHAT_DEPLOY': {
-      const one = parseHardhatDeployment(text, path);
+      const one = parseHardhatDeployment(text, path, options);
       return one ? [one] : null;
     }
     case 'DEPLOYMENTS_JSON':
-      return parseDeploymentsJson(text, chainId, path, repo);
+      return parseDeploymentsJson(text, chainId, path, repo, options);
   }
 }
 

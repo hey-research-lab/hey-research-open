@@ -235,7 +235,7 @@ export const serverEnvSchema = z
      * Base's provider caps a host may set (2026-11-24, founder "2. naikkan"; D14: chain-prefixed keys only).
      *
      *  - HEY_BASE_WEBSITE_DAILY_READS: `base-website`'s daily cap — a Base page's own site and up to two of its own docs
-     *    pages. Unset, the code's figure (`BASE_WEBSITE_DAILY_READS` in `@hey/domain`: 600, launch week from 25 Nov 2026;
+     *    pages. Unset, the code's figure (`BASE_WEBSITE_DAILY_READS` in `@hey/domain`: 2,000 since 27 Nov 2026, 600 from 25 Nov;
      *    revisit after the first beta week). A whole number from 0 to 5,000; 0 reads no Base site. Never touches
      *    Robinhood Chain's `website` budget. Worker only.
      */

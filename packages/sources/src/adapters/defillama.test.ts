@@ -203,3 +203,34 @@ describe('DefiLlama registry fields kept since 2026-09-27', () => {
     expect(result.data?.[0]).not.toHaveProperty('methodologyUrl');
   });
 });
+
+describe('DefiLlama registry on Base (2026-11-27, the Base registry ruling)', () => {
+  const adapter = createDefillamaAdapter();
+  const read = async () => {
+    const stub = stubFetch({ status: 200, body: readFixture('defillama-protocols-base.json'), headers: JSON_HEADERS });
+    const result = await adapter.fetch({ chain: 'Base' }, testContext({ fetchImpl: stub.fetchImpl }));
+    expect(hasData(result)).toBe(true);
+    return Object.fromEntries((result.data ?? []).map((p) => [p.slug, p]));
+  };
+
+  it('keeps the protocols listed on Base and their declared Base token, never another chain\'s', async () => {
+    const bySlug = await read();
+    expect(Object.keys(bySlug).sort()).toEqual(['broken-flags', 'harbor-lend', 'old-vaults', 'rug-swap']);
+    expect(bySlug['harbor-lend']).toMatchObject({ websiteUrl: 'https://harborlend.xyz/', chainTokenAddresses: ['0x00000000000000000000000000000000000000aa'] });
+  });
+
+  it('keeps the registry\'s deprecated, rugged and dead-from marks, and only when sent', async () => {
+    const bySlug = await read();
+    expect(bySlug['old-vaults']?.deprecated).toBe(true);
+    expect(bySlug['rug-swap']).toMatchObject({ rugged: true, deadFrom: '2026-03-01' });
+    expect(bySlug['harbor-lend']).not.toHaveProperty('deprecated');
+    expect(bySlug['harbor-lend']).not.toHaveProperty('rugged');
+    expect(bySlug['harbor-lend']).not.toHaveProperty('deadFrom');
+  });
+
+  it('drops a malformed mark, never the protocol', async () => {
+    const bySlug = await read();
+    expect(bySlug['broken-flags']).toBeDefined();
+    expect(bySlug['broken-flags']).not.toHaveProperty('deprecated');
+  });
+});

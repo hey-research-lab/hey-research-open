@@ -39,7 +39,16 @@ export type GithubFileInput = {
    * broadcast carries every receipt), never above `GITHUB_RECORD_MAX_BYTES`.
    */
   maxBytes?: number;
+  /**
+   * The commit to read the file at (2026-11-27, a Base page's deployment records): a full 40-hex commit id, so the
+   * record HEY read and the commit its evidence names are one. Anything else is refused (`canHandle`); omitted, GitHub's
+   * default branch.
+   */
+  ref?: string;
 };
+
+/** A full commit id, lower-case: the only `ref` a file or tree read takes. */
+export const GITHUB_COMMIT_SHA = /^[0-9a-f]{40}$/;
 
 /** The ceiling a caller may raise one file's cap to. */
 export const GITHUB_RECORD_MAX_BYTES = 2 * 1024 * 1024;
@@ -58,7 +67,8 @@ export function createGithubFileAdapter(): SourceAdapter<GithubFileInput, Github
       return (
         isGithubName(input.owner) &&
         isGithubName(input.repo) &&
-        (input.path === undefined || (!input.path.includes('..') && !input.path.startsWith('/')))
+        (input.path === undefined || (!input.path.includes('..') && !input.path.startsWith('/'))) &&
+        (input.ref === undefined || GITHUB_COMMIT_SHA.test(input.ref))
       );
     },
 
@@ -69,9 +79,11 @@ export function createGithubFileAdapter(): SourceAdapter<GithubFileInput, Github
       // A file path is read segment by segment; a `.` or `..` step is never one.
       const fileSegments = input.path ? input.path.split('/') : undefined;
       if (!repoPath || fileSegments?.some((segment) => segment === '.' || segment === '..')) return githubNameRefused(ctx);
+      if (input.ref !== undefined && !GITHUB_COMMIT_SHA.test(input.ref)) return githubNameRefused(ctx);
+      const at = input.ref ? `?ref=${input.ref}` : '';
       const url = fileSegments
-        ? `${base}${repoPath}/contents/${fileSegments.map(encodeURIComponent).join('/')}`
-        : `${base}${repoPath}/readme`;
+        ? `${base}${repoPath}/contents/${fileSegments.map(encodeURIComponent).join('/')}${at}`
+        : `${base}${repoPath}/readme${at}`;
 
       return performSourceFetch(
         ctx,
@@ -224,24 +236,31 @@ export type GithubTree = {
   truncated: boolean;
 };
 
-export type GithubTreeInput = { owner: string; repo: string; baseUrl?: string; token?: string };
+export type GithubTreeInput = {
+  owner: string;
+  repo: string;
+  baseUrl?: string;
+  token?: string;
+  /** A full 40-hex commit id to read the tree at (2026-11-27); omitted, the default branch's `HEAD`. */
+  ref?: string;
+};
 
 export function createGithubTreeAdapter(): SourceAdapter<GithubTreeInput, GithubTree> {
   return {
     name: 'github-tree',
 
     canHandle(input) {
-      return isGithubName(input.owner) && isGithubName(input.repo);
+      return isGithubName(input.owner) && isGithubName(input.repo) && (input.ref === undefined || GITHUB_COMMIT_SHA.test(input.ref));
     },
 
     fetch(input, ctx: SourceContext): Promise<SourceResult<GithubTree>> {
       const base = (input.baseUrl ?? GITHUB_DEFAULT_BASE_URL).replace(/\/$/, '');
       const repoPath = githubRepoPath(input.owner, input.repo);
-      if (!repoPath) return githubNameRefused(ctx);
+      if (!repoPath || (input.ref !== undefined && !GITHUB_COMMIT_SHA.test(input.ref))) return githubNameRefused(ctx);
       return performSourceFetch(
         ctx,
         {
-          url: `${base}${repoPath}/git/trees/HEAD?recursive=1`,
+          url: `${base}${repoPath}/git/trees/${input.ref ?? 'HEAD'}?recursive=1`,
           headers: {
             accept: 'application/vnd.github+json',
             'x-github-api-version': '2022-11-28',
@@ -259,6 +278,49 @@ export function createGithubTreeAdapter(): SourceAdapter<GithubTreeInput, Github
               .map((entry) => ({ path: entry.path, ...opt('size', entry.size) })),
             truncated: raw.truncated === true,
           }),
+        },
+      );
+    },
+  };
+}
+
+/**
+ * The commit the default branch points at, in one request (2026-11-27, founder "ok buat 1, 2 dan 4": a Base page's own
+ * repository's deployment records). `GET /repos/{owner}/{repo}/commits/HEAD` with GitHub's `sha` media type answers the
+ * bare 40-hex commit id, so the tree and every file of one read are taken at that commit (`ref`) and the evidence names
+ * the commit the record was read at, never a branch that moves.
+ */
+export type GithubHeadCommitInput = { owner: string; repo: string; baseUrl?: string; token?: string };
+export type GithubHeadCommit = { sha: string };
+
+export function createGithubHeadCommitAdapter(): SourceAdapter<GithubHeadCommitInput, GithubHeadCommit> {
+  return {
+    name: 'github-head-commit',
+
+    canHandle(input) {
+      return isGithubName(input.owner) && isGithubName(input.repo);
+    },
+
+    fetch(input, ctx: SourceContext): Promise<SourceResult<GithubHeadCommit>> {
+      const base = (input.baseUrl ?? GITHUB_DEFAULT_BASE_URL).replace(/\/$/, '');
+      const repoPath = githubRepoPath(input.owner, input.repo);
+      if (!repoPath) return githubNameRefused(ctx);
+      return performSourceFetch(
+        ctx,
+        {
+          url: `${base}${repoPath}/commits/HEAD`,
+          headers: {
+            accept: 'application/vnd.github.sha',
+            'x-github-api-version': '2022-11-28',
+            ...(input.token ? { authorization: `Bearer ${input.token}` } : {}),
+          },
+          maxBytes: 1_024,
+        },
+        {
+          schema: z.string().regex(GITHUB_COMMIT_SHA),
+          parse: (body) => body.trim().toLowerCase(),
+          cacheTtlSeconds: 3_600,
+          normalize: (sha): GithubHeadCommit => ({ sha }),
         },
       );
     },
