@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { ChainChips, type ChainMark } from './chain-tracked';
 import { cn } from './cn';
 import { emailSafe } from './email-safe';
 import { BrandNotice } from './brand-notice';
@@ -45,6 +46,11 @@ export type ProjectListRowProps = {
    * pill, which would say the list's own name on every row (UI audit, 2026-10-30). `ProjectList` drops the column.
    */
   hideStatus?: boolean;
+  /**
+   * The chains the row is about (multichain WP3.2): drawn as chips beside the narrative only where a list holds more than
+   * one chain ("All chains"). Absent everywhere else, so every other list draws exactly what it drew.
+   */
+  chains?: readonly ChainMark[] | undefined;
 };
 
 /** The column headers, in order; the phone layout keeps them for assistive tech only. */
@@ -123,7 +129,7 @@ const VERIFICATION_TONE: Record<string, string> = {
   MISMATCH: 'font-medium text-hey-warning',
 };
 
-export function ProjectListRow({ project, weeks, now, disclosure, preview, hideStatus = false }: ProjectListRowProps) {
+export function ProjectListRow({ project, weeks, now, disclosure, preview, hideStatus = false, chains }: ProjectListRowProps) {
   const facts = cardPreviewFacts(project, { ...(now ? { now } : {}), ...(disclosure ? { disclosure } : {}) });
   const identity = cardIdentity(project);
   const subline = [identity.narrative, identity.kind].filter(Boolean).join(' · ');
@@ -171,7 +177,12 @@ export function ProjectListRow({ project, weeks, now, disclosure, preview, hideS
                 {project.nameDisclaimer}
               </span>
             ) : null}
-            {subline ? (
+            {chains && chains.length > 0 ? (
+              <span className="v2-row-sub flex flex-wrap items-center gap-x-1.5 gap-y-1" data-testid="row-narrative">
+                <ChainChips chains={chains} />
+                {subline ? <span>{subline}</span> : null}
+              </span>
+            ) : subline ? (
               <span className="v2-row-sub" data-testid="row-narrative">
                 {subline}
               </span>

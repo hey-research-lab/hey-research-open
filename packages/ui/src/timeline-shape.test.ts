@@ -24,7 +24,7 @@ describe('shapeTimeline (2026-10-24 full audit, UI-2)', () => {
   it('folds two or more consecutive not-counted weeks into one line, never a single one', () => {
     const items = [ship('a'), ship('b', true), ship('c', true), ship('d', true), ship('e'), ship('f', true), ship('g')];
     const { shown } = shapeTimeline(items);
-    expect(shown.map((entry) => ('kind' in entry ? `${entry.kind}:${entry.items.length}` : entry.id))).toEqual(['a', 'not_counted:3', 'e', 'f', 'g']);
+    expect(shown.map((entry) => ('items' in entry ? `${entry.kind}:${entry.items.length}` : entry.id))).toEqual(['a', 'not_counted:3', 'e', 'f', 'g']);
   });
 
   it('keeps every item exactly once and counts folded items in the earlier total', () => {

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { ChainChips, type ChainMark } from './chain-tracked';
 import { cn } from './cn';
 import { emailSafe } from './email-safe';
 import { formatRelativeTime, formatVerification, plainText, readableSummary, shipKindLabel, shortenHexInText, type ReadableSummary } from './format';
@@ -44,7 +45,25 @@ export type TimelineItem = {
    * (2026-10-24 full audit, UI-2); the week stays on the record, one tap away.
    */
   notCounted?: boolean;
+  /**
+   * The chains the ship is on, on a page published on more than one chain (multichain WP3.2): a ship with no chain (a
+   * release, a code week, a feed entry) carries every chain's chip, a contract ship its own chain's. Set by the page only
+   * on such a page; a page on one chain draws no chip, so its timeline is unchanged. Display only.
+   */
+  chains?: readonly ChainMark[];
+  /** Short tags beside the chips ("Counted once", "Not in What changed"), each with its title. Worded by the page. */
+  tags?: readonly TimelineTag[];
+  /** Already on record when HEY began tracking its chain: drawn quieter (the 17 Nov "not news" decision). */
+  muted?: boolean;
 };
+
+export type TimelineTag = { label: string; help?: string };
+
+/**
+ * One muted line where HEY began tracking a project on another chain (multichain WP3.2): the ships of that chain below it
+ * were already on record and were not news. Worded by the page; it holds no ship and counts toward no limit.
+ */
+export type TimelineBreak = { kind: 'tracking_began'; id: string; line: string };
 
 /**
  * A run the page folded to one line (2026-10-19 audit): a deploy script's
@@ -58,15 +77,19 @@ export type TimelineRun = {
   id: string;
   line: string;
   items: readonly TimelineItem[];
+  /** The run's chains, on a page on more than one chain (multichain WP3.2); as an item's. */
+  chains?: readonly ChainMark[];
+  tags?: readonly TimelineTag[];
 };
 
 /** Consecutive weeks HEY read as maintenance or automation only, folded to one line (UI-2). */
 export type TimelineQuiet = { kind: 'not_counted'; id: string; items: readonly TimelineItem[] };
 
-type TimelineEntryShape = TimelineItem | TimelineRun | TimelineQuiet;
+type TimelineEntryShape = TimelineItem | TimelineRun | TimelineQuiet | TimelineBreak;
 
 const isRun = (entry: TimelineEntryShape): entry is TimelineRun => 'line' in entry && 'items' in entry;
 const isQuiet = (entry: TimelineEntryShape): entry is TimelineQuiet => 'kind' in entry && entry.kind === 'not_counted' && 'items' in entry;
+const isBreak = (entry: TimelineEntryShape): entry is TimelineBreak => 'kind' in entry && entry.kind === 'tracking_began';
 
 /** How many entries the timeline shows before "Earlier ships" (2026-10-24 full audit, UI-2). */
 export const TIMELINE_SHOWN = 8;
@@ -77,7 +100,7 @@ export const TIMELINE_SHOWN = 8;
  * "Earlier ships" disclosure. Nothing is dropped: every item stays in exactly one place.
  */
 export function shapeTimeline(
-  items: readonly (TimelineItem | TimelineRun)[],
+  items: readonly (TimelineItem | TimelineRun | TimelineBreak)[],
   limit: number = TIMELINE_SHOWN,
 ): { shown: TimelineEntryShape[]; earlier: TimelineEntryShape[]; earlierCount: number } {
   const folded: TimelineEntryShape[] = [];
@@ -88,7 +111,7 @@ export function shapeTimeline(
     quiet = [];
   };
   for (const entry of items) {
-    if (!isRun(entry) && entry.notCounted) {
+    if (!isRun(entry) && !isBreak(entry) && entry.notCounted) {
       quiet.push(entry);
       continue;
     }
@@ -96,9 +119,17 @@ export function shapeTimeline(
     folded.push(entry);
   }
   flush();
-  const shown = folded.slice(0, Math.max(0, limit));
-  const earlier = folded.slice(shown.length);
-  const earlierCount = earlier.reduce((sum, entry) => sum + (isRun(entry) || isQuiet(entry) ? entry.items.length : 1), 0);
+  // A break line counts toward no limit: the newest `limit` ships are shown, and a break stays before the ships it heads.
+  const max = Math.max(0, limit);
+  let taken = 0;
+  let cut = 0;
+  while (cut < folded.length && taken < max) {
+    if (!isBreak(folded[cut]!)) taken += 1;
+    cut += 1;
+  }
+  const shown = folded.slice(0, cut);
+  const earlier = folded.slice(cut);
+  const earlierCount = earlier.reduce((sum, entry) => sum + (isBreak(entry) ? 0 : isRun(entry) || isQuiet(entry) ? entry.items.length : 1), 0);
   return { shown, earlier, earlierCount };
 }
 
@@ -109,7 +140,7 @@ export function BuildTimeline({
   action,
   limit = TIMELINE_SHOWN,
 }: {
-  items: readonly (TimelineItem | TimelineRun)[];
+  items: readonly (TimelineItem | TimelineRun | TimelineBreak)[];
   now?: Date;
   className?: string;
   /**
@@ -123,7 +154,9 @@ export function BuildTimeline({
 }) {
   const { shown, earlier, earlierCount } = shapeTimeline(items, limit);
   const draw = (entry: TimelineEntryShape) =>
-    isQuiet(entry) ? (
+    isBreak(entry) ? (
+      <TimelineBreakEntry key={`break-${entry.id}`} entry={entry} />
+    ) : isQuiet(entry) ? (
       <TimelineQuietEntry key={`quiet-${entry.id}`} quiet={entry} now={now} action={action} />
     ) : isRun(entry) ? (
       <TimelineRunEntry key={`run-${entry.id}`} run={entry} now={now} action={action} />
@@ -163,6 +196,35 @@ function TimelineMarks() {
   );
 }
 
+/** The chips and tags of an item or a run on a page on more than one chain; nothing on a page on one chain. */
+function TimelineChains({ chains, tags }: { chains?: readonly ChainMark[] | undefined; tags?: readonly TimelineTag[] | undefined }) {
+  if ((!chains || chains.length === 0) && (!tags || tags.length === 0)) return null;
+  return (
+    <p className="mt-1.5 flex flex-wrap items-center gap-1.5" data-testid="timeline-chains">
+      {chains && chains.length > 0 ? <ChainChips chains={chains} /> : null}
+      {(tags ?? []).map((tag) => (
+        <span
+          key={tag.label}
+          className="inline-flex min-h-5 items-center rounded-chip bg-hey-subtle px-1.5 text-[11.5px] font-medium leading-4 text-hey-secondary"
+          data-testid="timeline-tag"
+          {...(tag.help ? { title: tag.help } : {})}
+        >
+          {tag.label}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+/** Where HEY began tracking the project on another chain: one muted line, no dot, the ships of that chain below it. */
+function TimelineBreakEntry({ entry }: { entry: TimelineBreak }) {
+  return (
+    <li className="relative border-l border-dashed border-hey-border-strong py-1 pl-5 text-[12.5px] leading-snug text-hey-muted" data-testid="timeline-tracking-began">
+      {emailSafe(entry.line)}
+    </li>
+  );
+}
+
 /**
  * A folded run: the domain's line, the newest ship's time and kind, then
  * every ship of the run inside a disclosure (UI rule 6) — never 22 rows of
@@ -182,6 +244,7 @@ function TimelineRunEntry({ run, now, action }: { run: TimelineRun; now?: Date |
         </time>
       </div>
       <p className="mt-1 text-xs text-hey-secondary">{shipKindLabel(newest)}</p>
+      <TimelineChains chains={run.chains} tags={run.tags} />
       <details className="group mt-2" data-testid="timeline-run-details">
         <summary className="inline-flex min-h-6 cursor-pointer list-none items-center text-sm text-hey-secondary underline decoration-hey-border-strong underline-offset-4 marker:hidden hover:text-hey-ink [&::-webkit-details-marker]:hidden">
           <span className="group-open:hidden">
@@ -236,12 +299,13 @@ function TimelineEntry({ item, now, action }: { item: TimelineItem; now?: Date |
     <li
       id={`ship-${item.id}`}
       className="relative pl-6 last:[&>span:nth-child(2)]:hidden"
+      {...(item.muted ? { 'data-muted': 'true' } : {})}
     >
       <TimelineMarks />
 
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         {/* Release notes arrive as Markdown; the timeline shows the words (QA sweep 2026-09-04). */}
-        <h3 className="text-sm font-medium break-words">
+        <h3 className={cn('text-sm font-medium break-words', item.muted ? 'text-hey-secondary' : undefined)}>
           {emailSafe(shortenHexInText(plainText(item.title)))}
           {/* A space in the text, not only a margin (UI-15): "15 commitsowner/repo" read run together. */}
           {item.repo ? ' ' : null}
@@ -262,6 +326,7 @@ function TimelineEntry({ item, now, action }: { item: TimelineItem; now?: Date |
         {/* Evidence quality is always visible, never implied. */}
         <span>{formatVerification(item.verificationStatus)}</span>
       </p>
+      <TimelineChains chains={item.chains} tags={item.tags} />
 
       {/*
         A code week leads with what changed (2026-10-16, audit U1): the commit subjects first, the
