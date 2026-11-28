@@ -141,10 +141,24 @@ published, plus `contract.method_first_observed`, `contract.method_resumed`,
 v4 pools on a project's attributed hook, 2026-10-15) and the contract control
 watch's `contract.ownership_changed`, `contract.admin_changed` and
 `contract.timelock_operation` (2026-11-22; the `control` preset: "When control of
-{project}'s contracts changes") — those in the inbox only, never mailed, sent to a
-webhook or to Telegram. The control types are contract-level facts about a
-project's own contract, so machine rule 11 would allow pushing them; they stay in
-the inbox until the founder rules otherwise.
+{project}'s contracts changes") — those never mailed or sent to a webhook, and all
+but the control types never sent to Telegram either. The control types are
+contract-level facts about a project's own contract (a new owner or admin named by
+its kind, an address only when it is one of the same project's own contracts), so
+since 2026-11-27 (founder delegation, Terminal wave 3 lane J) a rule that asks for
+Telegram sends them to the account's own linked chat — never to email, a webhook, a
+Telegram group or HEY's channel (`ALERT_TELEGRAM_DM_TYPES`,
+`alertTelegramDmDeliverable` in `alerts/types.ts`, the one predicate the matcher and
+DELIVER_TELEGRAM ask). Market movement, holder-derived distribution and any
+project-linked-address or Stock Token kind never reach a chat
+(`alertOutboundForbidden`).
+
+In the Terminal, Following carries the builder alert presets (releases and ships,
+resumed, contracts, unlocks, sources, and contract control); a preset that is on
+has one Telegram switch while a chat is linked, else a link to Account → Telegram.
+A preset's rule is an ordinary alert rule: it keeps matching and keeps its
+channels when the account's Terminal access lapses, and is changed on
+`/account/alerts` meanwhile.
 
 ## What can never be an alert
 
@@ -181,7 +195,9 @@ the inbox until the founder rules otherwise.
   checks and a signed ping. A subscription that also asks for the same type is
   sent the event once, not twice.
 - The two `contract.method_*` types and `build.code_activity` are **shown in HEY
-  only**: they are never emailed, sent to a webhook or to Telegram.
+  only**: they are never emailed, sent to a webhook or to Telegram. The contract
+  control types are never emailed or sent to a webhook, and reach your own linked
+  Telegram chat only when the rule asks for it (2026-11-27).
 - **Telegram**, when HEY's Telegram bot is switched on: to a private chat you
   linked from **Account → Telegram** (a ten-minute, single-use code the bot
   confirms by your display name). One message per event however many of your

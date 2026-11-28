@@ -58,6 +58,15 @@ import type {
   HeyTokenLookup,
   HeyTokenMarket,
 } from './types/projects';
+import type {
+  HeyTerminalCatalysts,
+  HeyTerminalCatalystsParams,
+  HeyTerminalContractControl,
+  HeyTerminalDeepResearch,
+  HeyTerminalSavedViews,
+  HeyTerminalScreener,
+  HeyTerminalScreenerParams,
+} from './types/terminal';
 import type { HeyV4HookDetail, HeyV4Hooks, HeyV4HooksQuery } from './types/v4-hooks';
 import { SDK_VERSION } from './version';
 
@@ -671,6 +680,39 @@ export class HeyClient {
   readonly search = {
     /** `GET /api/search/suggest?q=`: type-ahead over names, symbols, contracts, old slugs, verified domains and corroborated repositories (one matcher with the site, 2026-09-27), 2–64 characters, at most eight rows. */
     suggest: (q: string): Promise<HeySearchSuggestions> => this.get('/api/search/suggest', { q }),
+  };
+
+  /* ------------------------------------------------- the Terminal's holder routes */
+
+  /**
+   * The Research Terminal's own tools for a Terminal account's key (2026-11-27, `/api/terminal/*`). Every call needs
+   * an API key whose account the Terminal lets in; any other key throws `forbidden` (403) whose body says
+   * `reason: 'not_terminal_account'` and the gate's state in `terminalAccess`. The answers are private.
+   */
+  readonly terminal = {
+    /**
+     * `GET /api/terminal/deep-research?q=`: one question answered in steps from HEY's records, every sentence with its
+     * receipts; no AI. Spends one of the account's daily deep questions, shared with the Terminal's Deep research page
+     * (asking the same question again the same UTC day spends nothing); a spent day throws `quota` (429). A question
+     * about prices, trading, wallets, a verdict or a pick answers `status: 'declined'` and spends nothing.
+     */
+    deepResearch: (q: string): Promise<HeyTerminalDeepResearch> => this.get('/api/terminal/deep-research', { q }),
+    /** `GET /api/terminal/saved-views`: the account's saved screener views with their new matches; read-only (moves no marker). */
+    savedViews: (): Promise<HeyTerminalSavedViews> => this.get('/api/terminal/saved-views'),
+    /** `GET /api/terminal/screener`: one page of the builder screener — a saved view by id, or a screen; builder facts only. */
+    screener: (params: HeyTerminalScreenerParams = {}): Promise<HeyTerminalScreener> => {
+      const query: QueryParams = {};
+      for (const [key, value] of Object.entries(params)) {
+        if (value === undefined) continue;
+        query[key] = typeof value === 'boolean' ? (value ? '1' : undefined) : Array.isArray(value) ? (value as string[]).join(',') : (value as string | number);
+      }
+      return this.get('/api/terminal/screener', query);
+    },
+    /** `GET /api/terminal/contract-control?slug=`: who can change a project's own contracts, its queued timelock operations and recent control changes. */
+    contractControl: (slug: string, options: { limit?: number } = {}): Promise<HeyTerminalContractControl> =>
+      this.get('/api/terminal/contract-control', { slug, limit: options.limit }),
+    /** `GET /api/terminal/catalysts`: HoodLock unlocks ahead with their lock receipts; no Stock Token entry (those stay on the Terminal page). */
+    catalysts: (params: HeyTerminalCatalystsParams = {}): Promise<HeyTerminalCatalysts> => this.get('/api/terminal/catalysts', params),
   };
 
   /* ---------------------------------------------------------------- the rest */

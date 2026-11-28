@@ -62,3 +62,4 @@ export type * from './types/graph';
 export type * from './types/hey';
 export type * from './types/agent';
 export type * from './types/v4-hooks';
+export type * from './types/terminal';

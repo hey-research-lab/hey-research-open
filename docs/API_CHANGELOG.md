@@ -13,6 +13,18 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
+## 2026-11-27 — The Terminal's holder routes
+
+### Added
+
+- `GET /api/terminal/deep-research`, `/saved-views`, `/screener`, `/contract-control` and `/catalysts`: the Research
+  Terminal's own reads for a HEY account's API key (header only), answered only while the key's account is one the
+  Terminal admits; any other key is 403 `forbidden` with `reason: 'not_terminal_account'` and `terminalAccess`, the
+  gate's state. Private, never cached. The screener's rows carry builder facts only (no valuation, price, liquidity or
+  volume); contract control names an owner or admin by its kind, never an account; the calendar carries HoodLock unlocks
+  only, with `stockTokens.included: false`. Every listing says how many it showed of how many. SDK: `client.terminal`.
+  MCP: five holder tools, listed only with a key (see the [MCP guide](MCP.md)).
+
 ## 2026-11-22 — Withheld gap days in history, three contract control change types, and the spreadsheet route
 
 ### Added

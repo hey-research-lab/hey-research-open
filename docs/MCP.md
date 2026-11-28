@@ -140,6 +140,27 @@ words with the reading dates and sources; there, `get_changes` also accepts the
 `market_integrity` domain and the `market_integrity.event` type (2026-09-27).
 `list_bounties` was dropped: bounties are not research, and they stay in the API and the SDK.
 
+### The holder tools (2026-11-27): a Research Terminal account's key
+
+With an API key — sent as `authorization: Bearer <key>` to the hosted `/mcp`, or `HEY_API_KEY` for the stdio server —
+`tools/list` on the full profile adds five tools; a keyless list is unchanged, byte for byte, and the research profile
+never lists them. Each is one read of `/api/terminal/*` through the SDK (`client.terminal`), the same domain read the
+Terminal page renders, and the route checks on every call that the key's account is one the Research Terminal admits;
+any other key gets the route's 403 sentence naming the gate's state, never an empty answer.
+
+| Tool | Route | What it reads |
+|---|---|---|
+| `terminal_deep_research` | `/api/terminal/deep-research?q=` | One question answered in steps from HEY's records, every sentence with its receipt; no AI. Spends one of the account's 10 deep questions a UTC day, the same allowance as the Terminal's Deep research page. |
+| `terminal_saved_views` | `/api/terminal/saved-views` | The account's saved screener views (at most 12) with their new matches; moves no "last opened" marker. |
+| `terminal_screener` | `/api/terminal/screener` | One page (25 rows) of the builder screener — a saved view or a screen — with builder facts only, ordered by building, never a market figure. |
+| `terminal_contract_control` | `/api/terminal/contract-control?slug=` | Who can change a project's own contracts, by kind; queued timelock operations; recent control changes and upgrades. No account is named. |
+| `terminal_catalysts` | `/api/terminal/catalysts` | HoodLock unlocks ahead (30, 90 or 365 days) with their lock receipts. Stock Token multiplier changes stay on the Terminal page: no API or MCP answer carries a Stock Token. |
+
+A key the door has seen admitted is counted at 240 JSON-RPC calls a minute per key instead of 60 per address
+(`MCP_HOLDER_RATE_POLICY`); every read still spends the key's own API allowance. Nothing here reaches activity status,
+Build Momentum, the Discovery Gap, the Radar or any order (`hey/neutrality.test.ts`, "the holder MCP tier answers a
+Terminal account and decides nothing").
+
 ### Folded tools (round 4, 2026-09-30): callable until 2026-12-31
 
 By 2026-09-30 the tools were on npm and in the MCP Registry, so these are aliased, not

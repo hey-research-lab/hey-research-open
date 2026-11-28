@@ -37,10 +37,11 @@ import {
   renderUnlocks,
   renderWeeklyReport,
 } from './render';
+import { renderCatalysts, renderContractControl, renderDeepResearch, renderSavedViews, renderScreener } from './render-terminal';
 import { renderV4Hook } from './render-v4-hooks';
 import { renderBuildMarket, renderContract, renderCoverage, renderDiff, renderEvidence, renderExplainIndex, renderExplained, renderProjectContracts, renderSnapshot } from './render-machine';
 import { renderIdentitySearch } from './render-research';
-import { HEY_MCP_DEPRECATED_TOOLS, HEY_MCP_GATED_TOOLS, HEY_MCP_RESEARCH_PROFILE_SCOPE, HEY_MCP_TOOLS, mcpToolsFor, PUBLIC_CHANGE_TYPES, type HeyMcpProfile, type HeyMcpToolName } from './tools';
+import { HEY_MCP_DEPRECATED_TOOLS, HEY_MCP_GATED_TOOLS, HEY_MCP_HOLDER_TOOLS, HEY_MCP_RESEARCH_PROFILE_SCOPE, HEY_MCP_TOOLS, mcpToolsFor, PUBLIC_CHANGE_TYPES, type HeyMcpProfile, type HeyMcpToolName } from './tools';
 import {
   AGENT_CAPABILITIES,
   AGENT_Q_MAX,
@@ -409,6 +410,12 @@ export type HeyMcpOptions = {
    * research_answer (whose server-side answer carries its own) disclose it.
    */
   ownToken?: { chainId: number; address: string } | null;
+  /**
+   * Whether the server carries an API key (2026-11-27, holder tools): the hosted route passes true when the request
+   * sends one, the stdio server when `HEY_API_KEY` is set. It lists the holder tools (`HEY_MCP_HOLDER_TOOLS`) on the
+   * full profile; whether the key's account may read them is the API's decision on every call, never this flag's.
+   */
+  holder?: boolean;
 };
 
 /**
@@ -541,9 +548,9 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
       ? { kind: 'api', data, text, ...(extra ? { extra } : {}) }
       : { kind: 'api', data, text: text.body, footer: text.footer, ...(text.footerIfCut !== undefined ? { footerIfCut: text.footerIfCut } : {}), ...(extra ? { extra } : {}) };
 
-  const offered = new Set<string>(mcpToolsFor(profile, { marketIntegrity: options.marketIntegrity === true }).map((tool) => tool.name));
+  const offered = new Set<string>(mcpToolsFor(profile, { marketIntegrity: options.marketIntegrity === true, holder: options.holder === true }).map((tool) => tool.name));
   const describe = (name: HeyMcpToolName, lines: string[]) => ({
-    title: [...HEY_MCP_TOOLS, ...HEY_MCP_GATED_TOOLS, ...HEY_MCP_DEPRECATED_TOOLS].find((tool) => tool.name === name)!.title,
+    title: [...HEY_MCP_TOOLS, ...HEY_MCP_GATED_TOOLS, ...HEY_MCP_HOLDER_TOOLS, ...HEY_MCP_DEPRECATED_TOOLS].find((tool) => tool.name === name)!.title,
     description: lines.join(' '),
     annotations: READ_ONLY,
     outputSchema: name === 'research_answer' ? agentAnswerOutput : apiAnswerOutput,
@@ -1120,6 +1127,120 @@ export function createHeyMcpServer(client: HeyClient, now?: () => Date, options:
         ),
     );
   }
+
+  /**
+   * The holder tools (2026-11-27, lane K): the Terminal's research tools for a Terminal account's key, each one read of
+   * `/api/terminal/*` through the SDK. Descriptions restate the domain definitions they name — the daily allowance,
+   * the saved-view cap, the screener page, the control read's limit, the calendar's windows — and the web app's
+   * `mcp-holder-tools.test.ts` holds each figure to its domain constant.
+   */
+  function registerHolderTools(): void {
+    if (offered.has('terminal_deep_research')) {
+      server.registerTool(
+        'terminal_deep_research',
+        {
+          ...describe('terminal_deep_research', [
+            'Research Terminal accounts only (an API key whose account the Terminal admits; any other key is refused with the reason). One question about a project, the projects you follow or Robinhood Chain, answered in steps from HEY’s records — status, ships, changes, contract changes, ownership evidence, unknowns — every sentence with its receipt; a sentence without one is held, never printed. No AI.',
+            'Each question spends one of the account’s 10 deep questions a UTC day, the same allowance as the Terminal’s Deep research page; asking it again the same day spends nothing. Prices, trading, wallets, verdicts or picks are declined and spend nothing.',
+          ]),
+          inputSchema: { q: z.string().min(1).max(280).describe('The question, e.g. "What has hoodlock shipped, and what changed on its contracts?"') },
+        },
+        async ({ q }) =>
+          run('terminal_deep_research', apiUrl('/api/terminal/deep-research', { q }), async () => {
+            const answer = await client.terminal.deepResearch(q);
+            return api(answer, renderDeepResearch(answer));
+          }),
+      );
+    }
+    if (offered.has('terminal_saved_views')) {
+      server.registerTool(
+        'terminal_saved_views',
+        {
+          ...describe('terminal_saved_views', [
+            'Research Terminal accounts only. The account’s saved builder-screener views (at most 12), oldest first, each with how many projects newly match since it was last opened on the Terminal — a count, or not tracked with the reason.',
+            'Read-only: it moves no last-opened marker. Run one with terminal_screener and its id.',
+          ]),
+          inputSchema: {},
+        },
+        async () =>
+          run('terminal_saved_views', apiUrl('/api/terminal/saved-views'), async () => {
+            const views = await client.terminal.savedViews();
+            return api(views, renderSavedViews(views));
+          }),
+      );
+    }
+    if (offered.has('terminal_screener')) {
+      server.registerTool(
+        'terminal_screener',
+        {
+          ...describe('terminal_screener', [
+            'Research Terminal accounts only. One page (25 rows) of the Terminal’s builder screener: a saved view by id, or a screen by activity status, narrative, Verified Builder, Robinhood Chain evidence, shipped within 7, 30 or 90 days, or a Still Building or Under the Radar badge.',
+            'Rows carry builder facts only — status, last ship, counted ships in 30 days, Build Momentum and the Discovery Gap or why not measured — never a price, valuation or volume. Ordered by last ship, counted ships in 30 days or newly seen, never by a market figure.',
+          ]),
+          inputSchema: {
+            view: z.string().uuid().optional().describe('A saved view id from terminal_saved_views; the other filters are then ignored.'),
+            status: z.enum(['SHIPPING', 'ACTIVE', 'RESUMED', 'QUIET', 'DORMANT', 'UNKNOWN']).optional().describe('Activity status.'),
+            narrative: z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/).optional().describe('A narrative slug.'),
+            verified: z.boolean().optional().describe('Verified Builders only.'),
+            chain: z.boolean().optional().describe('Only projects with Robinhood Chain evidence.'),
+            shipped: z.union([z.literal(7), z.literal(30), z.literal(90)]).optional().describe('A counted ship within this many days.'),
+            badge: z.enum(['still-building', 'under-the-radar']).optional().describe('Holds this badge.'),
+            sort: z.enum(['shipped30d', 'newest']).optional().describe('Default: last ship first.'),
+            offset: z.number().int().min(0).max(10_000).optional().describe('Rows to skip, from the previous page’s offset.'),
+          },
+        },
+        async (args) => {
+          const params = { ...args } as Parameters<HeyClient['terminal']['screener']>[0];
+          const query: Query = {};
+          for (const [key, value] of Object.entries(args)) if (value !== undefined) query[key] = typeof value === 'boolean' ? (value ? '1' : undefined) : value;
+          return run('terminal_screener', apiUrl('/api/terminal/screener', query), async () => {
+            const page = await client.terminal.screener(params);
+            return api(page, renderScreener(page));
+          });
+        },
+      );
+    }
+    if (offered.has('terminal_contract_control')) {
+      server.registerTool(
+        'terminal_contract_control',
+        {
+          ...describe('terminal_contract_control', [
+            'Research Terminal accounts only. Who can change one published project’s own contracts: per contract its proxy kind, owner, proposed owner and proxy admin by kind (renounced, a contract, the project’s own contract) with the log that set it; timelock operations queued and not executed or cancelled; and the newest control changes and upgrades (default 30, at most 100), each with its receipt.',
+            'No account is ever named; a contract the watch has not read says so, never "no owner". Not a safety verdict.',
+          ]),
+          inputSchema: { slug, limit: z.number().int().min(1).max(100).optional().describe('Recent changes to return; default 30.') },
+        },
+        async ({ slug, limit }) =>
+          run('terminal_contract_control', apiUrl('/api/terminal/contract-control', { slug, limit }), async () => {
+            const control = await client.terminal.contractControl(slug, limit === undefined ? {} : { limit });
+            return api(control, renderContractControl(control));
+          }, slug),
+      );
+    }
+    if (offered.has('terminal_catalysts')) {
+      server.registerTool(
+        'terminal_catalysts',
+        {
+          ...describe('terminal_catalysts', [
+            'Research Terminal accounts only. HoodLock unlocks ahead in the next 30, 90 or 365 days (default 90), from the locker’s own record, for Robinhood Chain, the projects the account follows or one of its research boards.',
+            'By date alone, each with how HEY knows it and its receipt; an unlock date is when supply may move, never that it will. Stock Token multiplier changes stay on the Terminal’s calendar page, and Proof of Ship bounty windows are not read.',
+          ]),
+          inputSchema: {
+            view: z.enum(['chain', 'following', 'board']).optional().describe('Default chain.'),
+            board: z.string().uuid().optional().describe('With view board: one of the account’s research board ids.'),
+            days: z.union([z.literal(30), z.literal(90), z.literal(365)]).optional().describe('Default 90.'),
+          },
+        },
+        async (args) =>
+          run('terminal_catalysts', apiUrl('/api/terminal/catalysts', args), async () => {
+            const calendar = await client.terminal.catalysts(args);
+            return api(calendar, renderCatalysts(calendar));
+          }),
+      );
+    }
+  }
+
+  registerHolderTools();
   shapeToolList(server, research ? [] : HEY_MCP_DEPRECATED_TOOLS.map((tool) => tool.name));
   guardToolArguments(server, report);
 

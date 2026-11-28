@@ -238,6 +238,63 @@ export const HEY_MCP_GATED_TOOLS = [
 ] as const satisfies readonly HeyMcpToolInfo[];
 
 /**
+ * The holder tools (2026-11-27, Terminal holder value wave 3 lane K): the Research Terminal's own research tools over
+ * MCP, for a HEY account's API key whose account the Terminal lets in — the same reads the Terminal's pages render,
+ * through the public API's `/api/terminal/*` routes and the SDK, never the database (machine rule 7): whatever those
+ * routes withhold or refuse, the tools cannot say.
+ *
+ * Listed only when the server carries a key — the hosted `/mcp` when the request sends one, the stdio server when
+ * `HEY_API_KEY` is set — on the full profile; a keyless list is unchanged, byte for byte. The key's account is checked
+ * by the routes on every call: a key the Terminal does not admit answers the route's 403 sentence (which gate state it
+ * reached), never an empty result. Their own list budget (`HEY_MCP_HOLDER_TOOL_LIST_BUDGET`), on top of `full`'s.
+ */
+export const HEY_MCP_HOLDER_TOOLS = [
+  {
+    name: 'terminal_deep_research',
+    title: 'Deep research (Terminal)',
+    summary: 'One question about a project, the projects you follow or Robinhood Chain, answered in steps from HEY’s records with a receipt for every sentence; no AI. Spends one of the account’s daily deep questions, shared with the Terminal.',
+    routes: ['/api/terminal/deep-research'],
+    replaces: [],
+    profiles: ['full'],
+  },
+  {
+    name: 'terminal_saved_views',
+    title: 'Saved screener views (Terminal)',
+    summary: 'The account’s saved builder-screener views, each with its new matches since it was last opened on the Terminal.',
+    routes: ['/api/terminal/saved-views'],
+    replaces: [],
+    profiles: ['full'],
+  },
+  {
+    name: 'terminal_screener',
+    title: 'Builder screener (Terminal)',
+    summary: 'One page of the Terminal’s builder screener — a saved view, or a screen by status, narrative, badge and shipping — with builder facts only, never a market figure.',
+    routes: ['/api/terminal/screener'],
+    replaces: [],
+    profiles: ['full'],
+  },
+  {
+    name: 'terminal_contract_control',
+    title: 'Contract control (Terminal)',
+    summary: 'Who can change a project’s own contracts — owner and proxy admin by kind, timelock operations queued, recent control changes and upgrades — each with its receipt; no account is named.',
+    routes: ['/api/terminal/contract-control'],
+    replaces: [],
+    profiles: ['full'],
+  },
+  {
+    name: 'terminal_catalysts',
+    title: 'Unlock calendar (Terminal)',
+    summary: 'HoodLock unlocks ahead for the chain, what you follow or a board, by date alone, each with its lock receipt; Stock Token changes stay on the Terminal page.',
+    routes: ['/api/terminal/catalysts'],
+    replaces: [],
+    profiles: ['full'],
+  },
+] as const satisfies readonly HeyMcpToolInfo[];
+
+/** What the five holder tools add to a keyed `tools/list`, in bytes of JSON (6,111 as built); `holder-tools.test.ts` holds it. */
+export const HEY_MCP_HOLDER_TOOL_LIST_BUDGET = 6_500;
+
+/**
  * Tools folded into others on 2026-09-30 (round 4) to pay for typed output
  * inside the tool list's byte budget. Each overlapped a listed tool: the same
  * read, or a restatement the contract already carries. They are no longer
@@ -279,15 +336,19 @@ export const HEY_MCP_DEPRECATED_TOOLS = [
   },
 ] as const satisfies readonly HeyMcpDeprecatedTool[];
 
-export type HeyMcpToolName = (typeof HEY_MCP_TOOLS)[number]['name'] | (typeof HEY_MCP_GATED_TOOLS)[number]['name'] | (typeof HEY_MCP_DEPRECATED_TOOLS)[number]['name'];
+export type HeyMcpToolName =
+  | (typeof HEY_MCP_TOOLS)[number]['name']
+  | (typeof HEY_MCP_GATED_TOOLS)[number]['name']
+  | (typeof HEY_MCP_HOLDER_TOOLS)[number]['name']
+  | (typeof HEY_MCP_DEPRECATED_TOOLS)[number]['name'];
 
-/** The tools a profile lists, in catalogue order; `market_integrity` only where the site publishes it. */
-export function mcpToolsFor(profile: HeyMcpProfile, options: { marketIntegrity?: boolean } = {}): readonly HeyMcpToolInfo[] {
-  return [...HEY_MCP_TOOLS, ...(options.marketIntegrity ? HEY_MCP_GATED_TOOLS : [])].filter((tool) => (tool.profiles as readonly HeyMcpProfile[]).includes(profile));
+/** The tools a profile lists, in catalogue order; `market_integrity` only where the site publishes it; the holder tools only with a key. */
+export function mcpToolsFor(profile: HeyMcpProfile, options: { marketIntegrity?: boolean; holder?: boolean } = {}): readonly HeyMcpToolInfo[] {
+  return [...HEY_MCP_TOOLS, ...(options.marketIntegrity ? HEY_MCP_GATED_TOOLS : []), ...(options.holder ? HEY_MCP_HOLDER_TOOLS : [])].filter((tool) => (tool.profiles as readonly HeyMcpProfile[]).includes(profile));
 }
 
 /** Every name a server answers on some profile, listed or deprecated: what the request log may record as a tool. */
-export const HEY_MCP_CALLABLE_TOOL_NAMES: readonly string[] = [...HEY_MCP_TOOLS, ...HEY_MCP_GATED_TOOLS, ...HEY_MCP_DEPRECATED_TOOLS].map((tool) => tool.name);
+export const HEY_MCP_CALLABLE_TOOL_NAMES: readonly string[] = [...HEY_MCP_TOOLS, ...HEY_MCP_GATED_TOOLS, ...HEY_MCP_HOLDER_TOOLS, ...HEY_MCP_DEPRECATED_TOOLS].map((tool) => tool.name);
 
 /** Dropped on 2026-09-26 and not replaced: bounties are not research, and stay in the SDK and API. */
 export const HEY_MCP_DROPPED_TOOLS = ['list_bounties'] as const;

@@ -28,6 +28,8 @@ async function main(): Promise<void> {
     publicBaseUrl: baseUrl,
     // HEY_MCP_PROFILE=research serves the research profile (round 4): builder intelligence only. Anything else is the full set.
     profile: process.env.HEY_MCP_PROFILE?.trim().toLowerCase() === 'research' ? 'research' : 'full',
+    // With a key, the Research Terminal's holder tools are listed (2026-11-27); the API answers them only for a Terminal account's key.
+    holder: Boolean(apiKey),
   });
   await server.connect(new StdioServerTransport());
   // The origin, not the configured string: it is the host the key actually goes to, and a reader can check it at a glance.
