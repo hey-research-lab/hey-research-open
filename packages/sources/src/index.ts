@@ -49,6 +49,7 @@ export * from './adapters/rpc-storage';
 export * from './adapters/bitquery-deployment';
 export * from './adapters/bitquery-pools';
 export * from './adapters/bitquery-upgrades';
+export * from './adapters/bitquery-control-events';
 export * from './adapters/bitquery-stream';
 export * from './adapters/bitquery-creations';
 export * from './adapters/bitquery-creations-recent';

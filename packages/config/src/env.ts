@@ -643,6 +643,13 @@ export const serverEnvSchema = z
          */
         marketIntegrityExitLabels: optionalString.transform((value) => value === 'true').pipe(z.boolean()),
         /**
+         * Exit-pattern labels in the Research Terminal only (2026-11-22, founder delegation): off unless
+         * exactly "true", and only beside Market Integrity reaching the Terminal. It never names an exit
+         * pattern on a public surface, an alert, a webhook, Telegram or a dataset — no flag does since that
+         * ruling; `HEY_MARKET_INTEGRITY_EXIT_LABELS` is retired and opens nothing.
+         */
+        marketIntegrityExitLabelsTerminal: optionalString.transform((value) => value === 'true').pipe(z.boolean()),
+        /**
          * Kill switches for three reader features (2026-09-24): Ask HEY, the
          * comparison, and the watchlist. On unless set to exactly "false", so a
          * missing value never switches a shipped feature off; off answers 404
@@ -1210,6 +1217,7 @@ function shapeEnv(raw: RawEnv) {
       terminalBetaEnabled: raw.HEY_TERMINAL_BETA_ENABLED,
       marketIntegrityExposure: raw.HEY_MARKET_INTEGRITY,
       marketIntegrityExitLabels: raw.HEY_MARKET_INTEGRITY_EXIT_LABELS,
+      marketIntegrityExitLabelsTerminal: raw.HEY_MARKET_INTEGRITY_EXIT_LABELS_TERMINAL,
       askEnabled: raw.HEY_ASK_ENABLED,
       compareEnabled: raw.HEY_COMPARE_ENABLED,
       watchlistEnabled: raw.HEY_WATCHLIST_ENABLED,
@@ -1357,6 +1365,7 @@ export const ENV_KEY_BY_PATH: Record<string, string> = {
   'hey.terminalBetaEnabled': 'HEY_TERMINAL_BETA_ENABLED',
   'hey.marketIntegrityExposure': 'HEY_MARKET_INTEGRITY',
   'hey.marketIntegrityExitLabels': 'HEY_MARKET_INTEGRITY_EXIT_LABELS',
+  'hey.marketIntegrityExitLabelsTerminal': 'HEY_MARKET_INTEGRITY_EXIT_LABELS_TERMINAL',
   'hey.askEnabled': 'HEY_ASK_ENABLED',
   'hey.compareEnabled': 'HEY_COMPARE_ENABLED',
   'hey.watchlistEnabled': 'HEY_WATCHLIST_ENABLED',
@@ -1514,9 +1523,17 @@ export function marketIntegrityVisible(env: ServerEnv, surface: 'admin' | 'termi
   return surface === 'terminal' ? level === 'terminal' || level === 'public' : level === 'public';
 }
 
-/** Whether an exit-pattern classification may be named on that surface: the admin review, or a visible surface with the labels flag on. */
+/**
+ * Whether an exit-pattern classification may be named on that surface (2026-11-22, founder delegation): the
+ * admin review always; the Research Terminal only with `HEY_MARKET_INTEGRITY_EXIT_LABELS_TERMINAL=true` beside
+ * Market Integrity reaching the Terminal; a public surface never — the page, the API, the MCP, the evidence
+ * receipt, the ledger's public events, alerts, webhooks, Telegram and datasets. The older
+ * `HEY_MARKET_INTEGRITY_EXIT_LABELS` is retired: it opens nothing.
+ */
 export function marketIntegrityExitLabelsVisible(env: ServerEnv, surface: 'admin' | 'terminal' | 'public'): boolean {
-  return surface === 'admin' || (env.hey.marketIntegrityExitLabels && marketIntegrityVisible(env, surface));
+  if (surface === 'admin') return true;
+  if (surface === 'public') return false;
+  return env.hey.marketIntegrityExitLabelsTerminal && marketIntegrityVisible(env, 'terminal');
 }
 
 /** AI must be opt-in; every caller checks this before doing enrichment work. */

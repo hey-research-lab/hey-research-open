@@ -136,7 +136,7 @@ export function changeEvidence(baseUrl: string, evidence: readonly { id: string;
  * 2026-10-03: they listed 11 and 9 of 14). `integrity` resolves only while
  * HEY publishes Market Integrity.
  */
-export const HEY_EVIDENCE_FAMILIES = ['ship', 'signal', 'abi', 'impl', 'lock', 'source', 'claim', 'state', 'integrity', 'narrative', 'method', 'sourcechange', 'security', 'v4hook', 'v4pool', 'ponsgrad'] as const;
+export const HEY_EVIDENCE_FAMILIES = ['ship', 'signal', 'abi', 'impl', 'lock', 'source', 'claim', 'state', 'integrity', 'narrative', 'method', 'sourcechange', 'security', 'v4hook', 'v4pool', 'ponsgrad', 'ctrl'] as const;
 /** The families as a reader lists them: `integrity:` only where Market Integrity is public. */
 export function evidenceFamiliesFor(options: { marketIntegrityPublic: boolean }): readonly string[] {
   return HEY_EVIDENCE_FAMILIES.filter((family) => options.marketIntegrityPublic || family !== 'integrity');
@@ -212,7 +212,16 @@ export function agentChange(event: ChangeLike, project: { slug: string; url: str
  * and new Uniswap v4 pools on a project's attributed hook (2026-10-15: the hook's use, not the project's work).
  */
 const CONTEXT_DOMAINS: ReadonlySet<string> = new Set(['market', 'market_integrity']);
-const CONTEXT_TYPES: ReadonlySet<string> = new Set(['contract.usage_changed', 'contract.method_first_observed', 'contract.method_resumed', 'contract.v4_pool_initialized']);
+// Who can change a project's contract (2026-11-22, the contract control watch): context about the contract, never building.
+const CONTEXT_TYPES: ReadonlySet<string> = new Set([
+  'contract.usage_changed',
+  'contract.method_first_observed',
+  'contract.method_resumed',
+  'contract.v4_pool_initialized',
+  'contract.ownership_changed',
+  'contract.admin_changed',
+  'contract.timelock_operation',
+]);
 export const isContextChange = (change: { domain: string; type: string }): boolean => CONTEXT_DOMAINS.has(change.domain) || CONTEXT_TYPES.has(change.type);
 
 /** Every evidence id the answer cites, once each, in first-seen order, bounded. */

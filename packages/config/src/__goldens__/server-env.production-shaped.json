@@ -145,6 +145,7 @@
     "terminalBetaEnabled": false,
     "marketIntegrityExposure": "internal",
     "marketIntegrityExitLabels": false,
+    "marketIntegrityExitLabelsTerminal": false,
     "askEnabled": true,
     "compareEnabled": true,
     "watchlistEnabled": true,

@@ -13,6 +13,23 @@ own. Changes before 2026-10-16 are dated where they happened, in the reference.
 
 The TypeScript SDK keeps its own changelog in its package; its entries are summarised here.
 
+## 2026-11-22 — Withheld gap days in history, three contract control change types, and the spreadsheet route
+
+### Added
+
+- `GET /api/projects/{slug}/history`: a `discoveryGap` point with a null value is a day whose gap was withheld, with
+  `withheld` (the scorer's code that day) and `reason` (its words); the series carries `withheldRecordedFrom`, the day
+  HEY began recording withheld days. Days before it are absent ("not recorded"), never reconstructed. Additive.
+- Three ChangeEvent types on `/api/changes` and What changed, domain `contract`: `contract.ownership_changed`,
+  `contract.admin_changed` and `contract.timelock_operation`, with the evidence family
+  `ctrl:<chainId>:<address>:<block>:<logIndex>`. A new owner or admin is named only by its kind (zero address, one of the
+  same project's own contracts, a contract, an address with no code, unread), never an account. They are not webhook
+  types: no webhook subscription can carry them. Additive.
+- `GET /api/sheets`: the cells behind `=HEY()` for spreadsheets, read with a Terminal account's own key (header only), at
+  most ten projects a request. Its fields restate the public snapshot; Build Momentum is printed only where HEY measures
+  it, otherwise as its withheld words. No price, market or holder field. Described on the Terminal's spreadsheet page
+  (`/terminal/boards/sheets`).
+
 ## 2026-11-16 — The security review signer
 
 ### Added

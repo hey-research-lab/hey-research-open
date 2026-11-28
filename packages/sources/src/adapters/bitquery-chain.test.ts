@@ -22,6 +22,8 @@ describe('Bitquery adapters are Robinhood Chain only (I12)', () => {
     expect(factories.map(([name]) => name).sort()).toEqual([
       'createBitqueryChainDaysAdapter',
       'createBitqueryContractActivityAdapter',
+      // The contract control watch (2026-11-22, Terminal holder value lane E).
+      'createBitqueryControlEventsAdapter',
       'createBitqueryCreationsAdapter',
       'createBitqueryDeploymentAdapter',
       'createBitqueryDiscoveryAdapter',

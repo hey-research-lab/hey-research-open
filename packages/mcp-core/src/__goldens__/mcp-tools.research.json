@@ -301,6 +301,9 @@
               "contract.method_first_observed",
               "contract.method_resumed",
               "contract.v4_pool_initialized",
+              "contract.ownership_changed",
+              "contract.admin_changed",
+              "contract.timelock_operation",
               "token.launch_stage_changed",
               "token.verification_changed",
               "research.published",
@@ -509,7 +512,7 @@
   {
     "name": "get_evidence",
     "title": "Open evidence",
-    "description": "What backs this claim? Open the record a HEY answer cited by its typed id — ship:, signal:, abi:, impl:, lock:, source:, claim:, state:, narrative:, method:, sourcechange:, security:, v4hook:, v4pool:, ponsgrad: — as a receipt: what it claims, its source URL, when it happened at what precision, when HEY knew, how it is backed. A withdrawn record says so.",
+    "description": "What backs this claim? Open the record a HEY answer cited by its typed id — ship:, signal:, abi:, impl:, lock:, source:, claim:, state:, narrative:, method:, sourcechange:, security:, v4hook:, v4pool:, ponsgrad:, ctrl: — as a receipt: what it claims, its source URL, when it happened at what precision, when HEY knew, how it is backed. A withdrawn record says so.",
     "inputSchema": {
       "type": "object",
       "properties": {

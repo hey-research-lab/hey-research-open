@@ -13,12 +13,21 @@ import type { HeyWebhookEventType } from './webhooks';
 /**
  * The types a rule may name: the webhook types, plus a contract's functions first called or called again after a silence,
  * a week of code activity (2026-10-09, additive) and new Uniswap v4 pools on a project's attributed hook (2026-10-15,
- * additive) — those four shown in the inbox only; never emailed or sent to a webhook.
+ * additive) and who can change a project's own contract (2026-11-22, additive: ownership, proxy admin and timelock
+ * logs) — those shown in the inbox only; never emailed or sent to a webhook.
  */
-export type HeyAlertEventType = HeyWebhookEventType | 'contract.method_first_observed' | 'contract.method_resumed' | 'build.code_activity' | 'contract.v4_pool_initialized';
+export type HeyAlertEventType =
+  | HeyWebhookEventType
+  | 'contract.method_first_observed'
+  | 'contract.method_resumed'
+  | 'build.code_activity'
+  | 'contract.v4_pool_initialized'
+  | 'contract.ownership_changed'
+  | 'contract.admin_changed'
+  | 'contract.timelock_operation';
 
-/** `deploy` and `status` added 2026-10-03; `ship` and `code` 2026-10-09 (additive). */
-export type HeyAlertPresetId = 'release' | 'ship' | 'code' | 'deploy' | 'implementation' | 'resumed' | 'status' | 'unlock' | 'docs' | 'integrity' | 'usage';
+/** `deploy` and `status` added 2026-10-03; `ship` and `code` 2026-10-09; `control` 2026-11-22 (additive). */
+export type HeyAlertPresetId = 'release' | 'ship' | 'code' | 'deploy' | 'implementation' | 'resumed' | 'status' | 'unlock' | 'docs' | 'integrity' | 'usage' | 'control';
 
 /** Conditions narrow only the types they apply to, on facts the event itself carries. */
 export type HeyAlertConditions = {

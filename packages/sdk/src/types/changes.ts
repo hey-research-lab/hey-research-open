@@ -35,6 +35,10 @@ export type HeyChangeType =
   | 'contract.method_resumed'
   /** New Uniswap v4 pools observed initialised with a hook HEY attributes to the project, folded per hook and UTC day (2026-10-15). Never building. */
   | 'contract.v4_pool_initialized'
+  /** Who can change a project's own contract, from its own logs (2026-11-22, additive): ownership, proxy admin, timelock operations. Never building. */
+  | 'contract.ownership_changed'
+  | 'contract.admin_changed'
+  | 'contract.timelock_operation'
   | 'market.status_changed'
   | 'market.liquidity_moved'
   | 'market.volume_spike'

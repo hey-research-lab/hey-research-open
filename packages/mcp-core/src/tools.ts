@@ -79,7 +79,8 @@ export const HEY_MCP_PROFILE_PATHS: Readonly<Record<HeyMcpProfile, string>> = { 
 // research +50 (2026-10-22, audit API-6): research_answer says a not_found project is a status, not isError; the list measures 11,319.
 // full 22,000 and research 12,400 since 2026-11-05: every tool argument carries a description (24 had none; a
 // directory's quality check asked for them); the lists measure 21,892 and 12,328.
-export const HEY_MCP_TOOL_LIST_BUDGET: Readonly<Record<HeyMcpProfile, number>> = { full: 22_000, research: 12_400 };
+// research 12,500 since 2026-11-22: get_changes offers the contract control watch's three types; the list measures 12,431.
+export const HEY_MCP_TOOL_LIST_BUDGET: Readonly<Record<HeyMcpProfile, number>> = { full: 22_000, research: 12_500 };
 
 export type HeyMcpToolInfo = {
   name: string;
@@ -346,6 +347,9 @@ export const PUBLIC_CHANGE_TYPES = [
   'contract.method_first_observed',
   'contract.method_resumed',
   'contract.v4_pool_initialized',
+  'contract.ownership_changed',
+  'contract.admin_changed',
+  'contract.timelock_operation',
   'market.status_changed',
   'market.liquidity_moved',
   'market.volume_spike',

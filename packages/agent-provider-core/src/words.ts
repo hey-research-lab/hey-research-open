@@ -46,6 +46,10 @@ export const CHANGE_TYPE_NOUNS: Readonly<Record<string, CountNoun>> = {
   'contract.method_resumed': noun('method resumed', 'methods resumed'),
   // One event per hook per UTC day, so the count is days of new pools, never pools (2026-10-15).
   'contract.v4_pool_initialized': noun('day of new Uniswap v4 pools on an attributed hook', 'days of new Uniswap v4 pools on an attributed hook'),
+  // The contract control watch (2026-11-22): one event per log a project's own contract emitted about who controls it.
+  'contract.ownership_changed': noun('ownership change'),
+  'contract.admin_changed': noun('proxy admin change'),
+  'contract.timelock_operation': noun('timelock operation'),
   'market.status_changed': noun('market status change'),
   'market.liquidity_moved': noun('liquidity move'),
   'market.volume_spike': noun('volume spike'),

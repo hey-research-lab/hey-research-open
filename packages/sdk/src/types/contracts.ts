@@ -217,6 +217,8 @@ export type HeyHistoryPoint = {
   source?: string;
   calls?: number | null;
   ids?: string[];
+  /** `discoveryGap` (2026-11-22): the scorer's withheld code on a day whose close had no gap; `reason` holds its words. */
+  withheld?: string;
 };
 
 /** `GET /api/projects/{slug}/history`: points HEY persisted, each with its basis; a missing day is absent, never zero. */
@@ -231,6 +233,8 @@ export type HeyHistory = {
     unit: string;
     points: HeyHistoryPoint[];
     reason?: string;
+    /** `discoveryGap` (2026-11-22): the first day a withheld day was stored with its reason. */
+    withheldRecordedFrom?: string | null;
   }[];
   ignoredSeries: string[];
   method: string;

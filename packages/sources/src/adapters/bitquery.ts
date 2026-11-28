@@ -116,6 +116,12 @@ export const BITQUERY_POINTS = {
   surface: 200,
   /** Combined upgrade events for a batch of a hundred contracts (measured 277). */
   upgrades: 300,
+  /**
+   * Combined control events (ownership, proxy admin, timelock) for a batch of watched contracts (2026-11-22, the
+   * contract control watch): not measured yet, so the upgrade read's figure — the same cube, contracts and window.
+   * Only the first read and a catch-up ask `combined`; the routine read is realtime at five points.
+   */
+  controlCombined: 300,
   /** Combined contract creations by a batch of senders (measured 26). */
   creations: 30,
   /** One contract's creating call (measured 9.5). */

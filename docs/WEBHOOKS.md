@@ -82,7 +82,7 @@ a revision keeps (founder ruling 2026-10-03). Delivery by `seq` is unchanged.
 | `market_integrity.event` where HEY does not publish Market Integrity | not published there (founder decision F5); where it is published it is subscribable, `GET /api/webhooks` lists it in `eventTypes`, and an exit-pattern classification is delivered only where HEY names one. Publishing is never pushed as news: events already recorded enter the ledger as `backfill`. |
 | `market.distribution_changed` | derived from holder data (founder decision). |
 | `market.liquidity_moved`, `market.volume_spike` | market movement is context, not a change a project made; HEY sends no trading alerts. |
-| `build.code_activity`, `build.slowing`, `contract.source_unverified`, `contract.usage_changed`, `contract.method_first_observed`, `contract.method_resumed`, `contract.v4_pool_initialized` (2026-10-15), `research.owner_verified`, `research.narrative_assigned` | on `/api/changes`; not pushed. |
+| `build.code_activity`, `build.slowing`, `contract.source_unverified`, `contract.usage_changed`, `contract.method_first_observed`, `contract.method_resumed`, `contract.v4_pool_initialized` (2026-10-15), `contract.ownership_changed`, `contract.admin_changed`, `contract.timelock_operation` (2026-11-22, pending a founder ruling), `research.owner_verified`, `research.narrative_assigned` | on `/api/changes`; not pushed. |
 | anything Terminal-only | never, on any public surface. |
 | project-linked address events, holder lists | never. |
 
